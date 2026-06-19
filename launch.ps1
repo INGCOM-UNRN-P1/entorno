@@ -65,6 +65,11 @@ if (Test-Path $wezConfigPath) {
     $content = $content -replace "PrÃ©mium|Pr\xc3\xa9mium|Premium", "Premium"
     $content = $content -replace "apariencia|apariencia", "apariencia"
     
+    # Corregir la falta de barra diagonal al final de PORTABLE_ROOT en el wezterm.lua del disco del usuario
+    if ($content -notmatch 'portable_root:match') {
+        $content = $content -replace 'portable_root = portable_root:gsub\("\\\\", "/"\)', "portable_root = portable_root:gsub(`\"\\\\`\", `/`\)`r`n  if not portable_root:match(`/$`\) then`r`n    portable_root = portable_root .. `/`\`r`n  end"
+    }
+    
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
 }

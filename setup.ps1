@@ -791,6 +791,9 @@ local config = wezterm.config_builder()
 local portable_root = os.getenv("PORTABLE_ROOT")
 if portable_root then
   portable_root = portable_root:gsub("\\\\", "/")
+  if not portable_root:match("/$") then
+    portable_root = portable_root .. "/"
+  end
 else
   portable_root = "./"
 end
