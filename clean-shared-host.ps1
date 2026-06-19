@@ -87,11 +87,11 @@ if (Test-Path $bashPath) {
             "",
             $startInstMarker,
             "clear",
-            "echo -e `"\e[35m`"", # Violeta
-            "echo `"======================================================================`"",
-            "echo `"  UNRN Andina - Programación 1`"",
-            "echo `"======================================================================`"",
-            "echo -e `"\e[0m`"",
+            'echo -e "\e[35m"', # Violeta
+            'echo "======================================================================"',
+            'echo "  UNRN Andina - Programación 1"',
+            'echo "======================================================================"',
+            'echo -e "\e[0m"',
             $endInstMarker
         ) -join "`r`n"
         Add-Content -Path $bashrcPath -Value $instBanner

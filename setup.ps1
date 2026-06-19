@@ -119,7 +119,7 @@ try {
 
     # Escribir archivo de configuración .env local
     $envFilePath = Join-Path $portableRoot ".env"
-Set-Content -Path $envFilePath -Value "set `"HOME_DIR_NAME=$HomeDirName`""
+    Set-Content -Path $envFilePath -Value ('set "HOME_DIR_NAME={0}"' -f $HomeDirName)
 
 # Asegurar que el archivo .env y el directorio personalizado estén excluidos en .gitignore
 $gitignorePath = Join-Path $portableRoot ".gitignore"
@@ -138,8 +138,8 @@ Write-Host "=== Entorno Portable de Desarrollo C + Python + VS Code ===" -Foregr
 Write-Host "Directorio de instalación: $portableRoot`n"
 
 # Validar espacios o caracteres no ASCII en la ruta de instalación (causan errores graves con Make/compiladores)
-$hasSpaces = $portableRoot -match " "
-$hasNonAscii = $portableRoot -match "[^\u0000-\u007F]"
+$hasSpaces = $portableRoot -match ' '
+$hasNonAscii = $portableRoot -match '[^\u0000-\u007F]'
 
 if ($hasSpaces -or $hasNonAscii) {
     Write-Host "==========================================================================" -ForegroundColor Yellow
@@ -231,7 +231,7 @@ if (-not $isMsysInstalled) {
     }
 
     Write-Host "Extrayendo entorno base MSYS2 en: $portableRoot" -ForegroundColor Cyan
-    $process = Start-Process -FilePath $exePath -ArgumentList "-y", "-o`"$portableRoot`"" -Wait -NoNewWindow -PassThru
+    $process = Start-Process -FilePath $exePath -ArgumentList "-y", "-o$portableRoot" -Wait -NoNewWindow -PassThru
     if ($process.ExitCode -ne 0) {
         throw "Error durante la extracción de MSYS2 (código de salida: $($process.ExitCode))"
     }
@@ -310,11 +310,11 @@ if (Test-Path $bashrcPath) {
         "",
         $startInstMarker,
         "clear",
-        "echo -e `"\e[35m`"", # Violeta
-        "echo `"======================================================================`"",
-        "echo `"  UNRN Andina - Programación 1`"",
-        "echo `"======================================================================`"",
-        "echo -e `"\e[0m`"",
+        'echo -e "\e[35m"', # Violeta
+        'echo "======================================================================"',
+        'echo "  UNRN Andina - Programación 1"',
+        'echo "======================================================================"',
+        'echo -e "\e[0m"',
         $endInstMarker
     ) -join "`r`n"
     

@@ -151,11 +151,11 @@ if ($configureBanner -match "^[sS]$") {
         $instBanner = @(
             $startInstMarker,
             "clear",
-            "echo -e `"\e[35m`"", # Violeta
-            "echo `"======================================================================`"",
-            "echo `"  UNRN Andina - Programación 1`"",
-            "echo `"======================================================================`"",
-            "echo -e `"\e[0m`"",
+            'echo -e "\e[35m"', # Violeta
+            'echo "======================================================================"',
+            'echo "  UNRN Andina - Programación 1"',
+            'echo "======================================================================"',
+            'echo -e "\e[0m"',
             $endInstMarker
         ) -join "`r`n"
         if ($bashrcContent.Trim().Length -gt 0) {
@@ -172,14 +172,14 @@ if ($configureBanner -match "^[sS]$") {
     $newBannerBlock = "$startMarker`r`n"
     if ($enableWelcomeMessage -eq "s") {
         # Se remueve el clear para no borrar el banner institucional previo
-        $newBannerBlock += "echo -e `"\e[${bashColorCode}m`"`r`n"
-        $newBannerBlock += "echo `"======================================================================`"`r`n"
+        $newBannerBlock += "echo -e ""\e[${bashColorCode}m""`r`n"
+        $newBannerBlock += "echo ""======================================================================""`r`n"
         foreach ($line in $bannerLines) {
             $escapedLine = $line.Replace('"', '\"')
-            $newBannerBlock += "echo `"$escapedLine`"`r`n"
+            $newBannerBlock += "echo ""$escapedLine""`r`n"
         }
-        $newBannerBlock += "echo `"======================================================================`"`r`n"
-        $newBannerBlock += "echo -e `"\e[0m`"`r`n"
+        $newBannerBlock += "echo ""======================================================================""`r`n"
+        $newBannerBlock += "echo -e ""\e[0m""`r`n"
     }
     $newBannerBlock += "$endMarker"
     
