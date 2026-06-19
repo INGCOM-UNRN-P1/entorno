@@ -211,19 +211,25 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
     }
     Write-Host "[Instalación] MSYS2 no detectado o incompleto. Iniciando descarga..." -ForegroundColor Yellow
 
-    $releaseUrl = "https://api.github.com/repos/msys2/msys2-installer/releases/latest"
+    $releasesUrl = "https://api.github.com/repos/msys2/msys2-installer/releases"
     $downloadUrl = $null
     $fileName = $null
 
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Write-Host "Consultando API de GitHub por la última versión de MSYS2..."
-        $release = Invoke-RestMethod -Uri $releaseUrl -UseBasicParsing -TimeoutSec 10
-        $asset = $release.assets | Where-Object { $_.name -like "msys2-base-x86_64-*.sfx.exe" }
-        if ($asset) {
-            $downloadUrl = $asset.browser_download_url
-            $fileName = $asset.name
-            Write-Host "Última versión detectada: $fileName" -ForegroundColor Green
+        Write-Host "Consultando API de GitHub por la última versión estable de MSYS2..."
+        $releases = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing -TimeoutSec 10
+        # Buscar la primera versión que no sea un build 'nightly' y que contenga el archivo sfx.exe
+        foreach ($release in $releases) {
+            if ($release.tag_name -notlike "*nightly*") {
+                $asset = $release.assets | Where-Object { $_.name -like "msys2-base-x86_64-*.sfx.exe" }
+                if ($asset) {
+                    $downloadUrl = $asset.browser_download_url
+                    $fileName = $asset.name
+                    Write-Host "Última versión estable detectada: $fileName (Tag: $($release.tag_name))" -ForegroundColor Green
+                    break
+                }
+            }
         }
     } catch {
         Write-Warning "Fallo al consultar la API de GitHub. Usando fallback fijo."
