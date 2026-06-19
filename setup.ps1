@@ -377,7 +377,6 @@ if ($isUpdateMode -or -not $isMsysComplete) {
         "mingw-w64-clang-x86_64-openssl",
         "mingw-w64-clang-x86_64-sqlite3",
         "mingw-w64-clang-x86_64-curl",
-        "github-cli",
         "git"
     )
 
@@ -585,6 +584,95 @@ if (Test-Path $codeCmd) {
                 Write-Warning "No se pudo instalar/verificar la extensión $ext."
             }
         }
+    }
+}
+
+# ==========================================
+# 5.5. Gestión e Instalación de GitHub CLI (gh)
+# ==========================================
+$ghExe = Join-Path $portableRoot "bin\gh.exe"
+$ghZipPath = Join-Path $tempDir "gh_archive.zip"
+$isGhInstalled = Test-Path $ghExe
+$isGhComplete = Test-Path (Join-Path $portableRoot ".gh_complete")
+
+$ghDownloadUrl = ""
+$shouldInstallOrUpdateGh = $false
+
+if ($isUpdateMode -or -not $isGhComplete -or -not $isGhInstalled) {
+    Write-Host "Obteniendo URL de descarga de GitHub CLI..." -ForegroundColor Cyan
+    try {
+        $ghReleaseUrl = "https://api.github.com/repos/cli/cli/releases/latest"
+        $ghRelease = Invoke-RestMethod -Uri $ghReleaseUrl -UseBasicParsing -TimeoutSec 10
+        $ghAsset = $ghRelease.assets | Where-Object { $_.name -like "*windows_amd64.zip" }
+        if ($ghAsset) {
+            $ghDownloadUrl = $ghAsset.browser_download_url
+            Write-Host "Última versión detectada de GitHub CLI: $($ghAsset.name)" -ForegroundColor Green
+        }
+    } catch {
+        Write-Warning "Fallo al consultar la API de GitHub para GitHub CLI. Usando fallback fijo."
+    }
+
+    if (-not $ghDownloadUrl) {
+        $ghDownloadUrl = "https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.zip"
+        Write-Host "Fallback URL GitHub CLI: $ghDownloadUrl" -ForegroundColor Yellow
+    }
+}
+
+if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
+    Write-Host "GitHub CLI ya está instalado y configurado de una ejecución previa." -ForegroundColor Green
+} else {
+    if ($isUpdateMode) {
+        $installedGhVersionFile = Join-Path $portableRoot "bin\.gh_version"
+        $installedGhUrl = ""
+        if (Test-Path $installedGhVersionFile) {
+            $installedGhUrl = Get-Content $installedGhVersionFile -Raw
+        }
+        if ($ghDownloadUrl -ne $installedGhUrl) {
+            Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar." -ForegroundColor Yellow
+            $shouldInstallOrUpdateGh = $true
+        } else {
+            Write-Host "GitHub CLI ya se encuentra en la versión más reciente ($ghDownloadUrl)." -ForegroundColor Green
+        }
+    } else {
+        $shouldInstallOrUpdateGh = $true
+    }
+
+    if ($shouldInstallOrUpdateGh) {
+        if (-not $isUpdateMode -and $isGhInstalled) {
+            Write-Host "Detectada instalación incompleta de GitHub CLI. Reinstalando..." -ForegroundColor Yellow
+            Remove-Item -Path $ghExe -Force -ErrorAction SilentlyContinue
+        }
+
+        Write-Host "Descargando GitHub CLI..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing
+
+        $ghTempDir = Join-Path $portableRoot "gh_temp"
+        if (Test-Path $ghTempDir) {
+            Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        New-Item -ItemType Directory -Path $ghTempDir | Out-Null
+        
+        Write-Host "Extrayendo GitHub CLI..." -ForegroundColor Cyan
+        Expand-Archive -Path $ghZipPath -DestinationPath $ghTempDir -Force
+        
+        $extractedGhExe = Get-ChildItem -Path $ghTempDir -Filter "gh.exe" -Recurse | Select-Object -First 1
+        if ($extractedGhExe) {
+            $binDir = Join-Path $portableRoot "bin"
+            if (-not (Test-Path $binDir)) {
+                New-Item -ItemType Directory -Path $binDir | Out-Null
+            }
+            Move-Item -Path $extractedGhExe.FullName -Destination $ghExe -Force
+            Write-Host "GitHub CLI copiado con éxito a $ghExe." -ForegroundColor Green
+        } else {
+            Write-Error "No se pudo encontrar gh.exe en el paquete extraído."
+        }
+
+        Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $ghZipPath -Force -ErrorAction SilentlyContinue
+
+        Set-Content -Path (Join-Path $portableRoot "bin\.gh_version") -Value $ghDownloadUrl
+        Set-Content -Path (Join-Path $portableRoot ".gh_complete") -Value "Complete"
+        Write-Host "GitHub CLI instalado con éxito." -ForegroundColor Green
     }
 }
 
