@@ -54,14 +54,11 @@ $env:LANG = "es_AR.UTF-8"
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
 $env:WEZTERM_CONFIG_FILE = $wezConfigPath
 
-# Asegurar que wezterm.lua no tenga BOM (evita error de codificación UTF-8 en WezTerm)
+# Asegurar que wezterm.lua esté siempre en UTF-8 sin BOM (evita error de codificación UTF-8 en WezTerm)
 if (Test-Path $wezConfigPath) {
-    $bytes = [System.IO.File]::ReadAllBytes($wezConfigPath)
-    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
-        $content = [System.IO.File]::ReadAllText($wezConfigPath)
-        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-        [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
-    }
+    $content = [System.IO.File]::ReadAllText($wezConfigPath)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
 }
 
 # Agregar scripts internos, compilador y userland de MSYS2 al Path
