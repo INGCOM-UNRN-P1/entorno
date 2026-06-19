@@ -333,6 +333,10 @@ if (-not $isCodeInstalled) {
         "telemetry.telemetryLevel" = "off"
         "update.mode" = "none"
         "extensions.autoUpdate" = $false
+        "chat.disableAIFeatures" = $true
+        "github.copilot.enable" = @{
+            "*" = $false
+        }
         "terminal.integrated.profiles.windows" = @{
             "Clang64 Bash" = @{
                 "path" = "bash.exe"
@@ -569,10 +573,12 @@ if ($ImportHostConfig) {
             $settingsObj = @{}
         }
         
-        # Forzar/Asegurar parámetros de portabilidad
+        # Forzar/Asegurar parámetros de portabilidad e inhabilitar IA/Copilot
         $settingsObj | Add-Member -NotePropertyName "telemetry.telemetryLevel" -NotePropertyValue "off" -Force
         $settingsObj | Add-Member -NotePropertyName "update.mode" -NotePropertyValue "none" -Force
         $settingsObj | Add-Member -NotePropertyName "extensions.autoUpdate" -NotePropertyValue $false -Force
+        $settingsObj | Add-Member -NotePropertyName "chat.disableAIFeatures" -NotePropertyValue $true -Force
+        $settingsObj | Add-Member -NotePropertyName "github.copilot.enable" -NotePropertyValue @{ "*" = $false } -Force
         
         # Configurar el perfil de terminal Bash Clang64
         $terminalProfiles = @{

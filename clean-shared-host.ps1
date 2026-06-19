@@ -79,6 +79,10 @@ $defaultSettings = @{
     "telemetry.telemetryLevel" = "off"
     "update.mode" = "none"
     "extensions.autoUpdate" = $false
+    "chat.disableAIFeatures" = $true
+    "github.copilot.enable" = @{
+        "*" = $false
+    }
     "terminal.integrated.profiles.windows" = @{
         "Clang64 Bash" = @{
             "path" = "bash.exe"

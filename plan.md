@@ -30,7 +30,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 ## Fase 4: Gestión de Editor e Integración VS Code Portable (Completado)
 *   [x] Descarga automatizada del archivo ZIP oficial de VS Code en `setup.ps1`.
 *   [x] Habilitación del modo portable mediante la creación del directorio `vscode/data/`.
-*   [x] Configuración inicial aislada (`telemetry` inactivo, actualizaciones en modo manual) y seteo predeterminado de terminal de integración `bash.exe` de MSYS2.
+*   [x] Configuración inicial aislada (`telemetry` inactivo, actualizaciones en modo manual, inhabilitación total de Copilot e integraciones de IA/LLM) y seteo predeterminado de terminal de integración `bash.exe` de MSYS2.
 *   [x] Instalación de extensiones necesarias (`C/C++ Extension Pack` y `Python Extension`) a través del CLI de VS Code de forma automática.
 *   [x] Creación de cargadores específicos [launch-vscode.bat](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat) y [launch-vscode.ps1](file:///home/mrtin/dev/p1/entorno/launch-vscode.ps1) para propagar el `PATH` y variables de sesión.
 
