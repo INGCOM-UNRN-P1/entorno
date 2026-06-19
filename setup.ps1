@@ -15,8 +15,32 @@ $tempDir = Join-Path $portableRoot "downloads"
 $homeDir = Join-Path $portableRoot $HomeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
 
-# Escribir archivo de configuración .env local
-$envFilePath = Join-Path $portableRoot ".env"
+# Iniciar log de instalación
+$logPath = Join-Path $portableRoot "install.log"
+$transcriptStarted = $false
+try {
+    Start-Transcript -Path $logPath -Force -ErrorAction Stop | Out-Null
+    $transcriptStarted = $true
+} catch {
+    Write-Warning "No se pudo iniciar el log oficial de PowerShell. La instalación continuará sin registrar salida en archivo."
+}
+
+# Escribir información del entorno y fecha/hora de inicio en el log
+Write-Host "======================================================================"
+Write-Host "LOG DE INSTALACIÓN DETALLADO"
+Write-Host "======================================================================"
+Write-Host "Fecha/Hora de Inicio : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Write-Host "Entorno de Ejecución : $($PSVersionTable.OS) / OS: $($env:OS)"
+Write-Host "Nombre del Equipo    : $($env:COMPUTERNAME)"
+Write-Host "Usuario Ejecutor     : $($env:USERNAME)"
+Write-Host "Versión PowerShell   : $($PSVersionTable.PSVersion)"
+Write-Host "Ruta de la Carpeta   : $portableRoot"
+Write-Host "Parámetros Utilizados: -HomeDirName '$HomeDirName' -ImportHostConfig: $ImportHostConfig"
+Write-Host "======================================================================`n"
+
+try {
+    # Escribir archivo de configuración .env local
+    $envFilePath = Join-Path $portableRoot ".env"
 Set-Content -Path $envFilePath -Value "set `"HOME_DIR_NAME=$HomeDirName`""
 
 # Asegurar que el archivo .env y el directorio personalizado estén excluidos en .gitignore
@@ -58,7 +82,7 @@ if ($hasSpaces -or $hasNonAscii) {
     $choice = Read-Host "¿Deseás continuar con la instalación de todas formas? (s/n)"
     if ($choice -notmatch "^[sS]$") {
         Write-Host "Instalación cancelada." -ForegroundColor Red
-        exit 0
+        return
     }
     Write-Host "Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
 }
@@ -501,6 +525,15 @@ if (Test-Path $tempDir) {
     Remove-Item -Path $tempDir -Recurse -Force
 }
 
-Write-Host "`n=== ENTORNO PORTABLE CONFIGURADO Y LISTO ===" -ForegroundColor Green
-Write-Host "Ejecutá 'launch.bat' para iniciar la consola." -ForegroundColor Green
-Write-Host "Ejecutá 'launch-vscode.bat' para iniciar VS Code." -ForegroundColor Green
+    Write-Host "`n=== ENTORNO PORTABLE CONFIGURADO Y LISTO ===" -ForegroundColor Green
+    Write-Host "Ejecutá 'launch.bat' para iniciar la consola." -ForegroundColor Green
+    Write-Host "Ejecutá 'launch-vscode.bat' para iniciar VS Code." -ForegroundColor Green
+}
+finally {
+    if ($transcriptStarted) {
+        Write-Host "`n======================================================================"
+        Write-Host "FIN DE LA INSTALACIÓN: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+        Write-Host "======================================================================"
+        Stop-Transcript | Out-Null
+    }
+}
