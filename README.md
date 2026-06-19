@@ -21,7 +21,7 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 El repositorio está organizado para separar las herramientas ejecutables del host de las configuraciones y scripts de inicialización:
 
-*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm. Valida la ruta y registra toda la salida en `install.log` para troubleshooting, incluyendo información del sistema y hora de inicio.
+*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm. Al ejecutarse, actualiza automáticamente todos los scripts del entorno a la última versión (vía Git pull o descargándolos directamente de GitHub) y luego actualiza los componentes instalados (MSYS2, VS Code, WezTerm y extensiones). Valida la ruta de instalación y genera el registro `install.log` para troubleshooting.
 *   [package-env.ps1](file:///home/mrtin/dev/p1/entorno/package-env.ps1): Script de PowerShell para empaquetar el entorno completo inicializado en un archivo ZIP para distribución offline.
 *   [clean-shared-host.ps1](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1): Script de PowerShell para eliminar credenciales, historial de consola y configuraciones personales cuando se trabaja en una máquina pública o compartida.
 *   [customize-terminal.ps1](file:///home/mrtin/dev/p1/entorno/customize-terminal.ps1): Script de PowerShell interactivo para personalizar la apariencia de la consola (WezTerm) y el banner de bienvenida de Bash.

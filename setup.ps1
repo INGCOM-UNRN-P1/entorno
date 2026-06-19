@@ -39,6 +39,84 @@ Write-Host "Parámetros Utilizados: -HomeDirName '$HomeDirName' -ImportHostConfi
 Write-Host "======================================================================`n"
 
 try {
+    # ==========================================
+    # 0. Actualización automática de scripts
+    # ==========================================
+    Write-Host "=== Comprobando actualizaciones de los scripts del entorno ===" -ForegroundColor Cyan
+    
+    $repoOwner = "INGCOM-UNRN-P1"
+    $repoName = "entorno"
+    $branch = "main"
+    $rawBaseUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/$branch"
+    $isGitRepo = Test-Path (Join-Path $portableRoot ".git")
+
+    if ($isGitRepo) {
+        Write-Host "Repositorio Git detectado. Intentando actualizar vía 'git pull'..." -ForegroundColor Cyan
+        
+        $gitExe = "git"
+        $msysGit = Join-Path $portableRoot "msys64\usr\bin\git.exe"
+        if (Test-Path $msysGit) {
+            $gitExe = $msysGit
+        }
+        
+        try {
+            $process = Start-Process -FilePath $gitExe -ArgumentList "pull" -WorkingDirectory $portableRoot -Wait -NoNewWindow -PassThru -ErrorAction Stop
+            if ($process.ExitCode -eq 0) {
+                Write-Host "Scripts actualizados con éxito a través de Git.`n" -ForegroundColor Green
+            } else {
+                Write-Warning "Fallo al realizar git pull (código de salida: $($process.ExitCode)). Se continuará con la ejecución local."
+            }
+        } catch {
+            Write-Warning "No se pudo ejecutar git para la actualización automática: $_. Se continuará con la ejecución local."
+        }
+    } else {
+        Write-Host "No se detectó un repositorio de Git (carpeta standalone). Descargando última versión de los scripts..." -ForegroundColor Cyan
+        
+        $filesToDownload = @(
+            "setup.ps1",
+            "launch.bat",
+            "launch.ps1",
+            "launch-vscode.bat",
+            "launch-vscode.ps1",
+            "clean-shared-host.ps1",
+            "customize-terminal.ps1",
+            "customize-terminal.bat",
+            "package-env.ps1",
+            "install-lib.sh",
+            "configure-git.sh",
+            "README.md",
+            "plan.md",
+            "GEMINI.md"
+        )
+        
+        foreach ($file in $filesToDownload) {
+            $fileUrl = "$rawBaseUrl/$file"
+            $destinationPath = Join-Path $portableRoot $file
+            try {
+                Write-Host "Actualizando $file..." -ForegroundColor Gray
+                # Descarga con reintentos
+                $attempts = 0
+                $success = $false
+                while (-not $success -and $attempts -lt 3) {
+                    $attempts++
+                    try {
+                        Invoke-WebRequest -Uri $fileUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
+                        $success = $true
+                    } catch {
+                        if ($attempts -lt 3) {
+                            Start-Sleep -Seconds 1
+                        } else {
+                            throw $_
+                        }
+                    }
+                }
+            } catch {
+                Write-Warning "No se pudo actualizar el archivo $file: $_"
+            }
+        }
+        Write-Host "Actualización de scripts completada.`n" -ForegroundColor Green
+    }
+
     # Escribir archivo de configuración .env local
     $envFilePath = Join-Path $portableRoot ".env"
 Set-Content -Path $envFilePath -Value "set `"HOME_DIR_NAME=$HomeDirName`""
