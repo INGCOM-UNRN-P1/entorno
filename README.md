@@ -24,6 +24,8 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm. Valida la validez de la ruta.
 *   [package-env.ps1](file:///home/mrtin/dev/p1/entorno/package-env.ps1): Script de PowerShell para empaquetar el entorno completo inicializado en un archivo ZIP para distribución offline.
 *   [clean-shared-host.ps1](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1): Script de PowerShell para eliminar credenciales, historial de consola y configuraciones personales cuando se trabaja en una máquina pública o compartida.
+*   [customize-terminal.ps1](file:///home/mrtin/dev/p1/entorno/customize-terminal.ps1): Script de PowerShell interactivo para personalizar la apariencia de la consola (WezTerm) y el banner de bienvenida de Bash.
+*   [customize-terminal.bat](file:///home/mrtin/dev/p1/entorno/customize-terminal.bat): Cargador rápido CMD para lanzar el asistente de personalización de consola.
 *   [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub.
 *   [configure-git.sh](file:///home/mrtin/dev/p1/entorno/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada.
 *   [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola WezTerm desde CMD.
@@ -95,6 +97,22 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
 *   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
 
 Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador Clang, Make, CMake y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
+
+---
+
+## Personalización Estética de la Consola
+
+Podés personalizar el mensaje de bienvenida de Bash y la apariencia visual de la terminal WezTerm (esquema de color, tamaño de fuente y opacidad del fondo) ejecutando el asistente interactivo:
+
+*   **Desde CMD:** Hacé doble clic en `customize-terminal.bat` o ejecutalo desde consola.
+*   **Desde PowerShell:** Ejecutá `.\customize-terminal.ps1`.
+
+El asistente te guiará para:
+1.  **Configurar el Banner de Bienvenida:** Elegir entre un mensaje informativo limpio predeterminado, un mensaje de texto personalizado o limpiar la consola al iniciar. También te permite seleccionar el color del banner (Celeste, Verde, Amarillo, Violeta, Blanco).
+2.  **Modificar la Apariencia de WezTerm:** Seleccionar esquemas de color premium (Tokyo Night, Dracula, Gruvbox, Nord, One Half Dark), ajustar el tamaño de fuente y configurar la opacidad de fondo para lograr efectos de transparencia.
+
+> [!TIP]
+> El script incluye un sistema de reintentos automáticos para evitar fallos si el archivo de configuración estuviera temporalmente bloqueado por estar en uso por otra aplicación.
 
 ---
 
