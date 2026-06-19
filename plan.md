@@ -19,7 +19,15 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 3: Gestión de Editor e Integración VS Code Portable (Completado)
+## Fase 3: Terminal de Consola GPU WezTerm Portable (Completado)
+*   [x] Descarga e instalación automatizada del archivo ZIP de WezTerm en `setup.ps1`.
+*   [x] Configuración estética premium local (`wezterm.lua`) con tema Tokyo Night, tipografía JetBrains Mono y opacidad.
+*   [x] Redirección y mapeo dinámico de rutas en Lua, adaptando contrabarras para prevenir fallas de escape.
+*   [x] Integración de cargadores de terminal (`launch.bat` y `launch.ps1`) para iniciar WezTerm con fallback automático a consola estándar si no se encuentra instalado.
+
+---
+
+## Fase 4: Gestión de Editor e Integración VS Code Portable (Completado)
 *   [x] Descarga automatizada del archivo ZIP oficial de VS Code en `setup.ps1`.
 *   [x] Habilitación del modo portable mediante la creación del directorio `vscode/data/`.
 *   [x] Configuración inicial aislada (`telemetry` inactivo, actualizaciones en modo manual) y seteo predeterminado de terminal de integración `bash.exe` de MSYS2.
@@ -28,7 +36,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 4: Gestor de Librerías de C desde GitHub (Completado)
+## Fase 5: Gestor de Librerías de C desde GitHub (Completado)
 *   [x] Diseño y desarrollo de [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh) para compilar e instalar librerías externas de forma desatendida dentro del prefijo portable `/clang64`.
 *   [x] Soporte para múltiples modos de construcción:
     1. Recetas personalizadas `.portable-recipe.sh` en el repositorio.
@@ -38,7 +46,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 5: Configuración de Control de Versiones e Integración GitHub CLI (Completado)
+## Fase 6: Configuración de Control de Versiones e Integración GitHub CLI (Completado)
 *   [x] Integración del paquete `mingw-w64-clang-x86_64-github-cli` en MSYS2.
 *   [x] Diseño del script [configure-git.sh](file:///home/mrtin/dev/p1/entorno/configure-git.sh) para automatizar:
     1. Firma de autoría de commits (`user.name` y `user.email`).
@@ -47,7 +55,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 6: Empaquetamiento y Distribución Offline (Completado)
+## Fase 7: Empaquetamiento y Distribución Offline (Completado)
 *   [x] Diseño del script [package-env.ps1](file:///home/mrtin/dev/p1/entorno/package-env.ps1) que automatiza el empaquetamiento del entorno inicializado.
 *   [x] Limpieza del almacenamiento de pacman (`pacman -Scc`) integrado en el script para reducir el tamaño final en disco de la entrega.
 *   [x] Aislamiento en la copia del paquete, excluyendo la base de datos de control de versiones `.git` y descargas/copias temporales del host.
@@ -55,11 +63,11 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 7: Pruebas de Aceptación (Pendiente de Ejecución en Host)
+## Fase 8: Pruebas de Aceptación (Pendiente de Ejecución en Host)
 Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
 
 ### Prueba A: Compilación Clang C
-*   [ ] 1. Ejecutar `launch.bat`.
+*   [ ] 1. Ejecutar `launch.bat` (que iniciará WezTerm).
 *   [ ] 2. Crear un archivo `test.c` con el siguiente contenido:
    ```c
    #include <stdio.h>
@@ -116,5 +124,5 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 
 ---
 
-## Fase 8: Optimización y Mantenimiento (En desarrollo)
+## Fase 9: Optimización y Mantenimiento (En desarrollo)
 *   [ ] **Automatización de Descompresión:** Evaluación del diseño de un script ligero de PowerShell `install-offline.ps1` para asistir en la extracción rápida del ZIP distribuido.

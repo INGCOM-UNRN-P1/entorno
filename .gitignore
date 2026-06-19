@@ -4,6 +4,9 @@ msys64/
 # VS Code portable folder
 vscode/
 
+# WezTerm portable folder
+wezterm/
+
 
 # Temporary downloads and installers
 *.exe

@@ -26,6 +26,8 @@ if ($hasSpaces -or $hasNonAscii) {
 
 $homeDir = Join-Path $portableRoot "home"
 $msysDir = Join-Path $portableRoot "msys64"
+$wezDir = Join-Path $portableRoot "wezterm"
+$wezExe = Join-Path $wezDir "wezterm.exe"
 $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
 
 # Asegurar existencia del HOME portable
@@ -37,12 +39,21 @@ if (-not (Test-Path $homeDir)) {
 $env:HOME = $homeDir
 $env:MSYSTEM = "CLANG64"
 $env:CHERE_INVOKING = "1"
+$env:WEZTERM_CONFIG_FILE = Join-Path $portableRoot "wezterm.lua"
 
-# Validar existencia de MSYS2
-if (-not (Test-Path $bashPath)) {
-    Write-Error "No se encuentra MSYS2 en '$msysDir'. Corré 'powershell -File setup.ps1' para instalarlo."
-    return
+# Agregar compilador al Path
+$clangPath = Join-Path $portableRoot "msys64\clang64\bin"
+$usrPath = Join-Path $portableRoot "msys64\usr\bin"
+$env:PATH = "$clangPath;$usrPath;$env:PATH"
+
+# Lanzar WezTerm o fallar de vuelta a Bash estándar
+if (Test-Path $wezExe) {
+    Start-Process -FilePath $wezExe -NoNewWindow
+} else {
+    Write-Host "[INFO] WezTerm no encontrado. Lanzando Bash en consola estándar..." -ForegroundColor Yellow
+    if (-not (Test-Path $bashPath)) {
+        Write-Error "No se encuentra MSYS2 en '$msysDir'. Corré 'powershell -File setup.ps1' para instalarlo."
+        return
+    }
+    & $bashPath --login -i
 }
-
-# Lanzar bash interactivo
-& $bashPath --login -i

@@ -271,7 +271,121 @@ if (Test-Path $codeCmd) {
 }
 
 # ==========================================
-# 6. Limpieza final de temporales
+# 6. Gestión e Instalación de WezTerm Portable
+# ==========================================
+$wezDir = Join-Path $portableRoot "wezterm"
+$wezZipName = "wezterm_archive.zip"
+$wezZipPath = Join-Path $tempDir $wezZipName
+$isWezInstalled = Test-Path (Join-Path $wezDir "wezterm.exe")
+
+if (-not $isWezInstalled) {
+    Write-Host "[Instalación] WezTerm no detectado. Descargando versión portable..." -ForegroundColor Yellow
+    
+    $wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
+    $wezDownloadUrl = $null
+    
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Write-Host "Consultando API de GitHub por la última versión de WezTerm..."
+        $wezRelease = Invoke-RestMethod -Uri $wezReleaseUrl -UseBasicParsing -TimeoutSec 10
+        $wezAsset = $wezRelease.assets | Where-Object { $_.name -like "WezTerm-windows-*.zip" -and $_.name -notlike "*setup*" }
+        if ($wezAsset) {
+            $wezDownloadUrl = $wezAsset.browser_download_url
+            Write-Host "Última versión detectada de WezTerm: $($wezAsset.name)" -ForegroundColor Green
+        }
+    } catch {
+        Write-Warning "Fallo al consultar la API de GitHub para WezTerm. Usando fallback fijo."
+    }
+
+    if (-not $wezDownloadUrl) {
+        $wezDownloadUrl = "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip"
+        Write-Host "Fallback URL WezTerm: $wezDownloadUrl" -ForegroundColor Yellow
+    }
+
+    Write-Host "Descargando WezTerm..." -ForegroundColor Cyan
+    Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
+
+    Write-Host "Extrayendo WezTerm..." -ForegroundColor Cyan
+    Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
+    Write-Host "WezTerm Portable instalado con éxito." -ForegroundColor Green
+} else {
+    Write-Host "[Actualización] WezTerm ya instalado. Comprobando actualizaciones..." -ForegroundColor Yellow
+    try {
+        $wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
+        $wezDownloadUrl = $null
+        
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $wezRelease = Invoke-RestMethod -Uri $wezReleaseUrl -UseBasicParsing -TimeoutSec 10
+        $wezAsset = $wezRelease.assets | Where-Object { $_.name -like "WezTerm-windows-*.zip" -and $_.name -notlike "*setup*" }
+        if ($wezAsset) {
+            $wezDownloadUrl = $wezAsset.browser_download_url
+        }
+
+        if (-not $wezDownloadUrl) {
+            $wezDownloadUrl = "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip"
+        }
+
+        Write-Host "Descargando última versión de WezTerm para actualizar..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
+        
+        Write-Host "Borrando versión anterior de WezTerm..."
+        Remove-Item -Path $wezDir -Recurse -Force
+        New-Item -ItemType Directory -Path $wezDir | Out-Null
+        
+        Write-Host "Extrayendo actualización de WezTerm..."
+        Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
+        Write-Host "Actualización de WezTerm completada con éxito." -ForegroundColor Green
+    } catch {
+        Write-Error "Fallo durante la actualización de WezTerm: $_"
+    }
+}
+
+# Escribir configuración wezterm.lua
+$wezConfigPath = Join-Path $portableRoot "wezterm.lua"
+$wezConfigContent = @"
+local wezterm = require 'wezterm'
+local config = wezterm.config_builder()
+
+-- Configurar directorio raíz portable
+local portable_root = os.getenv("PORTABLE_ROOT")
+if portable_root then
+  portable_root = portable_root:gsub("\\\\", "/")
+else
+  portable_root = "./"
+end
+
+local bash_path = portable_root .. "msys64/usr/bin/bash.exe"
+config.default_prog = { bash_path, "--login", "-i" }
+
+-- Configurar entorno heredado
+local home_dir = os.getenv("HOME")
+if home_dir then home_dir = home_dir:gsub("\\\\", "/") end
+
+local path_env = os.getenv("PATH")
+if path_env then path_env = path_env:gsub("\\\\", "/") end
+
+config.set_environment_variables = {
+  MSYSTEM = "CLANG64",
+  CHERE_INVOKING = "1",
+  HOME = home_dir,
+  PATH = path_env,
+}
+
+-- Estética Premium (Tokyo Night y JetBrains Mono)
+config.color_scheme = 'Tokyo Night'
+config.font = wezterm.font 'JetBrains Mono'
+config.font_size = 11.0
+config.window_background_opacity = 0.95
+config.enable_tab_bar = false
+
+return config
+"@
+
+Set-Content -Path $wezConfigPath -Value $wezConfigContent
+Write-Host "Configuración wezterm.lua creada/actualizada." -ForegroundColor Green
+
+# ==========================================
+# 7. Limpieza final de temporales
 # ==========================================
 if (Test-Path $tempDir) {
     Write-Host "Limpiando archivos temporales..."
