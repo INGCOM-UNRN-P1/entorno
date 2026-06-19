@@ -253,9 +253,15 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
             if (-not (Test-Path $shaPath)) {
                 Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
             }
-            $expectedHash = (Get-Content $shaPath -Raw).Split(" ")[0].Trim().ToLower()
+            $shaContent = (Get-Content $shaPath -Raw).Trim()
+            if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
+                throw "El archivo de firma contiene HTML (posible página de error del servidor)."
+            }
+            $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
             if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
-                throw "El hash esperado recuperado no tiene un formato SHA256 válido (64 caracteres hexadecimales): '$expectedHash'"
+                $truncatedHash = $expectedHash
+                if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
+                throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
             }
             $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
             if ($actualHash -eq $expectedHash) {
@@ -263,9 +269,12 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
                 Write-Host "El archivo existente es válido. Se omitirá la descarga." -ForegroundColor Green
             } else {
                 Write-Host "La firma del archivo existente no coincide. Se procederá a descargar nuevamente." -ForegroundColor Yellow
+                Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path $exePath -Force -ErrorAction SilentlyContinue
             }
         } catch {
             Write-Host "No se pudo verificar la firma del archivo existente. Se procederá a descargar nuevamente. Detalles: $_" -ForegroundColor Yellow
+            Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
         }
     }
 
@@ -295,9 +304,15 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
         }
 
         try {
-            $expectedHash = (Get-Content $shaPath -Raw).Split(" ")[0].Trim().ToLower()
+            $shaContent = (Get-Content $shaPath -Raw).Trim()
+            if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
+                throw "El archivo de firma contiene HTML (posible página de error del servidor o rate limit)."
+            }
+            $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
             if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
-                throw "El hash esperado recuperado no tiene un formato SHA256 válido (64 caracteres hexadecimales): '$expectedHash'"
+                $truncatedHash = $expectedHash
+                if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
+                throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
             }
             $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
 
@@ -306,6 +321,7 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
             }
             Write-Host "Firma SHA256 verificada con éxito." -ForegroundColor Green
         } catch {
+            Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
             throw "Falla crítica en la verificación de firma SHA256. La instalación se detiene. Detalles: $_"
         }
     }

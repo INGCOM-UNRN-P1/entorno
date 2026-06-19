@@ -1,4 +1,4 @@
-﻿﻿﻿﻿# launch.ps1 - Lanzador del entorno portable en PowerShell
+﻿﻿﻿﻿﻿# launch.ps1 - Lanzador del entorno portable en PowerShell
 
 $ErrorActionPreference = "Stop"
 
