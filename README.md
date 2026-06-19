@@ -49,8 +49,18 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 
 ## Instalación e Inicialización (Online)
 
+Tenés dos opciones para realizar la instalación inicial:
+
+### Opción A: Ejecución Directa desde Internet (Recomendada)
+Podés descargar y ejecutar el script directamente en PowerShell sin necesidad de descargar o clonar el repositorio previamente. Abrí PowerShell en la carpeta donde quieras instalar el entorno y ejecutá:
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1 | iex
+```
+*Este comando obtendrá la última versión de `setup.ps1` desde el servidor origen de GitHub y aprovisionará automáticamente MSYS2, Clang, Python, VS Code y WezTerm en el directorio actual.*
+
+### Opción B: Descarga Manual o Clonado
 1. Descargá o cloná este repositorio en el directorio donde desees conservar el entorno.
-2. Abrí una terminal de PowerShell en esta carpeta y ejecutá el script de configuración:
+2. Abrí una terminal de PowerShell en esta carpeta y ejecutá:
    ```powershell
    Set-ExecutionPolicy Bypass -Scope Process -Force; .\setup.ps1
    ```
