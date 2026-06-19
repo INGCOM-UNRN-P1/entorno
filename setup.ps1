@@ -713,6 +713,7 @@ config.set_environment_variables = {
   CHERE_INVOKING = "1",
   HOME = home_dir,
   PATH = path_env,
+  LANG = "es_AR.UTF-8",
 }
 
 -- Estética Premium (Tokyo Night y JetBrains Mono)

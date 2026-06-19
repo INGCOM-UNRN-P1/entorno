@@ -49,6 +49,7 @@ if (-not (Test-Path $homeDir)) {
 $env:HOME = $homeDir
 $env:MSYSTEM = "CLANG64"
 $env:CHERE_INVOKING = "1"
+$env:LANG = "es_AR.UTF-8"
 $env:WEZTERM_CONFIG_FILE = Join-Path $portableRoot "wezterm.lua"
 
 # Agregar compilador al Path

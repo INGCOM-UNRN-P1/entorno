@@ -4,6 +4,10 @@
 
 set -e
 
+# Asegurar codificación UTF-8 para soporte de acentos y caracteres especiales
+export LANG="es_AR.UTF-8"
+export LC_ALL="es_AR.UTF-8"
+
 if [ -z "$MSYSTEM_PREFIX" ]; then
     echo -e "\e[31m[ERROR] No estás dentro de la consola del entorno portable.\e[0m"
     echo "Por favor, ejecutá 'launch.bat' o 'launch-vscode.bat' antes de correr este script."
@@ -34,9 +38,9 @@ git config --global core.autocrlf input
 git config --global init.defaultBranch main
 
 echo -e "\e[32mGit configurado con éxito.\e[0m"
-echo -e "Nombre:  $(git config --global user.name)"
-echo -e "Email:   $(git config --global user.email)"
-echo -e "Destino: ~/.gitconfig (portable)\n"
+printf "Nombre:  %s\n" "$(git config --global user.name)"
+printf "Email:   %s\n" "$(git config --global user.email)"
+printf "Destino: ~/.gitconfig (portable)\n\n"
 
 # Autenticar GitHub CLI
 if command -v gh &> /dev/null; then
