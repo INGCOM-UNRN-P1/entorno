@@ -45,14 +45,15 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 4. Ejecutar: `./test.exe`
 5. Verificar la salida esperada en consola.
 
-### Prueba B: Ejecución de Python y Pip
+### Prueba B: Ejecución de Python, Pip y UV
 1. Ejecutar `launch.bat`.
 2. Verificar versiones de herramientas:
    ```bash
    python --version
    pip --version
+   uv --version
    ```
-3. Instalar un paquete de prueba: `pip install requests`
+3. Instalar un paquete de prueba usando uv: `uv pip install requests`
 4. Verificar que se instale en el HOME local (`home/.local/...`) y no en la máquina host.
 
 ### Prueba C: Sistema de Construcción (CMake)

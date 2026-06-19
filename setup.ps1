@@ -113,6 +113,7 @@ $packages = @(
     "mingw-w64-clang-x86_64-gdb",
     "mingw-w64-clang-x86_64-python",
     "mingw-w64-clang-x86_64-python-pip",
+    "mingw-w64-clang-x86_64-uv",
     "mingw-w64-clang-x86_64-zlib",
     "mingw-w64-clang-x86_64-openssl",
     "mingw-w64-clang-x86_64-sqlite3",
