@@ -63,7 +63,14 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 8: Pruebas de Aceptación (Pendiente de Ejecución en Host)
+## Fase 8: Script de Limpieza en Hosts Compartidos (Completado)
+*   [x] Diseño y desarrollo de [clean-shared-host.ps1](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1) para desvincular identidades y claves personales en computadoras públicas o de terceros.
+*   [x] Eliminación completa y segura del historial de comandos, llaves SSH privadas, credenciales de Git y extensiones personalizadas en VS Code.
+*   [x] Reconfiguración automatizada del entorno portable a su estado predeterminado inicial posterior a la limpieza, garantizando que el siguiente usuario pueda lanzar el terminal sin dependencias corruptas o caídas por directorios faltantes.
+
+---
+
+## Fase 9: Pruebas de Aceptación (Pendiente de Ejecución en Host)
 Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
 
 ### Prueba A: Compilación Clang C
@@ -122,7 +129,14 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 *   [ ] 3. Extraer el contenido del archivo ZIP en otro directorio temporal distinto en la máquina.
 *   [ ] 4. Ejecutar `launch.bat` en la nueva carpeta y validar que todas las herramientas (`clang`, `python`, `git`, `gh`) sigan estando en el PATH de sesión sin requerir conexiones a internet.
 
+### Prueba H: Limpieza de Seguridad en Hosts Compartidos
+*   [ ] 1. Ejecutar `clean-shared-host.ps1` en PowerShell.
+*   [ ] 2. Verificar que el script muestre la advertencia detallada y los archivos a eliminar.
+*   [ ] 3. Confirmar la ejecución.
+*   [ ] 4. Validar que la carpeta `home/` sea recreada vacía y que `vscode/data/` sea restablecida a las configuraciones predeterminadas.
+*   [ ] 5. Confirmar que no queden contraseñas o datos personales en el directorio portable.
+
 ---
 
-## Fase 9: Optimización y Mantenimiento (En desarrollo)
+## Fase 10: Optimización y Mantenimiento (En desarrollo)
 *   [ ] **Automatización de Descompresión:** Evaluación del diseño de un script ligero de PowerShell `install-offline.ps1` para asistir en la extracción rápida del ZIP distribuido.

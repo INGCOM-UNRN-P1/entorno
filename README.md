@@ -21,8 +21,9 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 El repositorio está organizado para separar las herramientas ejecutables del host de las configuraciones y scripts de inicialización:
 
-*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm.
+*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm. Valida la validez de la ruta.
 *   [package-env.ps1](file:///home/mrtin/dev/p1/entorno/package-env.ps1): Script de PowerShell para empaquetar el entorno completo inicializado en un archivo ZIP para distribución offline.
+*   [clean-shared-host.ps1](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1): Script de PowerShell para eliminar credenciales, historial de consola y configuraciones personales cuando se trabaja en una máquina pública o compartida.
 *   [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub.
 *   [configure-git.sh](file:///home/mrtin/dev/p1/entorno/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada.
 *   [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola WezTerm desde CMD.
@@ -77,6 +78,21 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
 *   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
 
 Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador Clang, Make, CMake y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
+
+---
+
+## Uso en Computadoras Compartidas (Limpieza de Seguridad)
+
+Si usás este entorno en un pendrive y programás en computadoras compartidas (laboratorios, computadoras de estudio o de terceros), debés asegurar tu privacidad antes de retirar el dispositivo:
+
+1. Cerrá VS Code y los terminales WezTerm activos.
+2. Abrí una ventana de PowerShell en la carpeta raíz y ejecutá el script de limpieza:
+   ```powershell
+   Set-ExecutionPolicy Bypass -Scope Process -Force; .\clean-shared-host.ps1
+   ```
+3. El script te detallará los archivos que serán eliminados. Confirmá con `s`.
+
+*Este comando borrará tu historial de comandos, llaves SSH privadas, datos de usuario, extensiones personalizadas instaladas en VS Code y, lo más importante, los tokens y contraseñas guardados en `.git-credentials` sin requerir que borres los compiladores ni el editor de código, dejándolos listos para que los use otro usuario de forma segura.*
 
 ---
 
