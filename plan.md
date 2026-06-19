@@ -6,7 +6,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ## Fase 1: Arquitectura y Diseño Base (Completado)
 *   **Selección de Plataforma:** MSYS2 con entorno CLANG64 (compilación nativa Windows sobre UCRT).
-*   **Gestión de Dependencias:** Pacman para paquetes del sistema, pip para Python.
+*   **Gestión de Dependencias:** Pacman para paquetes del sistema, pip y uv para Python.
 *   **Mecanismo de Automatización:** Scripts de PowerShell (`setup.ps1`) para orquestar descargas y actualizaciones de forma desatendida.
 *   **Portabilidad Absoluta:** Aislamiento del directorio `$HOME` para evitar escritura en la máquina host.
 
@@ -28,7 +28,17 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 4: Pruebas de Aceptación (Pendiente de Ejecución en Host)
+## Fase 4: Gestor de Librerías de C desde GitHub (Completado)
+*   Diseño y desarrollo de [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh) para compilar e instalar librerías externas de forma desatendida dentro del prefijo portable `/clang64`.
+*   Soporte para múltiples modos de construcción:
+    1. Recetas personalizadas `.portable-recipe.sh` en el repositorio.
+    2. Proyectos CMake + Ninja automáticos.
+    3. Makefile genéricos con fallback de copia manual de cabeceras, archivos estáticos y DLLs.
+    4. Librerías puramente Header-only con copia estructurada de archivos `.h`/`.hpp`.
+
+---
+
+## Fase 5: Pruebas de Aceptación (Pendiente de Ejecución en Host)
 Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
 
 ### Prueba A: Compilación Clang C
@@ -66,7 +76,13 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 2. Verificar que el terminal integrado inicie directamente en `Clang64 Bash`.
 3. Validar que la compilación de C y Python sea reconocida desde las herramientas de autocompletado en el editor.
 
+### Prueba E: Instalación de Librerías de GitHub
+1. Ejecutar `launch.bat`.
+2. Correr el script: `./install-lib.sh davidsiaw/inih r29`
+3. Verificar que los archivos `ini.h` y `libinih.a` estén instalados en `msys64/clang64/include/` y `msys64/clang64/lib/` respectivamente.
+4. Crear un código simple en C que incluya `<ini.h>` y verificar que compile usando `clang test_ini.c -linih -o test_ini.exe`.
+
 ---
 
-## Fase 5: Optimización y Mantenimiento (En desarrollo)
+## Fase 6: Optimización y Mantenimiento (En desarrollo)
 *   **Reducción de tamaño:** Ejecución de limpieza de la caché de pacman (`pacman -Scc`) en el script de instalación para reducir el tamaño en disco de la carpeta final.

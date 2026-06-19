@@ -20,6 +20,7 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 El repositorio está organizado para separar las herramientas ejecutables del host de las configuraciones y scripts de inicialización:
 
 *   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno y VS Code.
+*   [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub.
 *   [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola desde la línea de comandos clásica (`cmd`).
 *   [launch.ps1](file:///home/mrtin/dev/p1/entorno/launch.ps1): Lanzador de consola desde PowerShell.
 *   [launch-vscode.bat](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador de VS Code desde CMD heredando las variables y compiladores locales.
@@ -58,6 +59,34 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
 *   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
 
 Al iniciar VS Code a través de los lanzadores, este heredará el compilador Clang, Make, CMake y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
+
+---
+
+## Gestión de Librerías de C desde GitHub
+
+El entorno incluye el script `./install-lib.sh` para instalar librerías directamente en el entorno portátil de compilación desde cualquier repositorio de GitHub. 
+
+### Ejecución básica
+Iniciá el terminal (`launch.bat`) y ejecutá:
+```bash
+./install-lib.sh <usuario/repositorio_github> [rama_o_tag]
+```
+
+### Ejemplos de uso:
+```bash
+# Instalar Nuklear (Librería GUI Header-only)
+./install-lib.sh immediate-mode-ui/nuklear
+
+# Instalar inih (Librería parser de archivos INI usando CMake)
+./install-lib.sh davidsiaw/inih r29
+```
+
+### Especificaciones de Instalación Soportadas
+El script detectará de forma automática el tipo de repositorio y aplicará el método correspondiente:
+1. **Receta Personalizada:** Si el repositorio contiene un script `.portable-recipe.sh`, se le dará prioridad ejecutándolo con el prefijo `/clang64` como argumento para que realice la instalación a medida.
+2. **CMake:** Si detecta `CMakeLists.txt`, compilará usando CMake con generador Ninja en modo Release, instalando las cabeceras y binarios en el prefijo.
+3. **Makefile:** Si detecta un `Makefile`, ejecutará `mingw32-make` e intentará un `make install PREFIX=/clang64`. Si falla, realizará una copia manual inteligente de los archivos `.h`, `.a` y `.dll`.
+4. **Header-Only:** Si no hay archivos de compilación, buscará archivos `.h`/`.hpp` y copiará la estructura de directorios al directorio de includes del compilador portable.
 
 ---
 
