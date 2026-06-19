@@ -1,4 +1,4 @@
-﻿﻿# launch-vscode.ps1 - Lanzador de VS Code con entorno portable
+﻿﻿﻿# launch-vscode.ps1 - Lanzador de VS Code con entorno portable
 
 $ErrorActionPreference = "Stop"
 

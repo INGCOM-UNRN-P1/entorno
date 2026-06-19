@@ -647,6 +647,14 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         Write-Host "Extrayendo WezTerm..." -ForegroundColor Cyan
         Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
         
+        # Si la descompresión creó un subdirectorio (ej: WezTerm-windows-...), mover su contenido a la raíz de $wezDir
+        $subDir = Get-ChildItem -Path $wezDir -Directory | Where-Object { Test-Path (Join-Path $_.FullName "wezterm.exe") }
+        if ($subDir) {
+            Write-Host "Aplanando estructura de carpetas de WezTerm..." -ForegroundColor Cyan
+            Get-ChildItem -Path $subDir.FullName | Move-Item -Destination $wezDir -Force
+            Remove-Item -Path $subDir.FullName -Recurse -Force
+        }
+        
         Set-Content -Path (Join-Path $wezDir ".version") -Value $wezDownloadUrl
         Set-Content -Path (Join-Path $portableRoot ".wezterm_complete") -Value "Complete"
         Write-Host "WezTerm Portable instalado con éxito." -ForegroundColor Green
