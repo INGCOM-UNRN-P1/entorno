@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿# launch.ps1 - Lanzador del entorno portable en PowerShell
+# launch.ps1 - Lanzador del entorno portable en PowerShell
 
 $ErrorActionPreference = "Stop"
 
@@ -57,6 +57,17 @@ $binPath = Join-Path $portableRoot "bin"
 $clangPath = Join-Path $portableRoot "msys64\clang64\bin"
 $usrPath = Join-Path $portableRoot "msys64\usr\bin"
 $env:PATH = "$binPath;$clangPath;$usrPath;$env:PATH"
+
+# Intentar autocorregir estructura si WezTerm quedó en una subcarpeta
+if (-not (Test-Path $wezExe) -and (Test-Path $wezDir)) {
+    $subDirExe = Get-ChildItem -Path $wezDir -Filter "wezterm.exe" -Recurse | Select-Object -First 1
+    if ($subDirExe) {
+        $subDir = $subDirExe.Directory
+        Write-Host "[INFO] Corrigiendo estructura de carpetas de WezTerm..." -ForegroundColor Cyan
+        Get-ChildItem -Path $subDir.FullName | Move-Item -Destination $wezDir -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $subDir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
 
 # Lanzar WezTerm o fallar de vuelta a Bash estándar
 if (Test-Path $wezExe) {

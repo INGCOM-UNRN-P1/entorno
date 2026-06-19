@@ -31,6 +31,21 @@ set "PATH=%PORTABLE_ROOT%bin;%PORTABLE_ROOT%msys64\clang64\bin;%PORTABLE_ROOT%ms
 :: Configuración de WezTerm
 set "WEZTERM_CONFIG_FILE=%PORTABLE_ROOT%wezterm.lua"
 
+:: Si no existe en la raíz pero WezTerm está en alguna subcarpeta, aplanarlo
+if not exist "%PORTABLE_ROOT%wezterm\wezterm.exe" (
+    if exist "%PORTABLE_ROOT%wezterm" (
+        for /f "delims=" %%f in ('dir /b /s "%PORTABLE_ROOT%wezterm\wezterm.exe" 2^>nul') do (
+            if exist "%%f" (
+                echo [INFO] Corrigiendo estructura de carpetas de WezTerm...
+                pushd "%%~dpf"
+                move * "%PORTABLE_ROOT%wezterm\" >nul 2>&1
+                popd
+                rmdir /s /q "%%~dpf" >nul 2>&1
+            )
+        )
+    )
+)
+
 :: Si existe WezTerm, lanzarlo. De lo contrario, caer de vuelta a Bash estándar en CMD.
 if exist "%PORTABLE_ROOT%wezterm\wezterm.exe" (
     start "" "%PORTABLE_ROOT%wezterm\wezterm.exe"
