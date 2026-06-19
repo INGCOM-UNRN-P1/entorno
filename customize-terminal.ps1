@@ -333,7 +333,8 @@ return config
     
     Write-Host "`nEscribiendo cambios en wezterm.lua..." -ForegroundColor Cyan
     Execute-WithRetry -Action {
-        Set-Content -Path $wezConfigPath -Value $wezConfigContent -Force
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
     } -ErrorMessage "Fallo al escribir en el archivo wezterm.lua."
     Write-Host "Configuración de apariencia de WezTerm actualizada correctamente." -ForegroundColor Green
 }

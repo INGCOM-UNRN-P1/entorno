@@ -46,6 +46,7 @@ if (-not (Test-Path $homeDir)) {
 }
 
 # Inyectar variables de entorno de sesión
+$env:PORTABLE_ROOT = $portableRoot
 $env:HOME = $homeDir
 $env:MSYSTEM = "CLANG64"
 $env:CHERE_INVOKING = "1"
