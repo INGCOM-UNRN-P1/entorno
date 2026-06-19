@@ -32,9 +32,7 @@ set "PATH=%PORTABLE_ROOT%bin;%PORTABLE_ROOT%msys64\clang64\bin;%PORTABLE_ROOT%ms
 set "WEZTERM_CONFIG_FILE=%PORTABLE_ROOT%wezterm.lua"
 
 :: Asegurar que wezterm.lua no tenga BOM (evita error de codificación UTF-8 en WezTerm)
-if exist "%WEZTERM_CONFIG_FILE%" (
-    powershell -NoProfile -Command "$p='%WEZTERM_CONFIG_FILE%'; if(Test-Path $p){$b=[System.IO.File]::ReadAllBytes($p); if($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF){$c=[System.IO.File]::ReadAllText($p); [System.IO.File]::WriteAllText($p,$c,(New-Object System.Text.UTF8Encoding($false)))}}" >nul 2>&1
-)
+if exist "%WEZTERM_CONFIG_FILE%" powershell -NoProfile -Command "$p='%WEZTERM_CONFIG_FILE%'; if(Test-Path $p){$b=[System.IO.File]::ReadAllBytes($p); if($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF){$c=[System.IO.File]::ReadAllText($p); [System.IO.File]::WriteAllText($p,$c,(New-Object System.Text.UTF8Encoding($false)))}}" >nul 2>&1
 
 :: Si no existe en la raíz pero WezTerm está en alguna subcarpeta, aplanarlo
 if not exist "%PORTABLE_ROOT%wezterm\wezterm.exe" (
