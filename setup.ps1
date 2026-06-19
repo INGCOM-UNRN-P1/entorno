@@ -734,7 +734,8 @@ config.enable_tab_bar = false
 
 return config
 "@
-    Set-Content -Path $wezConfigPath -Value $wezConfigContent
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
     Write-Host "Configuración wezterm.lua creada/actualizada." -ForegroundColor Green
 }
 
