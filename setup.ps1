@@ -13,6 +13,34 @@ $vscodeDir = Join-Path $portableRoot "vscode"
 Write-Host "=== Entorno Portable de Desarrollo C + Python + VS Code ===" -ForegroundColor Cyan
 Write-Host "Directorio de instalación: $portableRoot`n"
 
+# Validar espacios o caracteres no ASCII en la ruta de instalación (causan errores graves con Make/compiladores)
+$hasSpaces = $portableRoot -match " "
+$hasNonAscii = $portableRoot -match "[^\u0000-\u007F]"
+
+if ($hasSpaces -or $hasNonAscii) {
+    Write-Host "==========================================================================" -ForegroundColor Yellow
+    Write-Host "ADVERTENCIA: RUTA CON POSIBLES CONFLICTOS DETECTADA" -ForegroundColor Yellow
+    Write-Host "==========================================================================" -ForegroundColor Yellow
+    if ($hasSpaces) {
+        Write-Host "* La ruta de instalación contiene espacios en blanco." -ForegroundColor Yellow
+    }
+    if ($hasNonAscii) {
+        Write-Host "* La ruta de instalación contiene caracteres no ASCII (acentos, eñes, etc.)." -ForegroundColor Yellow
+    }
+    Write-Host "--------------------------------------------------------------------------"
+    Write-Host "Muchas herramientas de compilación de C (como Make, CMake y compiladores)"
+    Write-Host "fallan o tienen comportamientos erráticos con este tipo de rutas."
+    Write-Host "Se recomienda mover la carpeta a una ruta simple (Ej: C:\dev\entorno)."
+    Write-Host "--------------------------------------------------------------------------"
+    
+    $choice = Read-Host "¿Deseás continuar con la instalación de todas formas? (s/n)"
+    if ($choice -notmatch "^[sS]$") {
+        Write-Host "Instalación cancelada." -ForegroundColor Red
+        exit 0
+    }
+    Write-Host "Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
+}
+
 # Asegurar que existan los directorios iniciales
 if (-not (Test-Path $homeDir)) {
     New-Item -ItemType Directory -Path $homeDir | Out-Null
