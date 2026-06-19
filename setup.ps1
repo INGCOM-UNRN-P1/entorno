@@ -111,7 +111,7 @@ try {
                     }
                 }
             } catch {
-                Write-Warning "No se pudo actualizar el archivo $file: $_"
+                Write-Warning "No se pudo actualizar el archivo $($file): $_"
             }
         }
         Write-Host "Actualización de scripts completada.`n" -ForegroundColor Green
