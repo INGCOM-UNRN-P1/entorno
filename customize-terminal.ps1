@@ -261,6 +261,7 @@ if ($configureWez -match "^[sS]$") {
         if ([string]::IsNullOrEmpty($fontInput)) {
             $validFontSize = $true
         } else {
+            $val = 0.0
             if ([double]::TryParse($fontInput, [ref]$val) -and $val -ge 8 -and $val -le 24) {
                 $selectedFontSize = $fontInput
                 $validFontSize = $true
@@ -280,6 +281,7 @@ if ($configureWez -match "^[sS]$") {
         } else {
             # Reemplazar comas por puntos en la entrada si el locale de Windows usa comas decimales
             $opacityNormalized = $opacityInput.Replace(',', '.')
+            $val = 0.0
             if ([double]::TryParse($opacityNormalized, [System.Globalization.NumberStyles]::Any, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$val) -and $val -ge 0.5 -and $val -le 1.0) {
                 $selectedOpacity = $opacityNormalized
                 $validOpacity = $true
