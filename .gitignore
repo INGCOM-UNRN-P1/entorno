@@ -1,0 +1,16 @@
+# MSYS2 portable folder
+msys64/
+
+# Temporary downloads and installers
+*.exe
+*.zip
+*.tar.*
+*.tmp
+/downloads/
+
+# Log files
+*.log
+
+# Windows specific
+Thumbs.db
+desktop.ini
