@@ -1,5 +1,6 @@
 param(
-    [string]$HomeDirName = "home"
+    [string]$HomeDirName = "home",
+    [switch]$ImportHostConfig
 )
 
 $ErrorActionPreference = "Stop"
@@ -406,7 +407,94 @@ Set-Content -Path $wezConfigPath -Value $wezConfigContent
 Write-Host "Configuración wezterm.lua creada/actualizada." -ForegroundColor Green
 
 # ==========================================
-# 7. Limpieza final de temporales
+# 7. Importación de configuración del host (opcional)
+# ==========================================
+if ($ImportHostConfig) {
+    Write-Host "Importando configuración desde el host..." -ForegroundColor Cyan
+    
+    # 1. SSH Config
+    $hostSshDir = Join-Path $env:USERPROFILE ".ssh"
+    $portableSshDir = Join-Path $homeDir ".ssh"
+    if (Test-Path $hostSshDir) {
+        Write-Host "Copiando llaves SSH desde $hostSshDir..." -ForegroundColor Cyan
+        if (-not (Test-Path $portableSshDir)) {
+            New-Item -ItemType Directory -Path $portableSshDir | Out-Null
+        }
+        Copy-Item -Path (Join-Path $hostSshDir "*") -Destination $portableSshDir -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "Configuración de SSH copiada." -ForegroundColor Green
+    } else {
+        Write-Host "No se encontró la configuración de SSH en el host." -ForegroundColor Yellow
+    }
+
+    # 2. Git Config
+    $hostGitConfig = Join-Path $env:USERPROFILE ".gitconfig"
+    $portableGitConfig = Join-Path $homeDir ".gitconfig"
+    if (Test-Path $hostGitConfig) {
+        Write-Host "Copiando .gitconfig desde $hostGitConfig..." -ForegroundColor Cyan
+        Copy-Item -Path $hostGitConfig -Destination $portableGitConfig -Force
+        Write-Host "Configuración de Git copiada." -ForegroundColor Green
+    } else {
+        Write-Host "No se encontró el archivo .gitconfig en el host." -ForegroundColor Yellow
+    }
+    
+    $hostGitCreds = Join-Path $env:USERPROFILE ".git-credentials"
+    $portableGitCreds = Join-Path $homeDir ".git-credentials"
+    if (Test-Path $hostGitCreds) {
+        Write-Host "Copiando .git-credentials desde $hostGitCreds..." -ForegroundColor Cyan
+        Copy-Item -Path $hostGitCreds -Destination $portableGitCreds -Force
+        Write-Host "Credenciales de Git copiadas." -ForegroundColor Green
+    }
+
+    # 3. VS Code settings.json
+    $hostVscodeSettings = Join-Path $env:APPDATA "Code\User\settings.json"
+    $portableVscodeData = Join-Path $vscodeDir "data\user-data\User"
+    $portableVscodeSettings = Join-Path $portableVscodeData "settings.json"
+    
+    if (Test-Path $hostVscodeSettings) {
+        Write-Host "Importando y adaptando settings.json de VS Code..." -ForegroundColor Cyan
+        if (-not (Test-Path $portableVscodeData)) {
+            New-Item -ItemType Directory -Path $portableVscodeData | Out-Null
+        }
+        
+        try {
+            $hostSettingsContent = Get-Content $hostVscodeSettings -Raw
+            $settingsObj = $hostSettingsContent | ConvertFrom-Json
+            if (-not $settingsObj) {
+                $settingsObj = @{}
+            }
+        } catch {
+            Write-Warning "No se pudo leer o procesar el settings.json del host. Se va a usar una configuración limpia."
+            $settingsObj = @{}
+        }
+        
+        # Forzar/Asegurar parámetros de portabilidad
+        $settingsObj | Add-Member -NotePropertyName "telemetry.telemetryLevel" -NotePropertyValue "off" -Force
+        $settingsObj | Add-Member -NotePropertyName "update.mode" -NotePropertyValue "none" -Force
+        $settingsObj | Add-Member -NotePropertyName "extensions.autoUpdate" -NotePropertyValue $false -Force
+        
+        # Configurar el perfil de terminal Bash Clang64
+        $terminalProfiles = @{
+            "Clang64 Bash" = @{
+                "path" = "bash.exe"
+                "args" = @("--login", "-i")
+            }
+        }
+        $settingsObj | Add-Member -NotePropertyName "terminal.integrated.profiles.windows" -NotePropertyValue $terminalProfiles -Force
+        $settingsObj | Add-Member -NotePropertyName "terminal.integrated.defaultProfile.windows" -NotePropertyValue "Clang64 Bash" -Force
+        
+        # Guardar configuración fusionada
+        $mergedSettingsJson = $settingsObj | ConvertTo-Json -Depth 10
+        Set-Content -Path $portableVscodeSettings -Value $mergedSettingsJson
+        Write-Host "Configuración de VS Code importada y adaptada para portabilidad." -ForegroundColor Green
+    } else {
+        Write-Host "No se encontró la configuración de VS Code en el host." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "No se especificó -ImportHostConfig. Se deja de lado la configuración del host para empezar con un entorno limpio." -ForegroundColor Yellow
+}
+
+# ==========================================
+# 8. Limpieza final de temporales
 # ==========================================
 if (Test-Path $tempDir) {
     Write-Host "Limpiando archivos temporales..."

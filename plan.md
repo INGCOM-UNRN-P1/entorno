@@ -139,4 +139,5 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 ---
 
 ## Fase 10: Optimización y Mantenimiento (En desarrollo)
+*   [x] **Importación de configuración del host (opcional):** Opción para conservar (`-ImportHostConfig`) o dejar de lado la configuración del host base (SSH, Git y VS Code settings) al crear el entorno portable, sin alterar los archivos del host.
 *   [ ] **Automatización de Descompresión:** Evaluación del diseño de un script ligero de PowerShell `install-offline.ps1` para asistir en la extracción rápida del ZIP distribuido.
