@@ -38,7 +38,16 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 5: Pruebas de Aceptación (Pendiente de Ejecución en Host)
+## Fase 5: Configuración de Control de Versiones e Integración GitHub CLI (Completado)
+*   Integración del paquete `mingw-w64-clang-x86_64-github-cli` en MSYS2.
+*   Diseño del script [configure-git.sh](file:///home/mrtin/dev/p1/entorno/configure-git.sh) para automatizar:
+    1. Firma de autoría de commits (`user.name` y `user.email`).
+    2. Almacenamiento aislado de credenciales HTTPS de Git dentro del directorio portable (`home/.git-credentials`) mediante el helper `store`.
+    3. Autenticación asistida para interactuar con la consola mediante GitHub CLI (`gh`).
+
+---
+
+## Fase 6: Pruebas de Aceptación (Pendiente de Ejecución en Host)
 Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
 
 ### Prueba A: Compilación Clang C
@@ -84,7 +93,14 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 3. Verificar que los archivos `ini.h` y `libinih.a` estén instalados en `msys64/clang64/include/` y `msys64/clang64/lib/` respectivamente.
 4. Crear un código simple en C que incluya `<ini.h>` y verificar que compile usando `clang test_ini.c -linih -o test_ini.exe`.
 
+### Prueba F: Configuración Git y GitHub CLI
+1. Ejecutar `launch.bat`.
+2. Correr el script: `./configure-git.sh`
+3. Ingresar credenciales ficticias o reales de prueba.
+4. Verificar la creación de los archivos `home/.gitconfig` y `home/.git-credentials`.
+5. Ejecutar `gh --version` para validar que el CLI de GitHub responde de forma correcta.
+
 ---
 
-## Fase 6: Optimización y Mantenimiento (En desarrollo)
+## Fase 7: Optimización y Mantenimiento (En desarrollo)
 *   **Reducción de tamaño:** Ejecución de limpieza de la caché de pacman (`pacman -Scc`) en el script de instalación para reducir el tamaño en disco de la carpeta final.

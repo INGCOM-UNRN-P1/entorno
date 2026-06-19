@@ -119,6 +119,7 @@ $packages = @(
     "mingw-w64-clang-x86_64-openssl",
     "mingw-w64-clang-x86_64-sqlite3",
     "mingw-w64-clang-x86_64-curl",
+    "mingw-w64-clang-x86_64-github-cli",
     "git"
 )
 

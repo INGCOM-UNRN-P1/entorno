@@ -4,7 +4,7 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 ## Componentes Principales
 
-*   **Userland Unix:** Bash, coreutils, grep, sed, awk, tar, git, ssh.
+*   **Userland Unix:** Bash, coreutils, grep, sed, awk, tar, git, ssh y GitHub CLI (`gh`).
 *   **Compilador de C:** Clang (MinGW-w64 Clang64) optimizado para UCRT (Universal C Runtime).
 *   **Herramientas de Construcción:** `make` (mingw32-make), `cmake`, `ninja`.
 *   **Depurador:** GDB.
@@ -22,6 +22,7 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 
 *   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno y VS Code.
 *   [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub.
+*   [configure-git.sh](file:///home/mrtin/dev/p1/entorno/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada.
 *   [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola desde la línea de comandos clásica (`cmd`).
 *   [launch.ps1](file:///home/mrtin/dev/p1/entorno/launch.ps1): Lanzador de consola desde PowerShell.
 *   [launch-vscode.bat](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador de VS Code desde CMD heredando las variables y compiladores locales.
@@ -63,6 +64,20 @@ Al iniciar VS Code a través de los lanzadores, este heredará el compilador Cla
 
 ---
 
+## Configuración Inicial de Git y GitHub
+
+Dado que el entorno es portátil y no utiliza los directorios locales del host, debés configurar tu firma de Git para esta sesión portable:
+
+1. Ejecutá `launch.bat`.
+2. Dentro del terminal, corré el script de configuración:
+   ```bash
+   ./configure-git.sh
+   ```
+3. Completá tu nombre y correo. Las credenciales de acceso a repositorios HTTPS se guardarán localmente dentro de `home/.git-credentials` mediante el helper `store`. No afectarán la configuración global de Git de la computadora host.
+4. El script te ofrecerá iniciar sesión en la herramienta **GitHub CLI (`gh`)** para administrar tus repositorios, issues y PRs desde la consola portable.
+
+---
+
 ## Gestión de Librerías de C desde GitHub
 
 El entorno incluye el script `./install-lib.sh` para instalar librerías directamente en el entorno portátil de compilación desde cualquier repositorio de GitHub. 
@@ -86,7 +101,7 @@ Iniciá el terminal (`launch.bat`) y ejecutá:
 El script detectará de forma automática el tipo de repositorio y aplicará el método correspondiente:
 1. **Receta Personalizada:** Si el repositorio contiene un script `.portable-recipe.sh`, se le dará prioridad ejecutándolo con el prefijo `/clang64` como argumento para que realice la instalación a medida.
 2. **CMake:** Si detecta `CMakeLists.txt`, compilará usando CMake con generador Ninja en modo Release, instalando las cabeceras y binarios en el prefijo.
-3. **Makefile:** Si detecta un `Makefile`, ejecutará `mingw32-make` e intentará un `make install PREFIX=/clang64`. Si falla, realizará una copia manual inteligente de los archivos `.h`, `.a` y `.dll`.
+3. **Makefile:** Si detecta un `Makefile`, ejecutará `mingw32-make` e intentará un `make install PREFIX=/clang64`. Si falla, realizará una copia manual de los archivos `.h`, `.a` y `.dll`.
 4. **Header-Only:** Si no hay archivos de compilación, buscará archivos `.h`/`.hpp` y copiará la estructura de directorios al directorio de includes del compilador portable.
 
 ---
