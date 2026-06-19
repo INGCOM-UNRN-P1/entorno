@@ -29,6 +29,7 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [launch-vscode.bat](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador de VS Code desde CMD heredando las variables y compiladores locales.
 *   [launch-vscode.ps1](file:///home/mrtin/dev/p1/entorno/launch-vscode.ps1): Lanzador de VS Code desde PowerShell heredando las variables locales.
 *   [plan.md](file:///home/mrtin/dev/p1/entorno/plan.md): Plan de trabajo y hoja de ruta.
+*   [GEMINI.md](file:///home/mrtin/dev/p1/entorno/GEMINI.md): Directrices de desarrollo y reglas de formato de commits semánticos obligatorios para agentes de IA que colaboren en el proyecto.
 *   `home/`: Directorio local que actúa como `$HOME` del usuario. Evita contaminar la carpeta del sistema host. (Creado al inicializar).
 *   `msys64/`: Carpeta contenedora de MSYS2 y binarios (excluida en `.gitignore`).
 *   `vscode/`: Carpeta contenedora del editor y configuraciones locales (excluida en `.gitignore`).
