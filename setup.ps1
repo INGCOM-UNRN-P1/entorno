@@ -100,6 +100,7 @@ try {
                 "bin/install-lib.sh",
                 "bin/configure-git.sh",
                 "bin/update-packages.sh",
+                "bin/diagnose-env.sh",
                 "README.md",
                 "plan.md",
                 "GEMINI.md"

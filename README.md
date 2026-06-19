@@ -29,6 +29,7 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [`bin/install-lib.sh`](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub (agregado al PATH).
 *   [`bin/configure-git.sh`](file:///home/mrtin/dev/p1/entorno/bin/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada (agregado al PATH).
 *   [`bin/update-packages.sh`](file:///home/mrtin/dev/p1/entorno/bin/update-packages.sh): Script de Bash para actualizar la base de datos de pacman, actualizar los paquetes existentes e instalar todas las dependencias obligatorias del entorno portable (agregado al PATH).
+*   [`bin/diagnose-env.sh`](file:///home/mrtin/dev/p1/entorno/bin/diagnose-env.sh): Script de Bash para diagnosticar el estado del entorno portable, las herramientas instaladas (con sus versiones correspondientes), el listado completo de paquetes de pacman y el contenido de bin/ en un informe detallado (agregado al PATH).
 *   [`launch.bat`](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola WezTerm desde CMD.
 *   [`launch.ps1`](file:///home/mrtin/dev/p1/entorno/launch.ps1): Lanzador de consola WezTerm desde PowerShell.
 *   [`launch-vscode.bat`](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador de VS Code desde CMD heredando las variables y compiladores locales.
