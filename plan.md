@@ -47,7 +47,15 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 6: Pruebas de Aceptación (Pendiente de Ejecución en Host)
+## Fase 6: Empaquetamiento y Distribución Offline (Completado)
+*   Diseño del script [package-env.ps1](file:///home/mrtin/dev/p1/entorno/package-env.ps1) que automatiza el empaquetamiento del entorno inicializado.
+*   Limpieza del almacenamiento de pacman (`pacman -Scc`) integrado en el script para reducir el tamaño final en disco de la entrega.
+*   Aislamiento en la copia del paquete, excluyendo la base de datos de control de versiones `.git` y descargas/copias temporales del host.
+*   Compresión final nativa a formato ZIP distribuible (`portable-env-offline.zip`).
+
+---
+
+## Fase 7: Pruebas de Aceptación (Pendiente de Ejecución en Host)
 Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
 
 ### Prueba A: Compilación Clang C
@@ -100,7 +108,13 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 4. Verificar la creación de los archivos `home/.gitconfig` y `home/.git-credentials`.
 5. Ejecutar `gh --version` para validar que el CLI de GitHub responde de forma correcta.
 
+### Prueba G: Empaquetamiento y Despliegue Offline
+1. Ejecutar `package-env.ps1` en PowerShell.
+2. Verificar que se genere el archivo `portable-env-offline.zip`.
+3. Extraer el contenido del archivo ZIP en otro directorio temporal distinto en la máquina.
+4. Ejecutar `launch.bat` en la nueva carpeta y validar que todas las herramientas (`clang`, `python`, `git`, `gh`) sigan estando en el PATH de sesión sin requerir conexiones a internet.
+
 ---
 
-## Fase 7: Optimización y Mantenimiento (En desarrollo)
-*   **Reducción de tamaño:** Ejecución de limpieza de la caché de pacman (`pacman -Scc`) en el script de instalación para reducir el tamaño en disco de la carpeta final.
+## Fase 8: Optimización y Mantenimiento (En desarrollo)
+*   **Automatización de Descompresión:** Evaluación del diseño de un script ligero de PowerShell `install-offline.ps1` para asistir en la extracción rápida del ZIP distribuido.

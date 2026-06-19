@@ -20,7 +20,8 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 El repositorio está organizado para separar las herramientas ejecutables del host de las configuraciones y scripts de inicialización:
 
-*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno y VS Code.
+*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno y VS Code. Valida la validez de la ruta.
+*   [package-env.ps1](file:///home/mrtin/dev/p1/entorno/package-env.ps1): Script de PowerShell para empaquetar el entorno completo inicializado en un archivo ZIP para distribución offline.
 *   [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub.
 *   [configure-git.sh](file:///home/mrtin/dev/p1/entorno/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada.
 *   [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola desde la línea de comandos clásica (`cmd`).
@@ -42,7 +43,7 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 
 ---
 
-## Instalación e Inicialización
+## Instalación e Inicialización (Online)
 
 1. Descargá o cloná este repositorio en el directorio donde desees conservar el entorno.
 2. Abrí una terminal de PowerShell en esta carpeta y ejecutá el script de configuración:
@@ -64,6 +65,21 @@ Al iniciar VS Code a través de los lanzadores, este heredará el compilador Cla
 
 ---
 
+## Distribución e Instalación Offline
+
+Para empaquetar el entorno completo ya inicializado y distribuirlo a computadoras sin acceso a internet:
+
+1. Inicializá el entorno de forma normal en una máquina con conexión ejecutando `setup.ps1`.
+2. Una vez completado, ejecutá el script de empaquetado en PowerShell:
+   ```powershell
+   Set-ExecutionPolicy Bypass -Scope Process -Force; .\package-env.ps1
+   ```
+   *Este script optimizará el espacio (vaciando la caché de pacman), copiará la estructura libre de metadatos de Git y creará el archivo comprimido `portable-env-offline.zip` en la raíz.*
+3. Copiá el archivo `portable-env-offline.zip` a un pendrive o medio de almacenamiento.
+4. En la computadora de destino **sin internet**, simplemente extraé el archivo ZIP en cualquier ruta (sin espacios ni acentos) y ejecutá directamente los lanzadores (`launch.bat` o `launch-vscode.bat`). El entorno funcionará de forma inmediata 100% offline.
+
+---
+
 ## Configuración Inicial de Git y GitHub
 
 Dado que el entorno es portátil y no utiliza los directorios locales del host, debés configurar tu firma de Git para esta sesión portable:
@@ -74,7 +90,6 @@ Dado que el entorno es portátil y no utiliza los directorios locales del host, 
    ./configure-git.sh
    ```
 3. Completá tu nombre y correo. Las credenciales de acceso a repositorios HTTPS se guardarán localmente dentro de `home/.git-credentials` mediante el helper `store`. No afectarán la configuración global de Git de la computadora host.
-4. El script te ofrecerá iniciar sesión en la herramienta **GitHub CLI (`gh`)** para administrar tus repositorios, issues y PRs desde la consola portable.
 
 ---
 
@@ -96,13 +111,6 @@ Iniciá el terminal (`launch.bat`) y ejecutá:
 # Instalar inih (Librería parser de archivos INI usando CMake)
 ./install-lib.sh davidsiaw/inih r29
 ```
-
-### Especificaciones de Instalación Soportadas
-El script detectará de forma automática el tipo de repositorio y aplicará el método correspondiente:
-1. **Receta Personalizada:** Si el repositorio contiene un script `.portable-recipe.sh`, se le dará prioridad ejecutándolo con el prefijo `/clang64` como argumento para que realice la instalación a medida.
-2. **CMake:** Si detecta `CMakeLists.txt`, compilará usando CMake con generador Ninja en modo Release, instalando las cabeceras y binarios en el prefijo.
-3. **Makefile:** Si detecta un `Makefile`, ejecutará `mingw32-make` e intentará un `make install PREFIX=/clang64`. Si falla, realizará una copia manual de los archivos `.h`, `.a` y `.dll`.
-4. **Header-Only:** Si no hay archivos de compilación, buscará archivos `.h`/`.hpp` y copiará la estructura de directorios al directorio de includes del compilador portable.
 
 ---
 
