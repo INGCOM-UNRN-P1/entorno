@@ -26,8 +26,8 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [`clean-shared-host.ps1`](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1): Script de PowerShell para eliminar credenciales, historial de consola y configuraciones personales cuando se trabaja en una máquina pública o compartida.
 *   [`customize-terminal.ps1`](file:///home/mrtin/dev/p1/entorno/customize-terminal.ps1): Script de PowerShell interactivo para personalizar la apariencia de la consola (WezTerm) y el banner de bienvenida de Bash.
 *   [`customize-terminal.bat`](file:///home/mrtin/dev/p1/entorno/customize-terminal.bat): Cargador rápido CMD para lanzar el asistente de personalización de consola.
-*   [`install-lib.sh`](file:///home/mrtin/dev/p1/entorno/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub.
-*   [`configure-git.sh`](file:///home/mrtin/dev/p1/entorno/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada.
+*   [`bin/install-lib.sh`](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub (agregado al PATH).
+*   [`bin/configure-git.sh`](file:///home/mrtin/dev/p1/entorno/bin/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada (agregado al PATH).
 *   [`launch.bat`](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola WezTerm desde CMD.
 *   [`launch.ps1`](file:///home/mrtin/dev/p1/entorno/launch.ps1): Lanzador de consola WezTerm desde PowerShell.
 *   [`launch-vscode.bat`](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador de VS Code desde CMD heredando las variables y compiladores locales.
@@ -151,9 +151,9 @@ Para empaquetar el entorno completo ya inicializado y distribuirlo a computadora
 Dado que el entorno es portátil y no utiliza los directorios locales del host, debés configurar tu firma de Git para esta sesión portable:
 
 1. Ejecutá `launch.bat`.
-2. Dentro del terminal, corré el script de configuración:
+2. Dentro del terminal, corré el comando de configuración (agregado al PATH):
    ```bash
-   ./configure-git.sh
+   configure-git.sh
    ```
 3. Completá tu nombre y correo. Las credenciales de acceso a repositorios HTTPS se guardarán localmente dentro de `home/.git-credentials` mediante el helper `store`. No afectarán la configuración de la máquina host.
 
@@ -161,21 +161,21 @@ Dado que el entorno es portátil y no utiliza los directorios locales del host, 
 
 ## Gestión de Librerías de C desde GitHub
 
-El entorno incluye el script `./install-lib.sh` para instalar librerías directamente en el entorno portátil de compilación desde cualquier repositorio de GitHub. 
+El entorno incluye el script `install-lib.sh` (ubicado en `bin/` y disponible en el `PATH`) para instalar librerías directamente en el entorno portátil de compilación desde cualquier repositorio de GitHub.
 
 ### Ejecución básica
 Iniciá el terminal (`launch.bat`) y ejecutá:
 ```bash
-./install-lib.sh <usuario/repositorio_github> [rama_o_tag]
+install-lib.sh <usuario/repositorio_github> [rama_o_tag]
 ```
 
 ### Ejemplos de uso:
 ```bash
 # Instalar Nuklear (Librería GUI Header-only)
-./install-lib.sh immediate-mode-ui/nuklear
+install-lib.sh immediate-mode-ui/nuklear
 
 # Instalar inih (Librería parser de archivos INI usando CMake)
-./install-lib.sh davidsiaw/inih r29
+install-lib.sh davidsiaw/inih r29
 ```
 
 ---

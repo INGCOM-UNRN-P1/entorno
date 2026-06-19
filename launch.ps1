@@ -52,10 +52,11 @@ $env:CHERE_INVOKING = "1"
 $env:LANG = "es_AR.UTF-8"
 $env:WEZTERM_CONFIG_FILE = Join-Path $portableRoot "wezterm.lua"
 
-# Agregar compilador al Path
+# Agregar scripts internos, compilador y userland de MSYS2 al Path
+$binPath = Join-Path $portableRoot "bin"
 $clangPath = Join-Path $portableRoot "msys64\clang64\bin"
 $usrPath = Join-Path $portableRoot "msys64\usr\bin"
-$env:PATH = "$clangPath;$usrPath;$env:PATH"
+$env:PATH = "$binPath;$clangPath;$usrPath;$env:PATH"
 
 # Lanzar WezTerm o fallar de vuelta a Bash estándar
 if (Test-Path $wezExe) {

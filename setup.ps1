@@ -97,8 +97,8 @@ try {
                 "customize-terminal.ps1",
                 "customize-terminal.bat",
                 "package-env.ps1",
-                "install-lib.sh",
-                "configure-git.sh",
+                "bin/install-lib.sh",
+                "bin/configure-git.sh",
                 "README.md",
                 "plan.md",
                 "GEMINI.md"
@@ -107,6 +107,13 @@ try {
             foreach ($file in $filesToDownload) {
                 $fileUrl = "$rawBaseUrl/$file"
                 $destinationPath = Join-Path $portableRoot $file
+                
+                # Asegurar la existencia del directorio padre (ej: bin/)
+                $parentDir = Split-Path -Parent $destinationPath
+                if (-not (Test-Path $parentDir)) {
+                    New-Item -ItemType Directory -Path $parentDir | Out-Null
+                }
+
                 try {
                     Write-Host "Actualizando $file..." -ForegroundColor Gray
                     # Descarga con reintentos

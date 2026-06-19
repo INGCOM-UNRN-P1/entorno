@@ -37,7 +37,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 ---
 
 ## Fase 5: Gestor de Librerías de C desde GitHub (Completado)
-*   [x] Diseño y desarrollo de [install-lib.sh](file:///home/mrtin/dev/p1/entorno/install-lib.sh) para compilar e instalar librerías externas de forma desatendida dentro del prefijo portable `/clang64`.
+*   [x] Diseño y desarrollo de [install-lib.sh](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh) para compilar e instalar librerías externas de forma desatendida dentro del prefijo portable `/clang64`.
 *   [x] Soporte para múltiples modos de construcción:
     1. Recetas personalizadas `.portable-recipe.sh` en el repositorio.
     2. Proyectos CMake + Ninja automáticos.
@@ -48,7 +48,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ## Fase 6: Configuración de Control de Versiones e Integración GitHub CLI (Completado)
 *   [x] Integración del paquete `mingw-w64-clang-x86_64-github-cli` en MSYS2.
-*   [x] Diseño del script [configure-git.sh](file:///home/mrtin/dev/p1/entorno/configure-git.sh) para automatizar:
+*   [x] Diseño del script [configure-git.sh](file:///home/mrtin/dev/p1/entorno/bin/configure-git.sh) para automatizar:
     1. Firma de autoría de commits (`user.name` y `user.email`).
     2. Almacenamiento aislado de credenciales HTTPS de Git dentro del directorio portable (`home/.git-credentials`) mediante el helper `store`.
     3. Autenticación asistida para interactuar con la consola mediante GitHub CLI (`gh`).
@@ -112,13 +112,13 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 
 ### Prueba E: Instalación de Librerías de GitHub
 *   [ ] 1. Ejecutar `launch.bat`.
-*   [ ] 2. Correr el script: `./install-lib.sh davidsiaw/inih r29`
+*   [ ] 2. Correr el script: `install-lib.sh davidsiaw/inih r29` (ya agregado al PATH)
 *   [ ] 3. Verificar que los archivos `ini.h` y `libinih.a` estén instalados en `msys64/clang64/include/` y `msys64/clang64/lib/` respectivamente.
 *   [ ] 4. Crear un código simple en C que incluya `<ini.h>` y verificar que compile usando `clang test_ini.c -linih -o test_ini.exe`.
 
 ### Prueba F: Configuración Git y GitHub CLI
 *   [ ] 1. Ejecutar `launch.bat`.
-*   [ ] 2. Correr el script: `./configure-git.sh`
+*   [ ] 2. Correr el script: `configure-git.sh` (ya agregado al PATH)
 *   [ ] 3. Ingresar credenciales ficticias o reales de prueba.
 *   [ ] 4. Verificar la creación de los archivos `home/.gitconfig` y `home/.git-credentials`.
 *   [ ] 5. Ejecutar `gh --version` para validar que el CLI de GitHub responde de forma correcta.

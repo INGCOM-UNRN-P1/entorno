@@ -25,8 +25,8 @@ set "MSYSTEM=CLANG64"
 set "CHERE_INVOKING=1"
 set "LANG=es_AR.UTF-8"
 
-:: Agregar compilador y userland Unix al PATH de sesión
-set "PATH=%PORTABLE_ROOT%msys64\clang64\bin;%PORTABLE_ROOT%msys64\usr\bin;%PATH%"
+:: Agregar scripts internos, compilador y userland Unix al PATH de sesión
+set "PATH=%PORTABLE_ROOT%bin;%PORTABLE_ROOT%msys64\clang64\bin;%PORTABLE_ROOT%msys64\usr\bin;%PATH%"
 
 :: Configuración de WezTerm
 set "WEZTERM_CONFIG_FILE=%PORTABLE_ROOT%wezterm.lua"

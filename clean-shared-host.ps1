@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
+﻿﻿﻿﻿﻿﻿# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
 # Diseñado para usarse antes de desconectarse o cerrar sesión en computadoras compartidas.
 
 $ErrorActionPreference = "Stop"
