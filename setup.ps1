@@ -1,5 +1,6 @@
-# setup.ps1 - Script de inicialización y actualización del entorno portable
-# Configura MSYS2, el compilador Clang, la distribución de Python y VS Code Portable.
+param(
+    [string]$HomeDirName = "home"
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -10,8 +11,25 @@ if ([string]::IsNullOrEmpty($portableRoot)) {
 }
 $msysDir = Join-Path $portableRoot "msys64"
 $tempDir = Join-Path $portableRoot "downloads"
-$homeDir = Join-Path $portableRoot "home"
+$homeDir = Join-Path $portableRoot $HomeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
+
+# Escribir archivo de configuración .env local
+$envFilePath = Join-Path $portableRoot ".env"
+Set-Content -Path $envFilePath -Value "set `"HOME_DIR_NAME=$HomeDirName`""
+
+# Asegurar que el archivo .env y el directorio personalizado estén excluidos en .gitignore
+$gitignorePath = Join-Path $portableRoot ".gitignore"
+if (Test-Path $gitignorePath) {
+    $gitignoreContent = Get-Content $gitignorePath -Raw
+    if (-not $gitignoreContent.Contains(".env")) {
+        Add-Content -Path $gitignorePath -Value "`n# Local environment config`n.env"
+    }
+    $ignoreRule = "$HomeDirName/"
+    if (-not $gitignoreContent.Contains($ignoreRule)) {
+        Add-Content -Path $gitignorePath -Value "`n# Custom home folder`n$ignoreRule"
+    }
+}
 
 Write-Host "=== Entorno Portable de Desarrollo C + Python + VS Code ===" -ForegroundColor Cyan
 Write-Host "Directorio de instalación: $portableRoot`n"

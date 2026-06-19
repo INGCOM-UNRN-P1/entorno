@@ -57,7 +57,10 @@ Podés descargar y ejecutar el script directamente en PowerShell sin necesidad d
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1 | iex
 ```
-*Este comando obtendrá la última versión de `setup.ps1` desde el servidor origen de GitHub y aprovisionará automáticamente MSYS2, Clang, Python, VS Code y WezTerm en el directorio actual.*
+*Si deseás personalizar el nombre de la carpeta de configuraciones portátiles (por defecto `home`), podés pasar el parámetro `-HomeDirName` ejecutándolo de la siguiente forma:*
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Command -ScriptBlock ([scriptblock]::Create((irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1))) -ArgumentList @("-HomeDirName", "developer")
+```
 
 ### Opción B: Descarga Manual o Clonado
 1. Descargá o cloná este repositorio en el directorio donde desees conservar el entorno.
@@ -65,7 +68,10 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercont
    ```powershell
    Set-ExecutionPolicy Bypass -Scope Process -Force; .\setup.ps1
    ```
-   *El script descargará e instalará MSYS2, el compilador Clang, Python, VS Code Portable y WezTerm, dejando las configuraciones estéticas y las extensiones listas para usar.*
+   *Si deseás personalizar el nombre de la carpeta de configuraciones portátiles, podés pasar el parámetro `-HomeDirName`:*
+   ```powershell
+   Set-ExecutionPolicy Bypass -Scope Process -Force; .\setup.ps1 -HomeDirName "developer"
+   ```
 
 ---
 

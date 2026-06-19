@@ -7,6 +7,12 @@ vscode/
 # WezTerm portable folder
 wezterm/
 
+# Local environment configuration
+.env
+
+# Default home folder
+home/
+
 
 # Temporary downloads and installers
 *.exe

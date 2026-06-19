@@ -24,7 +24,17 @@ if ($hasSpaces -or $hasNonAscii) {
     Write-Host ""
 }
 
-$homeDir = Join-Path $portableRoot "home"
+# Cargar configuración de directorio HOME
+$homeDirName = "home"
+$envFile = Join-Path $portableRoot ".env"
+if (Test-Path $envFile) {
+    $envContent = Get-Content $envFile -Raw
+    if ($envContent -match 'HOME_DIR_NAME=(.*)') {
+        $homeDirName = $Matches[1].Replace('"', '').Trim()
+    }
+}
+
+$homeDir = Join-Path $portableRoot $homeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
 $codeExe = Join-Path $vscodeDir "Code.exe"
 

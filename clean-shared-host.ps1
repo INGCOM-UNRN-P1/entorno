@@ -4,7 +4,18 @@
 $ErrorActionPreference = "Stop"
 
 $portableRoot = $PSScriptRoot
-$homeDir = Join-Path $portableRoot "home"
+
+# Cargar configuración de directorio HOME
+$homeDirName = "home"
+$envFile = Join-Path $portableRoot ".env"
+if (Test-Path $envFile) {
+    $envContent = Get-Content $envFile -Raw
+    if ($envContent -match 'HOME_DIR_NAME=(.*)') {
+        $homeDirName = $Matches[1].Replace('"', '').Trim()
+    }
+}
+
+$homeDir = Join-Path $portableRoot $homeDirName
 $vscodeDataDir = Join-Path $portableRoot "vscode\data"
 $tempDir = Join-Path $portableRoot "downloads"
 $msysTemp = Join-Path $portableRoot "msys64\tmp"
@@ -17,7 +28,7 @@ Write-Host "credenciales y configuraciones guardadas en este entorno portable."
 Write-Host ""
 Write-Host "EFECTOS DE LA EJECUCIÓN:" -ForegroundColor Yellow
 Write-Host "1. ELIMINACIÓN DE CLAVES Y CONFIGURACIONES DE USUARIO:"
-Write-Host "   Se borrará la carpeta 'home/' completa. Esto incluye:"
+Write-Host "   Se borrará la carpeta '$homeDirName/' completa. Esto incluye:"
 Write-Host "   - Credenciales guardadas e inicios de sesión en GitHub (.git-credentials)."
 Write-Host "   - Configuración de identidad y firma de Git (.gitconfig)."
 Write-Host "   - Claves de acceso SSH (.ssh/)."
@@ -45,13 +56,13 @@ Write-Host "`nIniciando limpieza profunda..." -ForegroundColor Cyan
 
 # 1. Eliminar home/
 if (Test-Path $homeDir) {
-    Write-Host "* Eliminando directorio HOME portable..."
+    Write-Host "* Eliminando directorio portable '$homeDirName'..."
     Remove-Item -Path $homeDir -Recurse -Force
 }
 
 # Recrear home/ vacío para que los lanzadores funcionen
 New-Item -ItemType Directory -Path $homeDir | Out-Null
-Write-Host "  -> Directorio HOME restablecido a su estado inicial." -ForegroundColor Green
+Write-Host "  -> Directorio portable '$homeDirName' restablecido a su estado inicial." -ForegroundColor Green
 
 # 2. Eliminar vscode/data
 if (Test-Path $vscodeDataDir) {

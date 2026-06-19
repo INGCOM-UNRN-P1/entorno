@@ -15,8 +15,10 @@ if not "%PORTABLE_ROOT%"=="%PORTABLE_ROOT: =%" (
 )
 
 
-:: Configurar el directorio HOME portable para aislamiento de herramientas CLI (git, ssh, etc.)
-set "HOME=%PORTABLE_ROOT%home"
+:: Configurar el directorio HOME portable (cargando configuración si existe)
+set "HOME_DIR_NAME=home"
+if exist "%PORTABLE_ROOT%.env" call "%PORTABLE_ROOT%.env"
+set "HOME=%PORTABLE_ROOT%%HOME_DIR_NAME%"
 if not exist "%HOME%" mkdir "%HOME%"
 
 :: Inyectar variables para MSYS2
