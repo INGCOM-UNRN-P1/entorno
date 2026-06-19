@@ -3,8 +3,11 @@
 
 $ErrorActionPreference = "Stop"
 
-# Directorio base del script
+# Directorio base del script (con fallback al directorio actual si se ejecuta desde internet vía IEX)
 $portableRoot = $PSScriptRoot
+if ([string]::IsNullOrEmpty($portableRoot)) {
+    $portableRoot = (Get-Location).Path
+}
 $msysDir = Join-Path $portableRoot "msys64"
 $tempDir = Join-Path $portableRoot "downloads"
 $homeDir = Join-Path $portableRoot "home"
