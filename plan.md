@@ -54,6 +54,8 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 3. Compilar: `clang test.c -o test.exe`
 4. Ejecutar: `./test.exe`
 5. Verificar la salida esperada en consola.
+6. Realizar análisis estático de código: `cppcheck test.c`
+7. Verificar que cppcheck analice el archivo e informe el resultado.
 
 ### Prueba B: Ejecución de Python, Pip y UV
 1. Ejecutar `launch.bat`.

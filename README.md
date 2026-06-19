@@ -8,6 +8,7 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 *   **Compilador de C:** Clang (MinGW-w64 Clang64) optimizado para UCRT (Universal C Runtime).
 *   **Herramientas de Construcción:** `make` (mingw32-make), `cmake`, `ninja`.
 *   **Depurador:** GDB.
+*   **Análisis Estático:** Cppcheck (detección de errores de código, fugas de memoria y comportamientos indefinidos).
 *   **Lenguaje de Scripting:** Python 3 (nativo Clang64) con `pip` y `uv` (instalador y resolvedor de paquetes de alto rendimiento).
 *   **Editor de Código:** VS Code Portable (incluye extensiones de C/C++, CMake y Python).
 *   **Gestor de Paquetes:** `pacman` (nativo de MSYS2).
