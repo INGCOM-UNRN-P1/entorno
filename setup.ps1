@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig
 )
@@ -70,51 +70,65 @@ try {
             Write-Warning "No se pudo ejecutar git para la actualización automática: $_. Se continuará con la ejecución local."
         }
     } else {
-        Write-Host "No se detectó un repositorio de Git (carpeta standalone). Descargando última versión de los scripts..." -ForegroundColor Cyan
+        $hasExistingScripts = Test-Path (Join-Path $portableRoot "launch.bat")
+        $shouldUpdate = $true
         
-        $filesToDownload = @(
-            "setup.ps1",
-            "launch.bat",
-            "launch.ps1",
-            "launch-vscode.bat",
-            "launch-vscode.ps1",
-            "clean-shared-host.ps1",
-            "customize-terminal.ps1",
-            "customize-terminal.bat",
-            "package-env.ps1",
-            "install-lib.sh",
-            "configure-git.sh",
-            "README.md",
-            "plan.md",
-            "GEMINI.md"
-        )
-        
-        foreach ($file in $filesToDownload) {
-            $fileUrl = "$rawBaseUrl/$file"
-            $destinationPath = Join-Path $portableRoot $file
-            try {
-                Write-Host "Actualizando $file..." -ForegroundColor Gray
-                # Descarga con reintentos
-                $attempts = 0
-                $success = $false
-                while (-not $success -and $attempts -lt 3) {
-                    $attempts++
-                    try {
-                        Invoke-WebRequest -Uri $fileUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
-                        $success = $true
-                    } catch {
-                        if ($attempts -lt 3) {
-                            Start-Sleep -Seconds 1
-                        } else {
-                            throw $_
-                        }
-                    }
-                }
-            } catch {
-                Write-Warning "No se pudo actualizar el archivo $($file): $_"
+        if ($hasExistingScripts) {
+            Write-Host "Se detectaron scripts de consola existentes en el directorio." -ForegroundColor Yellow
+            $choice = Read-Host "¿Deseás actualizar todos los scripts del entorno a la última versión desde GitHub? (s/n)"
+            if ($choice -notmatch "^[sS]$") {
+                $shouldUpdate = $false
+                Write-Host "Se omite la actualización de los scripts. Se utilizarán las versiones locales.`n" -ForegroundColor Yellow
             }
         }
-        Write-Host "Actualización de scripts completada.`n" -ForegroundColor Green
+        
+        if ($shouldUpdate) {
+            Write-Host "No se detectó un repositorio de Git (carpeta standalone). Descargando última versión de los scripts..." -ForegroundColor Cyan
+            
+            $filesToDownload = @(
+                "setup.ps1",
+                "launch.bat",
+                "launch.ps1",
+                "launch-vscode.bat",
+                "launch-vscode.ps1",
+                "clean-shared-host.ps1",
+                "customize-terminal.ps1",
+                "customize-terminal.bat",
+                "package-env.ps1",
+                "install-lib.sh",
+                "configure-git.sh",
+                "README.md",
+                "plan.md",
+                "GEMINI.md"
+            )
+            
+            foreach ($file in $filesToDownload) {
+                $fileUrl = "$rawBaseUrl/$file"
+                $destinationPath = Join-Path $portableRoot $file
+                try {
+                    Write-Host "Actualizando $file..." -ForegroundColor Gray
+                    # Descarga con reintentos
+                    $attempts = 0
+                    $success = $false
+                    while (-not $success -and $attempts -lt 3) {
+                        $attempts++
+                        try {
+                            Invoke-WebRequest -Uri $fileUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
+                            $success = $true
+                        } catch {
+                            if ($attempts -lt 3) {
+                                Start-Sleep -Seconds 1
+                            } else {
+                                throw $_
+                            }
+                        }
+                    }
+                } catch {
+                    Write-Warning "No se pudo actualizar el archivo $($file): $_"
+                }
+            }
+            Write-Host "Actualización de scripts completada.`n" -ForegroundColor Green
+        }
     }
 
     # Escribir archivo de configuración .env local
