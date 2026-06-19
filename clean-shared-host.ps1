@@ -62,7 +62,42 @@ if (Test-Path $homeDir) {
 
 # Recrear home/ vacío para que los lanzadores funcionen
 New-Item -ItemType Directory -Path $homeDir | Out-Null
-Write-Host "  -> Directorio portable '$homeDirName' restablecido a su estado inicial." -ForegroundColor Green
+
+$bashPath = Join-Path $portableRoot "msys64\usr\bin\bash.exe"
+if (Test-Path $bashPath) {
+    # Inicializar bash para que cree el .bashrc base
+    & $bashPath -env "HOME=$homeDir" --login -c "exit"
+    
+    $bashrcPath = Join-Path $homeDir ".bashrc"
+    if (Test-Path $bashrcPath) {
+        $customAliases = @(
+            "",
+            "# === Portable Dev Environment Aliases ===",
+            "alias python='python3'",
+            "alias pip='pip3'",
+            "alias make='mingw32-make'",
+            "alias ll='ls -alF --color=auto'",
+            "export PS1='\[\e[32m\]\u@portable \[\e[33m\]\w\[\e[0m\]\n$ '"
+        )
+        Add-Content -Path $bashrcPath -Value ($customAliases -join "`r`n")
+        
+        $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
+        $endInstMarker = "# === END INSTITUTIONAL BANNER ==="
+        $instBanner = @(
+            "",
+            $startInstMarker,
+            "clear",
+            "echo -e `"\e[35m`"", # Violeta
+            "echo `"======================================================================`"",
+            "echo `"  UNRN Andina - Programación 1`"",
+            "echo `"======================================================================`"",
+            "echo -e `"\e[0m`"",
+            $endInstMarker
+        ) -join "`r`n"
+        Add-Content -Path $bashrcPath -Value $instBanner
+    }
+}
+Write-Host "  -> Directorio portable '$homeDirName' restablecido con alias y banner institucional." -ForegroundColor Green
 
 # 2. Eliminar vscode/data
 if (Test-Path $vscodeDataDir) {

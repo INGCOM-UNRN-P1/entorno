@@ -143,13 +143,35 @@ if ($configureBanner -match "^[sS]$") {
         $bashrcContent = Get-Content $bashrcPath -Raw
     }
     
+    $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
+    $endInstMarker = "# === END INSTITUTIONAL BANNER ==="
+    
+    # Asegurar la existencia del banner institucional (va antes del banner del estudiante)
+    if (-not $bashrcContent.Contains($startInstMarker)) {
+        $instBanner = @(
+            $startInstMarker,
+            "clear",
+            "echo -e `"\e[35m`"", # Violeta
+            "echo `"======================================================================`"",
+            "echo `"  UNRN Andina - Programación 1`"",
+            "echo `"======================================================================`"",
+            "echo -e `"\e[0m`"",
+            $endInstMarker
+        ) -join "`r`n"
+        if ($bashrcContent.Trim().Length -gt 0) {
+            $bashrcContent = $instBanner + "`r`n`r`n" + $bashrcContent
+        } else {
+            $bashrcContent = $instBanner
+        }
+    }
+    
     $startMarker = "# === START WELCOME BANNER ==="
     $endMarker = "# === END WELCOME BANNER ==="
     
-    # Generar el bloque nuevo
+    # Generar el bloque nuevo para la personalización del estudiante
     $newBannerBlock = "$startMarker`r`n"
     if ($enableWelcomeMessage -eq "s") {
-        $newBannerBlock += "clear`r`n"
+        # Se remueve el clear para no borrar el banner institucional previo
         $newBannerBlock += "echo -e `"\e[${bashColorCode}m`"`r`n"
         $newBannerBlock += "echo `"======================================================================`"`r`n"
         foreach ($line in $bannerLines) {

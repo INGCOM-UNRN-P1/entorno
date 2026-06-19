@@ -302,6 +302,27 @@ if (Test-Path $bashrcPath) {
             Add-Content -Path $bashrcPath -Value $alias
         }
     }
+
+    # Agregar banner institucional (UNRN Andina - Programación 1)
+    $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
+    $endInstMarker = "# === END INSTITUTIONAL BANNER ==="
+    $instBanner = @(
+        "",
+        $startInstMarker,
+        "clear",
+        "echo -e `"\e[35m`"", # Violeta
+        "echo `"======================================================================`"",
+        "echo `"  UNRN Andina - Programación 1`"",
+        "echo `"======================================================================`"",
+        "echo -e `"\e[0m`"",
+        $endInstMarker
+    ) -join "`r`n"
+    
+    $content = Get-Content $bashrcPath -Raw
+    if (-not $content.Contains($startInstMarker)) {
+        Add-Content -Path $bashrcPath -Value $instBanner
+    }
+    
     Write-Host "Configuración de terminal personalizada guardada." -ForegroundColor Green
 }
 
