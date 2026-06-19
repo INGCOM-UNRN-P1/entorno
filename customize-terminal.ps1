@@ -296,7 +296,7 @@ if ($configureWez -match "^[sS]$") {
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
--- Configurar directorio raíz portable
+-- Configurar directorio raiz portable
 local portable_root = os.getenv("PORTABLE_ROOT")
 if portable_root then
   portable_root = portable_root:gsub("\\\\", "/")
@@ -321,7 +321,7 @@ config.set_environment_variables = {
   PATH = path_env,
 }
 
--- Estética Premium (Personalizada via customize-terminal.ps1)
+-- Estetica Premium (Personalizada via customize-terminal.ps1)
 config.color_scheme = '$selectedScheme'
 config.font = wezterm.font 'JetBrains Mono'
 config.font_size = $selectedFontSize

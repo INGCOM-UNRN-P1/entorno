@@ -56,7 +56,15 @@ $env:WEZTERM_CONFIG_FILE = $wezConfigPath
 
 # Asegurar que wezterm.lua esté siempre en UTF-8 sin BOM (evita error de codificación UTF-8 en WezTerm)
 if (Test-Path $wezConfigPath) {
-    $content = [System.IO.File]::ReadAllText($wezConfigPath)
+    # Leer el archivo con codificación UTF8 explícita para evitar double-encoding en PowerShell 5.1
+    $content = [System.IO.File]::ReadAllText($wezConfigPath, [System.Text.Encoding]::UTF8)
+    
+    # Sanitizar de forma proactiva secuencias corruptas resultantes de conversiones fallidas previas
+    $content = $content -replace "raÃ\xad z|raÃ\xad|ra\xc3\xad z|raíz", "raiz"
+    $content = $content -replace "EstÃ©tica|Est\xc3\xa9tica|Estética", "Estetica"
+    $content = $content -replace "PrÃ©mium|Pr\xc3\xa9mium|Premium", "Premium"
+    $content = $content -replace "apariencia|apariencia", "apariencia"
+    
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
 }

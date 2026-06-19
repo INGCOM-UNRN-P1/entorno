@@ -787,7 +787,7 @@ if (-not (Test-Path $wezConfigPath) -or $isUpdateMode -or $shouldInstallOrUpdate
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
--- Configurar directorio raíz portable
+-- Configurar directorio raiz portable
 local portable_root = os.getenv("PORTABLE_ROOT")
 if portable_root then
   portable_root = portable_root:gsub("\\\\", "/")
@@ -813,7 +813,7 @@ config.set_environment_variables = {
   LANG = "es_AR.UTF-8",
 }
 
--- Estética Premium (Tokyo Night y JetBrains Mono)
+-- Estetica Premium (Tokyo Night y JetBrains Mono)
 config.color_scheme = 'Tokyo Night'
 config.font = wezterm.font 'JetBrains Mono'
 config.font_size = 11.0
