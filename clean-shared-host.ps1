@@ -142,5 +142,15 @@ if (Test-Path $msysTemp) {
     Get-ChildItem -Path $msysTemp | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
+# 5. Eliminar archivos de estado de instalación
+$completeMarkers = @(".install_complete", ".vscode_complete")
+foreach ($marker in $completeMarkers) {
+    $markerPath = Join-Path $portableRoot $marker
+    if (Test-Path $markerPath) {
+        Write-Host "* Eliminando indicador de estado: $marker"
+        Remove-Item -Path $markerPath -Force
+    }
+}
+
 Write-Host "`n=== LIMPIEZA COMPLETADA CON ÉXITO ===" -ForegroundColor Green
 Write-Host "El entorno portable se encuentra libre de credenciales y datos personales." -ForegroundColor Green

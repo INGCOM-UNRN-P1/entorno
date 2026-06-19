@@ -14,6 +14,7 @@ $msysDir = Join-Path $portableRoot "msys64"
 $tempDir = Join-Path $portableRoot "downloads"
 $homeDir = Join-Path $portableRoot $HomeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
+$isUpdateMode = Test-Path (Join-Path $portableRoot ".install_complete")
 
 # Iniciar log de instalación
 $logPath = Join-Path $portableRoot "install.log"
@@ -36,6 +37,7 @@ Write-Host "Usuario Ejecutor     : $($env:USERNAME)"
 Write-Host "Versión PowerShell   : $($PSVersionTable.PSVersion)"
 Write-Host "Ruta de la Carpeta   : $portableRoot"
 Write-Host "Parámetros Utilizados: -HomeDirName '$HomeDirName' -ImportHostConfig: $ImportHostConfig"
+Write-Host "Modo de Ejecución    : $(if ($isUpdateMode) { 'Actualización' } else { 'Instalación/Finalización' })"
 Write-Host "======================================================================`n"
 
 try {
@@ -149,6 +151,11 @@ if (Test-Path $gitignorePath) {
 }
 
 Write-Host "=== Entorno Portable de Desarrollo C + Python + VS Code ===" -ForegroundColor Cyan
+if ($isUpdateMode) {
+    Write-Host ">>> MODO ACTUALIZACIÓN: Se detectó una instalación previa completa. <<<" -ForegroundColor Green
+} else {
+    Write-Host ">>> MODO INSTALACIÓN/FINALIZACIÓN: Completando o finalizando instalación... <<<" -ForegroundColor Yellow
+}
 Write-Host "Directorio de instalación: $portableRoot`n"
 
 # Validar espacios o caracteres no ASCII en la ruta de instalación (causan errores graves con Make/compiladores)
@@ -193,9 +200,16 @@ if (-not (Test-Path $tempDir)) {
 # 1. Gestión e Instalación de MSYS2
 # ==========================================
 $isMsysInstalled = Test-Path (Join-Path $msysDir "usr\bin\bash.exe")
+$isMsysComplete = Test-Path (Join-Path $portableRoot ".msys_complete")
 
-if (-not $isMsysInstalled) {
-    Write-Host "[Instalación] MSYS2 no detectado. Iniciando descarga..." -ForegroundColor Yellow
+if (-not $isMsysInstalled -or -not $isMsysComplete) {
+    if ($isMsysInstalled -and -not $isMsysComplete) {
+        Write-Host "Se detectó una instalación previa incompleta de MSYS2. Limpiando para reinstalar base..." -ForegroundColor Yellow
+        if (Test-Path $msysDir) {
+            Remove-Item -Path $msysDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Write-Host "[Instalación] MSYS2 no detectado o incompleto. Iniciando descarga..." -ForegroundColor Yellow
 
     $releaseUrl = "https://api.github.com/repos/msys2/msys2-installer/releases/latest"
     $downloadUrl = $null
@@ -223,25 +237,71 @@ if (-not $isMsysInstalled) {
 
     $exePath = Join-Path $tempDir $fileName
     $shaPath = "$exePath.sha256"
+    $shaUrl = "$downloadUrl.sha256"
+    $isDownloadedAndValid = $false
 
-    Write-Host "Descargando $fileName..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing
-
-    try {
-        $shaUrl = "$downloadUrl.sha256"
-        Write-Host "Descargando verificación SHA256..."
-        Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction SilentlyContinue
-        
-        $expectedHash = (Get-Content $shaPath -Raw).Split(" ")[0].Trim()
-        $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
-
-        if ($actualHash -eq $expectedHash.ToLower()) {
-            Write-Host "Firma SHA256 verificada con éxito." -ForegroundColor Green
-        } else {
-            throw "Integridad corrupta. El hash no coincide."
+    # Verificar si ya existe una descarga previa válida para evitar descargas duplicadas en reintentos
+    if (Test-Path $exePath) {
+        Write-Host "Se detectó un instalador de MSYS2 descargado previamente. Verificando firma..." -ForegroundColor Yellow
+        try {
+            if (-not (Test-Path $shaPath)) {
+                Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
+            }
+            $expectedHash = (Get-Content $shaPath -Raw).Split(" ")[0].Trim().ToLower()
+            if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
+                throw "El hash esperado recuperado no tiene un formato SHA256 válido (64 caracteres hexadecimales): '$expectedHash'"
+            }
+            $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
+            if ($actualHash -eq $expectedHash) {
+                $isDownloadedAndValid = $true
+                Write-Host "El archivo existente es válido. Se omitirá la descarga." -ForegroundColor Green
+            } else {
+                Write-Host "La firma del archivo existente no coincide. Se procederá a descargar nuevamente." -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "No se pudo verificar la firma del archivo existente. Se procederá a descargar nuevamente. Detalles: $_" -ForegroundColor Yellow
         }
-    } catch {
-        Write-Warning "No se pudo validar el Hash SHA256 de forma automatizada. Se asume correcto."
+    }
+
+    if (-not $isDownloadedAndValid) {
+        Write-Host "Descargando $fileName..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing
+
+        Write-Host "Descargando verificación SHA256..." -ForegroundColor Cyan
+        try {
+            $attempts = 0
+            $success = $false
+            while (-not $success -and $attempts -lt 3) {
+                $attempts++
+                try {
+                    Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
+                    $success = $true
+                } catch {
+                    if ($attempts -lt 3) {
+                        Start-Sleep -Seconds 1
+                    } else {
+                        throw $_
+                    }
+                }
+            }
+        } catch {
+            throw "Error fatal al descargar el archivo de firma SHA256 desde: $shaUrl. Detalles: $_"
+        }
+
+        try {
+            $expectedHash = (Get-Content $shaPath -Raw).Split(" ")[0].Trim().ToLower()
+            if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
+                throw "El hash esperado recuperado no tiene un formato SHA256 válido (64 caracteres hexadecimales): '$expectedHash'"
+            }
+            $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
+
+            if ($actualHash -ne $expectedHash) {
+                throw "El hash calculado ($actualHash) no coincide con el esperado ($expectedHash)."
+            }
+            Write-Host "Firma SHA256 verificada con éxito." -ForegroundColor Green
+        } catch {
+            throw "Falla crítica en la verificación de firma SHA256. La instalación se detiene. Detalles: $_"
+        }
     }
 
     Write-Host "Extrayendo entorno base MSYS2 en: $portableRoot" -ForegroundColor Cyan
@@ -251,93 +311,98 @@ if (-not $isMsysInstalled) {
     }
     Write-Host "Instalación base de MSYS2 completada con éxito.`n" -ForegroundColor Green
 } else {
-    Write-Host "[Actualización] MSYS2 ya instalado. Procediendo a actualizar paquetes..." -ForegroundColor Yellow
+    Write-Host "[Actualización] MSYS2 base ya instalado y verificado." -ForegroundColor Green
 }
 
-# ==========================================
-# 2. Inicialización y Actualización de MSYS2
-# ==========================================
-Write-Host "Inicializando entorno de consola..." -ForegroundColor Cyan
-$bashPath = Join-Path $msysDir "usr\bin\bash.exe"
-& $bashPath --login -c "exit"
+if ($isUpdateMode -or -not $isMsysComplete) {
+    # ==========================================
+    # 2. Inicialización y Actualización de MSYS2
+    # ==========================================
+    Write-Host "Inicializando entorno de consola..." -ForegroundColor Cyan
+    $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
+    & $bashPath --login -c "exit"
 
-Write-Host "Sincronizando base de datos de pacman y actualizando paquetes del sistema..." -ForegroundColor Cyan
-& $bashPath --login -c "pacman -Syu --noconfirm"
+    Write-Host "Sincronizando base de datos de pacman y actualizando paquetes del sistema..." -ForegroundColor Cyan
+    & $bashPath --login -c "pacman -Syu --noconfirm"
 
-Write-Host "Consolidando actualizaciones del entorno..." -ForegroundColor Cyan
-& $bashPath --login -c "pacman -Su --noconfirm"
+    Write-Host "Consolidando actualizaciones del entorno..." -ForegroundColor Cyan
+    & $bashPath --login -c "pacman -Su --noconfirm"
 
-# ==========================================
-# 3. Instalación de Clang y Python
-# ==========================================
-$packages = @(
-    "mingw-w64-clang-x86_64-clang",
-    "mingw-w64-clang-x86_64-lld",
-    "mingw-w64-clang-x86_64-make",
-    "mingw-w64-clang-x86_64-cmake",
-    "mingw-w64-clang-x86_64-ninja",
-    "mingw-w64-clang-x86_64-gdb",
-    "mingw-w64-clang-x86_64-python",
-    "mingw-w64-clang-x86_64-python-pip",
-    "mingw-w64-clang-x86_64-uv",
-    "mingw-w64-clang-x86_64-cppcheck",
-    "mingw-w64-clang-x86_64-zlib",
-    "mingw-w64-clang-x86_64-openssl",
-    "mingw-w64-clang-x86_64-sqlite3",
-    "mingw-w64-clang-x86_64-curl",
-    "mingw-w64-clang-x86_64-github-cli",
-    "git"
-)
-
-$pkgString = $packages -join " "
-Write-Host "Instalando compiladores, herramientas de compilación, Python y librerías comunes..." -ForegroundColor Cyan
-& $bashPath --login -c "pacman -S --needed --noconfirm $pkgString"
-
-# Configurar alias en el HOME portable
-$bashrcPath = Join-Path $homeDir ".bashrc"
-if (-not (Test-Path $bashrcPath)) {
-    & $bashPath -env "HOME=$homeDir" --login -c "exit"
-}
-
-if (Test-Path $bashrcPath) {
-    $customAliases = @(
-        "",
-        "# === Portable Dev Environment Aliases ===",
-        "alias python='python3'",
-        "alias pip='pip3'",
-        "alias make='mingw32-make'",
-        "alias ll='ls -alF --color=auto'",
-        "export PS1='\[\e[32m\]\u@portable \[\e[33m\]\w\[\e[0m\]\n$ '"
+    # ==========================================
+    # 3. Instalación de Clang y Python
+    # ==========================================
+    $packages = @(
+        "mingw-w64-clang-x86_64-clang",
+        "mingw-w64-clang-x86_64-lld",
+        "mingw-w64-clang-x86_64-make",
+        "mingw-w64-clang-x86_64-cmake",
+        "mingw-w64-clang-x86_64-ninja",
+        "mingw-w64-clang-x86_64-gdb",
+        "mingw-w64-clang-x86_64-python",
+        "mingw-w64-clang-x86_64-python-pip",
+        "mingw-w64-clang-x86_64-uv",
+        "mingw-w64-clang-x86_64-cppcheck",
+        "mingw-w64-clang-x86_64-zlib",
+        "mingw-w64-clang-x86_64-openssl",
+        "mingw-w64-clang-x86_64-sqlite3",
+        "mingw-w64-clang-x86_64-curl",
+        "mingw-w64-clang-x86_64-github-cli",
+        "git"
     )
-    
-    $content = Get-Content $bashrcPath -Raw
-    foreach ($alias in $customAliases) {
-        if (-not $content.Contains($alias)) {
-            Add-Content -Path $bashrcPath -Value $alias
-        }
+
+    $pkgString = $packages -join " "
+    Write-Host "Instalando compiladores, herramientas de compilación, Python y librerías comunes..." -ForegroundColor Cyan
+    & $bashPath --login -c "pacman -S --needed --noconfirm $pkgString"
+
+    # Configurar alias en el HOME portable
+    $bashrcPath = Join-Path $homeDir ".bashrc"
+    if (-not (Test-Path $bashrcPath)) {
+        & $bashPath -env "HOME=$homeDir" --login -c "exit"
     }
 
-    # Agregar banner institucional (UNRN Andina - Programación 1)
-    $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
-    $endInstMarker = "# === END INSTITUTIONAL BANNER ==="
-    $instBanner = @(
-        "",
-        $startInstMarker,
-        "clear",
-        'echo -e "\e[35m"', # Violeta
-        'echo "======================================================================"',
-        'echo "  UNRN Andina - Programación 1"',
-        'echo "======================================================================"',
-        'echo -e "\e[0m"',
-        $endInstMarker
-    ) -join "`r`n"
-    
-    $content = Get-Content $bashrcPath -Raw
-    if (-not $content.Contains($startInstMarker)) {
-        Add-Content -Path $bashrcPath -Value $instBanner
+    if (Test-Path $bashrcPath) {
+        $customAliases = @(
+            "",
+            "# === Portable Dev Environment Aliases ===",
+            "alias python='python3'",
+            "alias pip='pip3'",
+            "alias make='mingw32-make'",
+            "alias ll='ls -alF --color=auto'",
+            "export PS1='\[\e[32m\]\u@portable \[\e[33m\]\w\[\e[0m\]\n$ '"
+        )
+        
+        $content = Get-Content $bashrcPath -Raw
+        foreach ($alias in $customAliases) {
+            if (-not $content.Contains($alias)) {
+                Add-Content -Path $bashrcPath -Value $alias
+            }
+        }
+
+        # Agregar banner institucional (UNRN Andina - Programación 1)
+        $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
+        $endInstMarker = "# === END INSTITUTIONAL BANNER ==="
+        $instBanner = @(
+            "",
+            $startInstMarker,
+            "clear",
+            'echo -e "\e[35m"', # Violeta
+            'echo "======================================================================"',
+            'echo "  UNRN Andina - Programación 1"',
+            'echo "======================================================================"',
+            'echo -e "\e[0m"',
+            $endInstMarker
+        ) -join "`r`n"
+        
+        $content = Get-Content $bashrcPath -Raw
+        if (-not $content.Contains($startInstMarker)) {
+            Add-Content -Path $bashrcPath -Value $instBanner
+        }
+        
+        Write-Host "Configuración de terminal personalizada guardada." -ForegroundColor Green
     }
-    
-    Write-Host "Configuración de terminal personalizada guardada." -ForegroundColor Green
+    Set-Content -Path (Join-Path $portableRoot ".msys_complete") -Value "Complete"
+} else {
+    Write-Host "[Actualización] MSYS2 y herramientas de desarrollo ya configuradas. Se omite pacman para agilizar la ejecución." -ForegroundColor Green
 }
 
 # ==========================================
@@ -347,71 +412,128 @@ $vscodeZipUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win3
 $vscodeZipName = "vscode_archive.zip"
 $vscodeZipPath = Join-Path $tempDir $vscodeZipName
 $isCodeInstalled = Test-Path (Join-Path $vscodeDir "Code.exe")
+$isCodeComplete = Test-Path (Join-Path $portableRoot ".vscode_complete")
 
-if (-not $isCodeInstalled) {
-    Write-Host "[Instalación] VS Code no detectado. Descargando versión portable..." -ForegroundColor Yellow
-    Invoke-WebRequest -Uri $vscodeZipUrl -OutFile $vscodeZipPath -UseBasicParsing
-    
-    Write-Host "Extrayendo VS Code..." -ForegroundColor Cyan
-    Expand-Archive -Path $vscodeZipPath -DestinationPath $vscodeDir -Force
-    
-    # Activar el Modo Portable creando la carpeta 'data'
-    $dataDir = Join-Path $vscodeDir "data"
-    $userSettingsDir = Join-Path $dataDir "user-data\User"
-    if (-not (Test-Path $userSettingsDir)) {
-        New-Item -ItemType Directory -Path $userSettingsDir | Out-Null
+# Resolver la URL de redirección final de VS Code
+$resolvedVscodeUrl = $vscodeZipUrl
+if ($isUpdateMode -or -not $isCodeComplete) {
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $request = [System.Net.WebRequest]::Create($vscodeZipUrl)
+        $request.Method = "HEAD"
+        $request.AllowAutoRedirect = $true
+        $request.Timeout = 10000
+        $response = $request.GetResponse()
+        $resolvedVscodeUrl = $response.ResponseUri.AbsoluteUri
+        $response.Close()
+    } catch {
+        Write-Warning "No se pudo resolver la URL final de redirección de VS Code. Se usará la URL directa."
     }
-    
-    # Escribir configuración inicial de settings.json para aislar telemetría y configurar bash
-    $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
-    $defaultSettings = @{
-        "telemetry.telemetryLevel" = "off"
-        "update.mode" = "none"
-        "extensions.autoUpdate" = $false
-        "chat.disableAIFeatures" = $true
-        "github.copilot.enable" = @{
-            "*" = $false
+}
+
+if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
+    Write-Host "VS Code ya se encuentra instalado y configurado de una ejecución previa." -ForegroundColor Green
+} else {
+    $shouldInstallOrUpdateVscode = $false
+    if ($isUpdateMode) {
+        $installedVscodeVersionFile = Join-Path $vscodeDir ".version"
+        $installedVscodeUrl = ""
+        if (Test-Path $installedVscodeVersionFile) {
+            $installedVscodeUrl = Get-Content $installedVscodeVersionFile -Raw
         }
-        "terminal.integrated.profiles.windows" = @{
-            "Clang64 Bash" = @{
-                "path" = "bash.exe"
-                "args" = @("--login", "-i")
+        
+        if ($resolvedVscodeUrl -ne $installedVscodeUrl) {
+            Write-Host "Hay una nueva versión de VS Code disponible para actualizar." -ForegroundColor Yellow
+            $shouldInstallOrUpdateVscode = $true
+        } else {
+            Write-Host "VS Code ya se encuentra en la versión más reciente ($resolvedVscodeUrl)." -ForegroundColor Green
+        }
+    } else {
+        $shouldInstallOrUpdateVscode = $true
+    }
+
+    if ($shouldInstallOrUpdateVscode) {
+        if (-not $isUpdateMode -and $isCodeInstalled) {
+            Write-Host "Detectada instalación incompleta de VS Code. Reinstalando..." -ForegroundColor Yellow
+            Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        $vscodeZipValid = $false
+        if (Test-Path $vscodeZipPath) {
+            Write-Host "Se detectó una descarga previa de VS Code. Verificando..." -ForegroundColor Yellow
+            try {
+                $fileSize = (Get-Item $vscodeZipPath).Length
+                if ($fileSize -gt 50MB) {
+                    $vscodeZipValid = $true
+                    Write-Host "El archivo ZIP previo es válido. Se omitirá la descarga." -ForegroundColor Green
+                } else {
+                    Write-Host "El archivo ZIP previo está incompleto o dañado. Se volverá a descargar." -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Host "No se pudo verificar el archivo ZIP previo. Se volverá a descargar." -ForegroundColor Yellow
             }
         }
-        "terminal.integrated.defaultProfile.windows" = "Clang64 Bash"
-    } | ConvertTo-Json -Depth 10
-    
-    Set-Content -Path $settingsJsonPath -Value $defaultSettings
-    Write-Host "VS Code Portable configurado con éxito." -ForegroundColor Green
-} else {
-    Write-Host "[Actualización] VS Code ya instalado. Procediendo a actualizar..." -ForegroundColor Yellow
-    try {
-        Write-Host "Descargando la última versión de VS Code..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $vscodeZipUrl -OutFile $vscodeZipPath -UseBasicParsing
+        
+        if (-not $vscodeZipValid) {
+            Write-Host "Descargando VS Code..." -ForegroundColor Cyan
+            Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing
+        }
         
         $backupDataDir = Join-Path $portableRoot "vscode_data_backup"
         $dataDir = Join-Path $vscodeDir "data"
         
-        if (Test-Path $dataDir) {
-            Write-Host "Respaldando carpeta data de VS Code..."
+        if ($isUpdateMode -and (Test-Path $dataDir)) {
+            Write-Host "Respaldando carpeta data de VS Code..." -ForegroundColor Cyan
+            if (Test-Path $backupDataDir) {
+                Remove-Item -Path $backupDataDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
             Move-Item -Path $dataDir -Destination $backupDataDir -Force
         }
         
-        Write-Host "Eliminando instalación anterior..."
-        Remove-Item -Path $vscodeDir -Recurse -Force
+        if (Test-Path $vscodeDir) {
+            Write-Host "Eliminando instalación anterior de VS Code..." -ForegroundColor Cyan
+            Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
         New-Item -ItemType Directory -Path $vscodeDir | Out-Null
         
-        Write-Host "Extrayendo actualización..."
+        Write-Host "Extrayendo VS Code..." -ForegroundColor Cyan
         Expand-Archive -Path $vscodeZipPath -DestinationPath $vscodeDir -Force
         
-        if (Test-Path $backupDataDir) {
-            Write-Host "Restaurando carpeta data..."
+        if ($isUpdateMode -and (Test-Path $backupDataDir)) {
+            Write-Host "Restaurando carpeta data..." -ForegroundColor Cyan
             Move-Item -Path $backupDataDir -Destination $dataDir -Force
+        } else {
+            # Activar el Modo Portable creando la carpeta 'data'
+            $userSettingsDir = Join-Path $dataDir "user-data\User"
+            if (-not (Test-Path $userSettingsDir)) {
+                New-Item -ItemType Directory -Path $userSettingsDir | Out-Null
+            }
+            
+            # Escribir configuración inicial de settings.json para aislar telemetría y configurar bash
+            $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
+            $defaultSettings = @{
+                "telemetry.telemetryLevel" = "off"
+                "update.mode" = "none"
+                "extensions.autoUpdate" = $false
+                "chat.disableAIFeatures" = $true
+                "github.copilot.enable" = @{
+                    "*" = $false
+                }
+                "terminal.integrated.profiles.windows" = @{
+                    "Clang64 Bash" = @{
+                        "path" = "bash.exe"
+                        "args" = @("--login", "-i")
+                    }
+                }
+                "terminal.integrated.defaultProfile.windows" = "Clang64 Bash"
+            } | ConvertTo-Json -Depth 10
+            
+            Set-Content -Path $settingsJsonPath -Value $defaultSettings
         }
         
-        Write-Host "Actualización de VS Code completada con éxito." -ForegroundColor Green
-    } catch {
-        Write-Error "Fallo durante la actualización de VS Code: $_"
+        Set-Content -Path (Join-Path $vscodeDir ".version") -Value $resolvedVscodeUrl
+        Set-Content -Path (Join-Path $portableRoot ".vscode_complete") -Value "Complete"
+        Write-Host "VS Code Portable configurado/actualizado con éxito." -ForegroundColor Green
     }
 }
 
@@ -420,15 +542,17 @@ if (-not $isCodeInstalled) {
 # ==========================================
 $codeCmd = Join-Path $vscodeDir "bin\code.cmd"
 if (Test-Path $codeCmd) {
-    Write-Host "Verificando e instalando extensiones de VS Code..." -ForegroundColor Cyan
-    $extensions = @("ms-vscode.cpptools", "ms-vscode.cmake-tools", "ms-python.python")
-    foreach ($ext in $extensions) {
-        Write-Host "Instalando extensión: $ext..."
-        $process = Start-Process -FilePath $codeCmd -ArgumentList "--install-extension", $ext, "--force" -Wait -NoNewWindow -PassThru
-        if ($process.ExitCode -eq 0) {
-            Write-Host "Extensión $ext instalada/verificada." -ForegroundColor Green
-        } else {
-            Write-Warning "No se pudo instalar/verificar la extensión $ext."
+    if ($isUpdateMode -or -not $isCodeComplete) {
+        Write-Host "Verificando e instalando extensiones de VS Code..." -ForegroundColor Cyan
+        $extensions = @("ms-vscode.cpptools", "ms-vscode.cmake-tools", "ms-python.python")
+        foreach ($ext in $extensions) {
+            Write-Host "Instalando/verificando extensión: $ext..."
+            $process = Start-Process -FilePath $codeCmd -ArgumentList "--install-extension", $ext, "--force" -Wait -NoNewWindow -PassThru
+            if ($process.ExitCode -eq 0) {
+                Write-Host "Extensión $ext instalada/verificada." -ForegroundColor Green
+            } else {
+                Write-Warning "No se pudo instalar/verificar la extensión $ext."
+            }
         }
     }
 }
@@ -440,13 +564,13 @@ $wezDir = Join-Path $portableRoot "wezterm"
 $wezZipName = "wezterm_archive.zip"
 $wezZipPath = Join-Path $tempDir $wezZipName
 $isWezInstalled = Test-Path (Join-Path $wezDir "wezterm.exe")
+$isWezComplete = Test-Path (Join-Path $portableRoot ".wezterm_complete")
 
-if (-not $isWezInstalled) {
-    Write-Host "[Instalación] WezTerm no detectado. Descargando versión portable..." -ForegroundColor Yellow
-    
-    $wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
-    $wezDownloadUrl = $null
-    
+# Obtener URL de descarga más reciente de WezTerm
+$wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
+$wezDownloadUrl = $null
+
+if ($isUpdateMode -or -not $isWezComplete) {
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Write-Host "Consultando API de GitHub por la última versión de WezTerm..."
@@ -464,48 +588,75 @@ if (-not $isWezInstalled) {
         $wezDownloadUrl = "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip"
         Write-Host "Fallback URL WezTerm: $wezDownloadUrl" -ForegroundColor Yellow
     }
+}
 
-    Write-Host "Descargando WezTerm..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
-
-    Write-Host "Extrayendo WezTerm..." -ForegroundColor Cyan
-    Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
-    Write-Host "WezTerm Portable instalado con éxito." -ForegroundColor Green
+if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
+    Write-Host "WezTerm ya está instalado y configurado de una ejecución previa." -ForegroundColor Green
 } else {
-    Write-Host "[Actualización] WezTerm ya instalado. Comprobando actualizaciones..." -ForegroundColor Yellow
-    try {
-        $wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
-        $wezDownloadUrl = $null
+    $shouldInstallOrUpdateWez = $false
+    if ($isUpdateMode) {
+        $installedWezVersionFile = Join-Path $wezDir ".version"
+        $installedWezUrl = ""
+        if (Test-Path $installedWezVersionFile) {
+            $installedWezUrl = Get-Content $installedWezVersionFile -Raw
+        }
         
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $wezRelease = Invoke-RestMethod -Uri $wezReleaseUrl -UseBasicParsing -TimeoutSec 10
-        $wezAsset = $wezRelease.assets | Where-Object { $_.name -like "WezTerm-windows-*.zip" -and $_.name -notlike "*setup*" }
-        if ($wezAsset) {
-            $wezDownloadUrl = $wezAsset.browser_download_url
+        if ($wezDownloadUrl -ne $installedWezUrl) {
+            Write-Host "Hay una nueva versión de WezTerm disponible para actualizar." -ForegroundColor Yellow
+            $shouldInstallOrUpdateWez = $true
+        } else {
+            Write-Host "WezTerm ya se encuentra en la versión más reciente ($wezDownloadUrl)." -ForegroundColor Green
+        }
+    } else {
+        $shouldInstallOrUpdateWez = $true
+    }
+
+    if ($shouldInstallOrUpdateWez) {
+        if (-not $isUpdateMode -and $isWezInstalled) {
+            Write-Host "Detectada instalación incompleta de WezTerm. Reinstalando..." -ForegroundColor Yellow
+            Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
         }
 
-        if (-not $wezDownloadUrl) {
-            $wezDownloadUrl = "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip"
+        $isWezZipValid = $false
+        if (Test-Path $wezZipPath) {
+            Write-Host "Se detectó un archivo ZIP de WezTerm descargado previamente. Verificando..." -ForegroundColor Yellow
+            try {
+                $fileSize = (Get-Item $wezZipPath).Length
+                if ($fileSize -gt 10MB) {
+                    $isWezZipValid = $true
+                    Write-Host "El archivo ZIP previo de WezTerm es válido. Se omitirá la descarga." -ForegroundColor Green
+                } else {
+                    Write-Host "El archivo ZIP previo de WezTerm está incompleto. Se volverá a descargar." -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Host "No se pudo verificar el archivo ZIP previo de WezTerm. Se volverá a descargar." -ForegroundColor Yellow
+            }
         }
 
-        Write-Host "Descargando última versión de WezTerm para actualizar..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
-        
-        Write-Host "Borrando versión anterior de WezTerm..."
-        Remove-Item -Path $wezDir -Recurse -Force
+        if (-not $isWezZipValid) {
+            Write-Host "Descargando WezTerm..." -ForegroundColor Cyan
+            Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
+        }
+
+        if (Test-Path $wezDir) {
+            Write-Host "Eliminando instalación anterior de WezTerm..." -ForegroundColor Cyan
+            Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
         New-Item -ItemType Directory -Path $wezDir | Out-Null
-        
-        Write-Host "Extrayendo actualización de WezTerm..."
+
+        Write-Host "Extrayendo WezTerm..." -ForegroundColor Cyan
         Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
-        Write-Host "Actualización de WezTerm completada con éxito." -ForegroundColor Green
-    } catch {
-        Write-Error "Fallo durante la actualización de WezTerm: $_"
+        
+        Set-Content -Path (Join-Path $wezDir ".version") -Value $wezDownloadUrl
+        Set-Content -Path (Join-Path $portableRoot ".wezterm_complete") -Value "Complete"
+        Write-Host "WezTerm Portable instalado con éxito." -ForegroundColor Green
     }
 }
 
 # Escribir configuración wezterm.lua
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
-$wezConfigContent = @"
+if (-not (Test-Path $wezConfigPath) -or $isUpdateMode -or $shouldInstallOrUpdateWez) {
+    $wezConfigContent = @"
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
@@ -543,9 +694,9 @@ config.enable_tab_bar = false
 
 return config
 "@
-
-Set-Content -Path $wezConfigPath -Value $wezConfigContent
-Write-Host "Configuración wezterm.lua creada/actualizada." -ForegroundColor Green
+    Set-Content -Path $wezConfigPath -Value $wezConfigContent
+    Write-Host "Configuración wezterm.lua creada/actualizada." -ForegroundColor Green
+}
 
 # ==========================================
 # 7. Importación de configuración del host (opcional)
@@ -643,6 +794,9 @@ if (Test-Path $tempDir) {
     Write-Host "Limpiando archivos temporales..."
     Remove-Item -Path $tempDir -Recurse -Force
 }
+
+    # Guardar el indicador final de instalación completa exitosa
+    Set-Content -Path (Join-Path $portableRoot ".install_complete") -Value "Complete"
 
     Write-Host "`n=== ENTORNO PORTABLE CONFIGURADO Y LISTO ===" -ForegroundColor Green
     Write-Host "Ejecutá 'launch.bat' para iniciar la consola." -ForegroundColor Green

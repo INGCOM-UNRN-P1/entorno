@@ -1,4 +1,4 @@
-﻿# customize-terminal.ps1 - Facilita la personalización estética de la consola portable (WezTerm y Bash)
+﻿﻿# customize-terminal.ps1 - Facilita la personalización estética de la consola portable (WezTerm y Bash)
 # Idioma: Español rioplatense con voseo.
 
 $ErrorActionPreference = "Stop"
