@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿# package-env.ps1 - Empaqueta el entorno portable inicializado en un archivo ZIP para distribución offline.
+﻿﻿﻿﻿﻿﻿﻿﻿# package-env.ps1 - Empaqueta el entorno portable inicializado en un archivo ZIP para distribución offline.
 
 $ErrorActionPreference = "Stop"
 

@@ -99,6 +99,7 @@ try {
                 "package-env.ps1",
                 "bin/install-lib.sh",
                 "bin/configure-git.sh",
+                "bin/update-packages.sh",
                 "README.md",
                 "plan.md",
                 "GEMINI.md"
