@@ -1,5 +1,5 @@
 # setup.ps1 - Script de inicialización y actualización del entorno portable
-# Configura MSYS2, el compilador Clang y la distribución de Python.
+# Configura MSYS2, el compilador Clang, la distribución de Python y VS Code Portable.
 
 $ErrorActionPreference = "Stop"
 
@@ -8,35 +8,36 @@ $portableRoot = $PSScriptRoot
 $msysDir = Join-Path $portableRoot "msys64"
 $tempDir = Join-Path $portableRoot "downloads"
 $homeDir = Join-Path $portableRoot "home"
+$vscodeDir = Join-Path $portableRoot "vscode"
 
-Write-Host "=== Entorno Portable de Desarrollo C + Python ===" -ForegroundColor Cyan
+Write-Host "=== Entorno Portable de Desarrollo C + Python + VS Code ===" -ForegroundColor Cyan
 Write-Host "Directorio de instalación: $portableRoot`n"
 
-# Asegurar que existan los directorios
+# Asegurar que existan los directorios iniciales
 if (-not (Test-Path $homeDir)) {
     New-Item -ItemType Directory -Path $homeDir | Out-Null
     Write-Host "Creado directorio HOME portable: $homeDir" -ForegroundColor Green
 }
 
-# 1. Comprobar si MSYS2 ya existe
-$isInstalled = Test-Path (Join-Path $msysDir "usr\bin\bash.exe")
+if (-not (Test-Path $tempDir)) {
+    New-Item -ItemType Directory -Path $tempDir | Out-Null
+}
 
-if (-not $isInstalled) {
+# ==========================================
+# 1. Gestión e Instalación de MSYS2
+# ==========================================
+$isMsysInstalled = Test-Path (Join-Path $msysDir "usr\bin\bash.exe")
+
+if (-not $isMsysInstalled) {
     Write-Host "[Instalación] MSYS2 no detectado. Iniciando descarga..." -ForegroundColor Yellow
-    
-    # Crear carpeta temporal
-    if (-not (Test-Path $tempDir)) {
-        New-Item -ItemType Directory -Path $tempDir | Out-Null
-    }
 
-    # Intentar obtener la URL de descarga dinámica desde la API de GitHub
     $releaseUrl = "https://api.github.com/repos/msys2/msys2-installer/releases/latest"
     $downloadUrl = $null
     $fileName = $null
 
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Write-Host "Consultando API de GitHub por la última versión..."
+        Write-Host "Consultando API de GitHub por la última versión de MSYS2..."
         $release = Invoke-RestMethod -Uri $releaseUrl -UseBasicParsing -TimeoutSec 10
         $asset = $release.assets | Where-Object { $_.name -like "msys2-base-x86_64-*.sfx.exe" }
         if ($asset) {
@@ -45,10 +46,9 @@ if (-not $isInstalled) {
             Write-Host "Última versión detectada: $fileName" -ForegroundColor Green
         }
     } catch {
-        Write-Warning "Fallo al consultar la API de GitHub (posible límite de peticiones). Usando fallback fijo."
+        Write-Warning "Fallo al consultar la API de GitHub. Usando fallback fijo."
     }
 
-    # Fallback si falla la consulta de API
     if (-not $downloadUrl) {
         $downloadUrl = "https://github.com/msys2/msys2-installer/releases/download/2025-02-21/msys2-base-x86_64-20250221.sfx.exe"
         $fileName = "msys2-base-x86_64-20250221.sfx.exe"
@@ -58,11 +58,9 @@ if (-not $isInstalled) {
     $exePath = Join-Path $tempDir $fileName
     $shaPath = "$exePath.sha256"
 
-    # Descarga del SFX.exe
     Write-Host "Descargando $fileName..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing
 
-    # Verificación opcional de SHA256
     try {
         $shaUrl = "$downloadUrl.sha256"
         Write-Host "Descargando verificación SHA256..."
@@ -80,41 +78,35 @@ if (-not $isInstalled) {
         Write-Warning "No se pudo validar el Hash SHA256 de forma automatizada. Se asume correcto."
     }
 
-    # Extracción
     Write-Host "Extrayendo entorno base MSYS2 en: $portableRoot" -ForegroundColor Cyan
     $process = Start-Process -FilePath $exePath -ArgumentList "-y", "-o`"$portableRoot`"" -Wait -NoNewWindow -PassThru
     if ($process.ExitCode -ne 0) {
         throw "Error durante la extracción de MSYS2 (código de salida: $($process.ExitCode))"
     }
-
-    # Limpieza de archivos descargados
-    Write-Host "Limpiando archivos temporales..."
-    Remove-Item -Path $tempDir -Recurse -Force
-    Write-Host "Instalación base completada con éxito.`n" -ForegroundColor Green
+    Write-Host "Instalación base de MSYS2 completada con éxito.`n" -ForegroundColor Green
 } else {
     Write-Host "[Actualización] MSYS2 ya instalado. Procediendo a actualizar paquetes..." -ForegroundColor Yellow
 }
 
-# 2. Inicializar el entorno e importar perfil de usuario
+# ==========================================
+# 2. Inicialización y Actualización de MSYS2
+# ==========================================
 Write-Host "Inicializando entorno de consola..." -ForegroundColor Cyan
 $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
-# Ejecutar bash vacío para generar archivos por defecto en /etc/skel y configurar directorios iniciales
 & $bashPath --login -c "exit"
 
-# 3. Actualizar la base de datos de paquetes y dependencias del sistema
 Write-Host "Sincronizando base de datos de pacman y actualizando paquetes del sistema..." -ForegroundColor Cyan
 & $bashPath --login -c "pacman -Syu --noconfirm"
 
-# Si pacman notificó reinicio de runtime, volvemos a correr actualización para dependencias restantes
 Write-Host "Consolidando actualizaciones del entorno..." -ForegroundColor Cyan
 & $bashPath --login -c "pacman -Su --noconfirm"
 
-# 4. Instalación del Toolchain Clang y Python en el entorno CLANG64
-# Seleccionamos CLANG64 por utilizar UCRT como runtime moderno de Windows, y ser autocontenido y nativo.
+# ==========================================
+# 3. Instalación de Clang y Python
+# ==========================================
 $packages = @(
     "mingw-w64-clang-x86_64-clang",
     "mingw-w64-clang-x86_64-lld",
-    "mingw-w64-clang-x86_64-llvm",
     "mingw-w64-clang-x86_64-make",
     "mingw-w64-clang-x86_64-cmake",
     "mingw-w64-clang-x86_64-ninja",
@@ -132,14 +124,12 @@ $pkgString = $packages -join " "
 Write-Host "Instalando compiladores, herramientas de compilación, Python y librerías comunes..." -ForegroundColor Cyan
 & $bashPath --login -c "pacman -S --needed --noconfirm $pkgString"
 
-# 5. Escribir configuración personalizada en el HOME portable
+# Configurar alias en el HOME portable
 $bashrcPath = Join-Path $homeDir ".bashrc"
 if (-not (Test-Path $bashrcPath)) {
-    # Si por alguna razón no se copió del skeleton, forzar inicio bash para que se cree
     & $bashPath -env "HOME=$homeDir" --login -c "exit"
 }
 
-# Agregar alias útiles si no existen
 if (Test-Path $bashrcPath) {
     $customAliases = @(
         "",
@@ -157,8 +147,106 @@ if (Test-Path $bashrcPath) {
             Add-Content -Path $bashrcPath -Value $alias
         }
     }
-    Write-Host "Configuración personalizada agregada a $bashrcPath" -ForegroundColor Green
+    Write-Host "Configuración de terminal personalizada guardada." -ForegroundColor Green
+}
+
+# ==========================================
+# 4. Gestión e Instalación de VS Code Portable
+# ==========================================
+$vscodeZipUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive"
+$vscodeZipName = "vscode_archive.zip"
+$vscodeZipPath = Join-Path $tempDir $vscodeZipName
+$isCodeInstalled = Test-Path (Join-Path $vscodeDir "Code.exe")
+
+if (-not $isCodeInstalled) {
+    Write-Host "[Instalación] VS Code no detectado. Descargando versión portable..." -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $vscodeZipUrl -OutFile $vscodeZipPath -UseBasicParsing
+    
+    Write-Host "Extrayendo VS Code..." -ForegroundColor Cyan
+    Expand-Archive -Path $vscodeZipPath -DestinationPath $vscodeDir -Force
+    
+    # Activar el Modo Portable creando la carpeta 'data'
+    $dataDir = Join-Path $vscodeDir "data"
+    $userSettingsDir = Join-Path $dataDir "user-data\User"
+    if (-not (Test-Path $userSettingsDir)) {
+        New-Item -ItemType Directory -Path $userSettingsDir | Out-Null
+    }
+    
+    # Escribir configuración inicial de settings.json para aislar telemetría y configurar bash
+    $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
+    $defaultSettings = @{
+        "telemetry.telemetryLevel" = "off"
+        "update.mode" = "none"
+        "extensions.autoUpdate" = $false
+        "terminal.integrated.profiles.windows" = @{
+            "Clang64 Bash" = @{
+                "path" = "bash.exe"
+                "args" = @("--login", "-i")
+            }
+        }
+        "terminal.integrated.defaultProfile.windows" = "Clang64 Bash"
+    } | ConvertTo-Json -Depth 10
+    
+    Set-Content -Path $settingsJsonPath -Value $defaultSettings
+    Write-Host "VS Code Portable configurado con éxito." -ForegroundColor Green
+} else {
+    Write-Host "[Actualización] VS Code ya instalado. Procediendo a actualizar..." -ForegroundColor Yellow
+    try {
+        Write-Host "Descargando la última versión de VS Code..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $vscodeZipUrl -OutFile $vscodeZipPath -UseBasicParsing
+        
+        $backupDataDir = Join-Path $portableRoot "vscode_data_backup"
+        $dataDir = Join-Path $vscodeDir "data"
+        
+        if (Test-Path $dataDir) {
+            Write-Host "Respaldando carpeta data de VS Code..."
+            Move-Item -Path $dataDir -Destination $backupDataDir -Force
+        }
+        
+        Write-Host "Eliminando instalación anterior..."
+        Remove-Item -Path $vscodeDir -Recurse -Force
+        New-Item -ItemType Directory -Path $vscodeDir | Out-Null
+        
+        Write-Host "Extrayendo actualización..."
+        Expand-Archive -Path $vscodeZipPath -DestinationPath $vscodeDir -Force
+        
+        if (Test-Path $backupDataDir) {
+            Write-Host "Restaurando carpeta data..."
+            Move-Item -Path $backupDataDir -Destination $dataDir -Force
+        }
+        
+        Write-Host "Actualización de VS Code completada con éxito." -ForegroundColor Green
+    } catch {
+        Write-Error "Fallo durante la actualización de VS Code: $_"
+    }
+}
+
+# ==========================================
+# 5. Instalación de Extensiones de VS Code
+# ==========================================
+$codeCmd = Join-Path $vscodeDir "bin\code.cmd"
+if (Test-Path $codeCmd) {
+    Write-Host "Verificando e instalando extensiones de VS Code..." -ForegroundColor Cyan
+    $extensions = @("ms-vscode.cpptools", "ms-vscode.cmake-tools", "ms-python.python")
+    foreach ($ext in $extensions) {
+        Write-Host "Instalando extensión: $ext..."
+        $process = Start-Process -FilePath $codeCmd -ArgumentList "--install-extension", $ext, "--force" -Wait -NoNewWindow -PassThru
+        if ($process.ExitCode -eq 0) {
+            Write-Host "Extensión $ext instalada/verificada." -ForegroundColor Green
+        } else {
+            Write-Warning "No se pudo instalar/verificar la extensión $ext."
+        }
+    }
+}
+
+# ==========================================
+# 6. Limpieza final de temporales
+# ==========================================
+if (Test-Path $tempDir) {
+    Write-Host "Limpiando archivos temporales..."
+    Remove-Item -Path $tempDir -Recurse -Force
 }
 
 Write-Host "`n=== ENTORNO PORTABLE CONFIGURADO Y LISTO ===" -ForegroundColor Green
 Write-Host "Ejecutá 'launch.bat' para iniciar la consola." -ForegroundColor Green
+Write-Host "Ejecutá 'launch-vscode.bat' para iniciar VS Code." -ForegroundColor Green

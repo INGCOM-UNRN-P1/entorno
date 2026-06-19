@@ -14,12 +14,21 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ## Fase 2: Scripts de Automatización e Inicialización (Completado)
 *   Creación de [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1) con descarga dinámica via GitHub API y validación SHA256.
-*   Diseño de los cargadores [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat) y [launch.ps1](file:///home/mrtin/dev/p1/entorno/launch.ps1).
+*   Diseño de los cargadores de consola [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat) y [launch.ps1](file:///home/mrtin/dev/p1/entorno/launch.ps1).
 *   Configuración de exclusiones en `.gitignore` para no subir binarios al repositorio.
 
 ---
 
-## Fase 3: Pruebas de Aceptación (Pendiente de Ejecución en Host)
+## Fase 3: Gestión de Editor e Integración VS Code Portable (Completado)
+*   Descarga automatizada del archivo ZIP oficial de VS Code en `setup.ps1`.
+*   Habilitación del modo portable mediante la creación del directorio `vscode/data/`.
+*   Configuración inicial aislada (`telemetry` inactivo, actualizaciones en modo manual) y seteo predeterminado de terminal de integración `bash.exe` de MSYS2.
+*   Instalación de extensiones necesarias (`C/C++ Extension Pack` y `Python Extension`) a través del CLI de VS Code de forma automática.
+*   Creación de cargadores específicos [launch-vscode.bat](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat) y [launch-vscode.ps1](file:///home/mrtin/dev/p1/entorno/launch-vscode.ps1) para propagar el `PATH` y variables de sesión.
+
+---
+
+## Fase 4: Pruebas de Aceptación (Pendiente de Ejecución en Host)
 Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
 
 ### Prueba A: Compilación Clang C
@@ -51,8 +60,12 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 2. Generar el build con Ninja: `cmake -G Ninja .`
 3. Compilar con `ninja` o `cmake --build .`.
 
+### Prueba D: Validación de VS Code Portable
+1. Ejecutar `launch-vscode.bat`.
+2. Verificar que el terminal integrado inicie directamente en `Clang64 Bash`.
+3. Validar que la compilación de C y Python sea reconocida desde las herramientas de autocompletado en el editor.
+
 ---
 
-## Fase 4: Optimización y Ajustes Adicionales (Opcional)
-*   **Integración con VS Code Portable:** Configuración de `.vscode/settings.json` local para apuntar los paths de compilador y formateador (`clang-format`) a los binarios contenidos en `msys64/`.
-*   **Reducción de tamaño:** Limpieza de la caché de pacman (`pacman -Scc`) en el script de instalación para reducir el tamaño en disco de la carpeta final.
+## Fase 5: Optimización y Mantenimiento (En desarrollo)
+*   **Reducción de tamaño:** Ejecución de limpieza de la caché de pacman (`pacman -Scc`) en el script de instalación para reducir el tamaño en disco de la carpeta final.

@@ -1,6 +1,6 @@
 # Entorno de Desarrollo Portable en C y Python para Windows
 
-Entorno de desarrollo completamente autocontenido para Windows. Integra una terminal con userland Unix completo basado en MSYS2, el compilador Clang nativo y una distribución de Python 3.
+Entorno de desarrollo completamente autocontenido para Windows. Integra una terminal con userland Unix completo basado en MSYS2, el compilador Clang nativo, una distribución de Python 3 y un entorno preconfigurado de VS Code Portable.
 
 ## Componentes Principales
 
@@ -9,6 +9,7 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 *   **Herramientas de Construcción:** `make` (mingw32-make), `cmake`, `ninja`.
 *   **Depurador:** GDB.
 *   **Lenguaje de Scripting:** Python 3 (nativo Clang64) con `pip`.
+*   **Editor de Código:** VS Code Portable (incluye extensiones de C/C++, CMake y Python).
 *   **Gestor de Paquetes:** `pacman` (nativo de MSYS2).
 *   **Librerías de C Preinstaladas:** `zlib`, `openssl`, `sqlite3`, `curl`.
 
@@ -18,12 +19,15 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 El repositorio está organizado para separar las herramientas ejecutables del host de las configuraciones y scripts de inicialización:
 
-*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno.
+*   [setup.ps1](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno y VS Code.
 *   [launch.bat](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola desde la línea de comandos clásica (`cmd`).
 *   [launch.ps1](file:///home/mrtin/dev/p1/entorno/launch.ps1): Lanzador de consola desde PowerShell.
+*   [launch-vscode.bat](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador de VS Code desde CMD heredando las variables y compiladores locales.
+*   [launch-vscode.ps1](file:///home/mrtin/dev/p1/entorno/launch-vscode.ps1): Lanzador de VS Code desde PowerShell heredando las variables locales.
 *   [plan.md](file:///home/mrtin/dev/p1/entorno/plan.md): Plan de trabajo y hoja de ruta.
-*   `home/`: Directorio local que actúa como `$HOME` del usuario. Evita contaminar la carpeta de usuario del sistema host. Contiene `.bashrc` y configuraciones locales. (Creado al inicializar).
-*   `msys64/`: Carpeta contenedora de MSYS2 y binarios. Excluida en el control de versiones `.gitignore`.
+*   `home/`: Directorio local que actúa como `$HOME` del usuario. Evita contaminar la carpeta del sistema host. (Creado al inicializar).
+*   `msys64/`: Carpeta contenedora de MSYS2 y binarios (excluida en `.gitignore`).
+*   `vscode/`: Carpeta contenedora del editor y configuraciones locales (excluida en `.gitignore`).
 
 ---
 
@@ -42,22 +46,22 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
    ```powershell
    Set-ExecutionPolicy Bypass -Scope Process -Force; .\setup.ps1
    ```
-   *El script descargará la última versión base de MSYS2, verificará su hash SHA256, la extraerá e instalará Clang, Python y las herramientas necesarias de forma automática.*
+   *El script descargará e instalará MSYS2, el compilador Clang, Python, y la última versión de VS Code Portable, preinstalando además las extensiones de C/C++ y Python necesarias.*
 
 ---
 
 ## Uso Diario
 
-Para abrir la consola interactiva con la ruta configurada y las herramientas disponibles en el PATH:
+Para abrir la consola interactiva o el editor con el PATH y las herramientas configuradas:
 
-*   **Desde CMD:** Hacé doble clic o ejecutá `launch.bat`.
-*   **Desde PowerShell:** Ejecutá `.\launch.ps1`.
+*   **Lanzar Terminal:** Ejecutá `launch.bat` (CMD) o `.\launch.ps1` (PowerShell).
+*   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
 
-El entorno te ubicará por defecto en el directorio raíz de este proyecto (`CHERE_INVOKING=1`) y montará todas las configuraciones locales en la carpeta `home/` del repositorio portable.
+Al iniciar VS Code a través de los lanzadores, este heredará el compilador Clang, Make, CMake y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
 
 ---
 
 ## Regeneración y Actualizaciones Rápidas
 
-*   **Para actualizar paquetes existentes:** Volvé a ejecutar `setup.ps1`. Pacman se encargará de actualizar todos los compiladores y utilidades.
-*   **Para regenerar el entorno completo de cero:** Borrá la carpeta `msys64` y ejecutá nuevamente `setup.ps1`. La carpeta `home/` persistirá tus configuraciones personales (como el historial de bash o las llaves SSH).
+*   **Para actualizar todo el entorno (paquetes y VS Code):** Volvé a ejecutar `setup.ps1`. El script respetará tu carpeta `vscode/data` (donde se guardan tus extensiones y configuraciones) actualizando únicamente la base del editor.
+*   **Para regenerar el entorno de cero:** Borrá las carpetas `msys64` y `vscode` (resguardando `vscode/data` si querés conservar la configuración del editor) y ejecutá nuevamente `setup.ps1`.
