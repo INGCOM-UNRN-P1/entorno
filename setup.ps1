@@ -1,6 +1,7 @@
 param(
     [string]$HomeDirName = "home",
-    [switch]$ImportHostConfig
+    [switch]$ImportHostConfig,
+    [switch]$SkipUpdate
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,9 +45,13 @@ try {
     # ==========================================
     # 0. Actualización automática de scripts
     # ==========================================
-    Write-Host "=== Comprobando actualizaciones de los scripts del entorno ===" -ForegroundColor Cyan
-    
-    $repoOwner = "INGCOM-UNRN-P1"
+    if ($SkipUpdate) {
+        Write-Host "=== Omitiendo actualización de scripts (-SkipUpdate) ===" -ForegroundColor DarkGray
+    } else {
+        Write-Host "=== Comprobando actualizaciones de los scripts del entorno ===" -ForegroundColor Cyan
+        
+        $didUpdate = $false
+        $repoOwner = "INGCOM-UNRN-P1"
     $repoName = "entorno"
     $branch = "main"
     $rawBaseUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/$branch"
@@ -65,6 +70,7 @@ try {
             $process = Start-Process -FilePath $gitExe -ArgumentList "pull" -WorkingDirectory $portableRoot -Wait -NoNewWindow -PassThru -ErrorAction Stop
             if ($process.ExitCode -eq 0) {
                 Write-Host "Scripts actualizados con éxito a través de Git.`n" -ForegroundColor Green
+                $didUpdate = $true
             } else {
                 Write-Warning "Fallo al realizar git pull (código de salida: $($process.ExitCode)). Se continuará con la ejecución local."
             }
@@ -139,6 +145,17 @@ try {
                 }
             }
             Write-Host "Actualización de scripts completada.`n" -ForegroundColor Green
+            $didUpdate = $true
+        }
+        if ($didUpdate) {
+            Write-Host "Relanzando setup.ps1 para aplicar la versión más reciente en memoria..." -ForegroundColor Magenta
+            $newArgs = @("-SkipUpdate")
+            if ($HomeDirName -ne "home") { $newArgs += "-HomeDirName `"$HomeDirName`"" }
+            if ($ImportHostConfig) { $newArgs += "-ImportHostConfig" }
+            
+            $localSetup = Join-Path $portableRoot "setup.ps1"
+            Invoke-Expression "& `"$localSetup`" $($newArgs -join ' ')"
+            exit $LASTEXITCODE
         }
     }
 
