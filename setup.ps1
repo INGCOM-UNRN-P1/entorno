@@ -820,15 +820,18 @@ config.default_prog = { bash_path, "--login", "-i" }
 
 -- Configurar entorno heredado forzando el HOME portable (aislado del sistema host)
 local home_dir = portable_root .. "$HomeDirName"
+config.default_cwd = home_dir
 
 local path_env = os.getenv("PATH")
-if path_env then path_env = path_env:gsub("\\\\", "/") end
+if path_env then path_env = path_env:gsub("\\\\", "/") else path_env = "" end
+
+local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/clang64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
 
 config.set_environment_variables = {
   MSYSTEM = "CLANG64",
   CHERE_INVOKING = "1",
   HOME = home_dir,
-  PATH = path_env,
+  PATH = custom_path,
   LANG = "es_AR.UTF-8",
 }
 

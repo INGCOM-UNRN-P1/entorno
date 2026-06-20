@@ -75,6 +75,16 @@ if (Test-Path $wezConfigPath) {
     $content = $content -replace 'os\.getenv\("PORTABLE_ROOT"\)', 'wezterm.config_dir'
     $content = $content -replace 'os\.getenv\("HOME"\)', ("portable_root .. `"" + $homeDirName + "`"")
     
+    # Configurar default_cwd y custom PATH si no están presentes
+    if ($content -notmatch 'config\.default_cwd\s*=') {
+        $content = $content -replace '(local home_dir = [^\r\n]+)', "`$1`r`nconfig.default_cwd = home_dir"
+    }
+    if ($content -notmatch 'local custom_path\s*=') {
+        $pathRepl = "if path_env then path_env = path_env:gsub(`"\\\\`", `"/`") else path_env = `"`" end`r`n`r`nlocal custom_path = portable_root .. `"bin;`" .. portable_root .. `"msys64/clang64/bin;`" .. portable_root .. `"msys64/usr/bin;`" .. path_env"
+        $content = $content -replace 'if path_env then path_env = path_env:gsub\("\\\\", "/"\) end', $pathRepl
+        $content = $content -replace 'PATH = path_env', 'PATH = custom_path'
+    }
+    
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
 }
