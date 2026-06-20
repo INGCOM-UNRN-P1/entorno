@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig
 )
@@ -787,23 +787,17 @@ if (-not (Test-Path $wezConfigPath) -or $isUpdateMode -or $shouldInstallOrUpdate
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
--- Configurar directorio raiz portable
-local portable_root = os.getenv("PORTABLE_ROOT")
-if portable_root then
-  portable_root = portable_root:gsub("\\\\", "/")
-  if not portable_root:match("/$") then
-    portable_root = portable_root .. "/"
-  end
-else
-  portable_root = "./"
+-- Configurar directorio raiz portable de forma determinista
+local portable_root = wezterm.config_dir:gsub("\\\\", "/")
+if not portable_root:match("/$") then
+  portable_root = portable_root .. "/"
 end
 
 local bash_path = portable_root .. "msys64/usr/bin/bash.exe"
 config.default_prog = { bash_path, "--login", "-i" }
 
--- Configurar entorno heredado
-local home_dir = os.getenv("HOME")
-if home_dir then home_dir = home_dir:gsub("\\\\", "/") end
+-- Configurar entorno heredado forzando el HOME portable (aislado del sistema host)
+local home_dir = portable_root .. "$HomeDirName"
 
 local path_env = os.getenv("PATH")
 if path_env then path_env = path_env:gsub("\\\\", "/") end

@@ -71,6 +71,10 @@ if (Test-Path $wezConfigPath) {
         $content = $content -replace 'portable_root = portable_root:gsub\("[\\]+", "/"\)', $replacement
     }
     
+    # Actualizar configuración de wezterm para independizarse de daemons previos y fijar HOME local
+    $content = $content -replace 'os\.getenv\("PORTABLE_ROOT"\)', 'wezterm.config_dir'
+    $content = $content -replace 'os\.getenv\("HOME"\)', ("portable_root .. `"" + $homeDirName + "`"")
+    
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
 }
