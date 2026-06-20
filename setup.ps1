@@ -810,7 +810,7 @@ local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
 -- Configurar directorio raiz portable de forma determinista
-local portable_root = wezterm.config_dir:gsub("\\\\", "/")
+local portable_root = wezterm.config_dir:gsub("[\\]+", "/")
 if not portable_root:match("/$") then
   portable_root = portable_root .. "/"
 end
@@ -823,7 +823,7 @@ local home_dir = portable_root .. "$HomeDirName"
 config.default_cwd = home_dir
 
 local path_env = os.getenv("PATH")
-if path_env then path_env = path_env:gsub("\\\\", "/") else path_env = "" end
+if path_env then path_env = path_env:gsub("[\\]+", "/") else path_env = "" end
 
 local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/clang64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
 

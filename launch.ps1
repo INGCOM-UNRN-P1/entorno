@@ -67,8 +67,8 @@ if (Test-Path $wezConfigPath) {
     
     # Corregir la falta de barra diagonal al final de PORTABLE_ROOT en el wezterm.lua del disco del usuario
     if ($content -notmatch 'portable_root:match') {
-        $replacement = 'portable_root = portable_root:gsub("\\", "/")' + "`r`n  if not portable_root:match('/$$') then`r`n    portable_root = portable_root .. '/'`r`n  end"
-        $content = $content -replace 'portable_root = portable_root:gsub\("[\\]+", "/"\)', $replacement
+        $replacement = 'local portable_root = wezterm.config_dir:gsub("[\\\]+", "/")' + "`r`nif not portable_root:match('/$$') then`r`n  portable_root = portable_root .. '/'`r`nend"
+        $content = $content -replace 'local portable_root = wezterm\.config_dir:gsub\("(\\\\\\\\|\[\\\\\]\+)", "/"\)', $replacement
     }
     
     # Actualizar configuración de wezterm para independizarse de daemons previos y fijar HOME local
@@ -80,7 +80,7 @@ if (Test-Path $wezConfigPath) {
         $content = $content -replace '(local home_dir = [^\r\n]+)', "`$1`r`nconfig.default_cwd = home_dir"
     }
     if ($content -notmatch 'local custom_path\s*=') {
-        $pathRepl = "if path_env then path_env = path_env:gsub(`"\\\\`", `"/`") else path_env = `"`" end`r`n`r`nlocal custom_path = portable_root .. `"bin;`" .. portable_root .. `"msys64/clang64/bin;`" .. portable_root .. `"msys64/usr/bin;`" .. path_env"
+        $pathRepl = "if path_env then path_env = path_env:gsub(`"[\\\]+`", `"/`") else path_env = `"`" end`r`n`r`nlocal custom_path = portable_root .. `"bin;`" .. portable_root .. `"msys64/clang64/bin;`" .. portable_root .. `"msys64/usr/bin;`" .. path_env"
         $content = $content -replace 'if path_env then path_env = path_env:gsub\("\\\\", "/"\) end', $pathRepl
         $content = $content -replace 'PATH = path_env', 'PATH = custom_path'
     }
