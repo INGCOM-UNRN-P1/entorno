@@ -11,6 +11,10 @@ $portableRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($portableRoot)) {
     $portableRoot = (Get-Location).Path
 }
+
+if (-not ($HomeDirName -match "^[a-zA-Z0-9_-]+$")) {
+    $HomeDirName = "home"
+}
 $msysDir = Join-Path $portableRoot "msys64"
 $tempDir = Join-Path $portableRoot "downloads"
 $homeDir = Join-Path $portableRoot $HomeDirName
@@ -151,12 +155,15 @@ try {
 
     if ($didUpdate) {
         Write-Host "Relanzando setup.ps1 para aplicar la versión más reciente en memoria..." -ForegroundColor Magenta
-        $newArgs = @("-SkipUpdate")
-        if ($HomeDirName -ne "home") { 
-            $newArgs += "-HomeDirName"
-            $newArgs += $HomeDirName 
+        $newArgs = @{
+            SkipUpdate = $true
         }
-        if ($ImportHostConfig) { $newArgs += "-ImportHostConfig" }
+        if ($HomeDirName -ne "home") { 
+            $newArgs["HomeDirName"] = $HomeDirName 
+        }
+        if ($ImportHostConfig) { 
+            $newArgs["ImportHostConfig"] = $true 
+        }
         
         $localSetup = Join-Path $portableRoot "setup.ps1"
         & $localSetup @newArgs
