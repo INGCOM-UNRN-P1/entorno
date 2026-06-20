@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
     [switch]$SkipUpdate
