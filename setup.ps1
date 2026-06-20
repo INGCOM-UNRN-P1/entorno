@@ -147,19 +147,24 @@ try {
             Write-Host "Actualización de scripts completada.`n" -ForegroundColor Green
             $didUpdate = $true
         }
-        if ($didUpdate) {
-            Write-Host "Relanzando setup.ps1 para aplicar la versión más reciente en memoria..." -ForegroundColor Magenta
-            $newArgs = @("-SkipUpdate")
-            if ($HomeDirName -ne "home") { $newArgs += "-HomeDirName `"$HomeDirName`"" }
-            if ($ImportHostConfig) { $newArgs += "-ImportHostConfig" }
-            
-            $localSetup = Join-Path $portableRoot "setup.ps1"
-            Invoke-Expression "& `"$localSetup`" $($newArgs -join ' ')"
-            exit $LASTEXITCODE
-        }
     }
 
-    # Escribir archivo de configuración .env local
+    if ($didUpdate) {
+        Write-Host "Relanzando setup.ps1 para aplicar la versión más reciente en memoria..." -ForegroundColor Magenta
+        $newArgs = @("-SkipUpdate")
+        if ($HomeDirName -ne "home") { 
+            $newArgs += "-HomeDirName"
+            $newArgs += $HomeDirName 
+        }
+        if ($ImportHostConfig) { $newArgs += "-ImportHostConfig" }
+        
+        $localSetup = Join-Path $portableRoot "setup.ps1"
+        & $localSetup @newArgs
+        exit $LASTEXITCODE
+    }
+}
+
+# Escribir archivo de configuración .env local
     $envFilePath = Join-Path $portableRoot ".env"
     Set-Content -Path $envFilePath -Value ('set "HOME_DIR_NAME={0}"' -f $HomeDirName)
 
