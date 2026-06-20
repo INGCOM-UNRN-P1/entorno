@@ -232,7 +232,7 @@ if (-not (Test-Path $bashProfilePath)) {
 
 $bashrcPath = Join-Path $homeDir ".bashrc"
 if (-not (Test-Path $bashrcPath)) {
-    $bashrcContent = "# .bashrc`n# Aquí podés agregar tus alias y funciones personalizadas.`n"
+    $bashrcContent = "# .bashrc`n# Aquí podés agregar tus alias y funciones personalizadas.`n`n# Agregar bin portable al PATH convirtiendo la ruta a formato Unix`nif [ -n `"`$PORTABLE_ROOT`" ]; then`n    UNIX_ROOT=`$`(cygpath -u `"`$PORTABLE_ROOT`"`)`n    export PATH=`"`${UNIX_ROOT}bin:`$PATH`"`nfi`n"
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
