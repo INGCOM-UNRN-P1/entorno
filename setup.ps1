@@ -217,10 +217,24 @@ if ($hasSpaces -or $hasNonAscii) {
     Write-Host "Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
 }
 
-# Asegurar que existan los directorios iniciales
+# Asegurar que existan los directorios iniciales y sus archivos skel
 if (-not (Test-Path $homeDir)) {
     New-Item -ItemType Directory -Path $homeDir | Out-Null
     Write-Host "Creado directorio HOME portable: $homeDir" -ForegroundColor Green
+}
+
+$bashProfilePath = Join-Path $homeDir ".bash_profile"
+if (-not (Test-Path $bashProfilePath)) {
+    $bashProfileContent = "if [ -f `"`${HOME}/.bashrc`" ] ; then`n  source `"`${HOME}/.bashrc`"`nfi"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($bashProfilePath, $bashProfileContent, $utf8NoBom)
+}
+
+$bashrcPath = Join-Path $homeDir ".bashrc"
+if (-not (Test-Path $bashrcPath)) {
+    $bashrcContent = "# .bashrc`n# Aquí podés agregar tus alias y funciones personalizadas.`n"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
 
 if (-not (Test-Path $tempDir)) {
@@ -829,6 +843,8 @@ local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/clang64/
 
 config.set_environment_variables = {
   MSYSTEM = "CLANG64",
+  MSYS2_PATH_TYPE = "inherit",
+  PORTABLE_ROOT = portable_root,
   CHERE_INVOKING = "1",
   HOME = home_dir,
   PATH = custom_path,

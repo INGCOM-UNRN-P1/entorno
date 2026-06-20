@@ -40,9 +40,23 @@ $wezDir = Join-Path $portableRoot "wezterm"
 $wezExe = Join-Path $wezDir "wezterm.exe"
 $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
 
-# Asegurar existencia del HOME portable
+# Asegurar existencia del HOME portable y sus archivos de inicio (skel)
 if (-not (Test-Path $homeDir)) {
     New-Item -ItemType Directory -Path $homeDir | Out-Null
+}
+
+$bashProfilePath = Join-Path $homeDir ".bash_profile"
+if (-not (Test-Path $bashProfilePath)) {
+    $bashProfileContent = "if [ -f `"`${HOME}/.bashrc`" ] ; then`n  source `"`${HOME}/.bashrc`"`nfi"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($bashProfilePath, $bashProfileContent, $utf8NoBom)
+}
+
+$bashrcPath = Join-Path $homeDir ".bashrc"
+if (-not (Test-Path $bashrcPath)) {
+    $bashrcContent = "# .bashrc`n# Aquí podés agregar tus alias y funciones personalizadas.`n"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
 
 # Inyectar variables de entorno de sesión
@@ -83,6 +97,11 @@ if (Test-Path $wezConfigPath) {
         $pathRepl = "if path_env then path_env = path_env:gsub(`"[\\\]+`", `"/`") else path_env = `"`" end`r`n`r`nlocal custom_path = portable_root .. `"bin;`" .. portable_root .. `"msys64/clang64/bin;`" .. portable_root .. `"msys64/usr/bin;`" .. path_env"
         $content = $content -replace 'if path_env then path_env = path_env:gsub\("\\\\", "/"\) end', $pathRepl
         $content = $content -replace 'PATH = path_env', 'PATH = custom_path'
+    }
+    
+    # Asegurar que MSYS2 herede el PATH y el PORTABLE_ROOT
+    if ($content -notmatch 'MSYS2_PATH_TYPE\s*=') {
+        $content = $content -replace 'MSYSTEM\s*=\s*"CLANG64",', "`$0`r`n  MSYS2_PATH_TYPE = `"inherit`",`r`n  PORTABLE_ROOT = portable_root,"
     }
     
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
