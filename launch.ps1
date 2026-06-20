@@ -31,7 +31,7 @@ if (Test-Path $envFile) {
     $envContent = Get-Content $envFile -Raw
     if ($envContent -match 'HOME_DIR_NAME=(.*)') {
         $homeDirName = $Matches[1].Replace('"', '').Trim()
-        if (-not ($homeDirName -match "^[a-zA-Z0-9_-]+$")) {
+        if (-not ($homeDirName -match "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$")) {
             $homeDirName = "home"
         }
     }

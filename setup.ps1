@@ -12,7 +12,7 @@ if ([string]::IsNullOrEmpty($portableRoot)) {
     $portableRoot = (Get-Location).Path
 }
 
-if (-not ($HomeDirName -match "^[a-zA-Z0-9_-]+$")) {
+if (-not ($HomeDirName -match "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$")) {
     $HomeDirName = "home"
 }
 $msysDir = Join-Path $portableRoot "msys64"
