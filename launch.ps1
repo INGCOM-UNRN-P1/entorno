@@ -1,4 +1,4 @@
-﻿# launch.ps1 - Lanzador del entorno portable en PowerShell
+# launch.ps1 - Lanzador del entorno portable en PowerShell
 
 $ErrorActionPreference = "Stop"
 
@@ -67,7 +67,8 @@ if (Test-Path $wezConfigPath) {
     
     # Corregir la falta de barra diagonal al final de PORTABLE_ROOT en el wezterm.lua del disco del usuario
     if ($content -notmatch 'portable_root:match') {
-        $content = $content -replace 'portable_root = portable_root:gsub\("\\\\", "/"\)', "portable_root = portable_root:gsub(`\"\\\\`\", `/`\)`r`n  if not portable_root:match(`/$`\) then`r`n    portable_root = portable_root .. `/`\`r`n  end"
+        $replacement = 'portable_root = portable_root:gsub("\\", "/")' + "`r`n  if not portable_root:match('/$$') then`r`n    portable_root = portable_root .. '/'`r`n  end"
+        $content = $content -replace 'portable_root = portable_root:gsub\("[\\]+", "/"\)', $replacement
     }
     
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
