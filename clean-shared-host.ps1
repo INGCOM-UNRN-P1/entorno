@@ -70,8 +70,8 @@ if (Test-Path $bashPath) {
     
     $bashrcPath = Join-Path $homeDir ".bashrc"
     if (Test-Path $bashrcPath) {
+        $aliasesFile = Join-Path $homeDir ".bash_aliases"
         $customAliases = @(
-            "",
             "# === Portable Dev Environment Aliases ===",
             "alias python='python3'",
             "alias pip='pip3'",
@@ -79,7 +79,14 @@ if (Test-Path $bashPath) {
             "alias ll='ls -alF --color=auto'",
             "export PS1='\[\e[32m\]\u@portable \[\e[33m\]\w\[\e[0m\]\n$ '"
         )
-        Add-Content -Path $bashrcPath -Value ($customAliases -join "`r`n")
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($aliasesFile, ($customAliases -join "`n") + "`n", $utf8NoBom)
+        
+        $sourceLine = "if [ -f ~/.bash_aliases ]; then source ~/.bash_aliases; fi"
+        $content = Get-Content $bashrcPath -Raw
+        if (-not $content.Contains("source ~/.bash_aliases")) {
+            Add-Content -Path $bashrcPath -Value "`n$sourceLine"
+        }
         
         $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
         $endInstMarker = "# === END INSTITUTIONAL BANNER ==="

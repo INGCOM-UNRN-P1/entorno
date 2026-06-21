@@ -434,8 +434,8 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     }
 
     if (Test-Path $bashrcPath) {
+        $aliasesFile = Join-Path $homeDir ".bash_aliases"
         $customAliases = @(
-            "",
             "# === Portable Dev Environment Aliases ===",
             "alias python='python3'",
             "alias pip='pip3'",
@@ -443,12 +443,12 @@ if ($isUpdateMode -or -not $isMsysComplete) {
             "alias ll='ls -alF --color=auto'",
             "export PS1='\[\e[32m\]\u@portable \[\e[33m\]\w\[\e[0m\]\n$ '"
         )
+        [System.IO.File]::WriteAllText($aliasesFile, ($customAliases -join "`n") + "`n", $utf8NoBom)
         
+        $sourceLine = "if [ -f ~/.bash_aliases ]; then source ~/.bash_aliases; fi"
         $content = Get-Content $bashrcPath -Raw
-        foreach ($alias in $customAliases) {
-            if (-not $content.Contains($alias)) {
-                Add-Content -Path $bashrcPath -Value $alias
-            }
+        if (-not $content.Contains("source ~/.bash_aliases")) {
+            Add-Content -Path $bashrcPath -Value "`n$sourceLine"
         }
 
         # Agregar banner institucional (UNRN Andina - Programación 1)
