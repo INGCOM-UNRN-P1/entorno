@@ -516,8 +516,13 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
         }
         
         if ($resolvedVscodeUrl -ne $installedVscodeUrl) {
-            Write-Host "Hay una nueva versión de VS Code disponible para actualizar." -ForegroundColor Yellow
-            $shouldInstallOrUpdateVscode = $true
+            Write-Host "Hay una nueva versión de VS Code disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
+            $choice = Read-Host "¿Deseás descargar e instalar la actualización de VS Code? (s/n)"
+            if ($choice -match "^[sS]$") {
+                $shouldInstallOrUpdateVscode = $true
+            } else {
+                Write-Host "Omitiendo actualización de VS Code." -ForegroundColor DarkGray
+            }
         } else {
             Write-Host "VS Code ya se encuentra en la versión más reciente ($resolvedVscodeUrl)." -ForegroundColor Green
         }
@@ -671,8 +676,13 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
             $installedGhUrl = Get-Content $installedGhVersionFile -Raw
         }
         if ($ghDownloadUrl -ne $installedGhUrl) {
-            Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar." -ForegroundColor Yellow
-            $shouldInstallOrUpdateGh = $true
+            Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
+            $choice = Read-Host "¿Deseás descargar e instalar la actualización de GitHub CLI? (s/n)"
+            if ($choice -match "^[sS]$") {
+                $shouldInstallOrUpdateGh = $true
+            } else {
+                Write-Host "Omitiendo actualización de GitHub CLI." -ForegroundColor DarkGray
+            }
         } else {
             Write-Host "GitHub CLI ya se encuentra en la versión más reciente ($ghDownloadUrl)." -ForegroundColor Green
         }
@@ -764,8 +774,13 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         }
         
         if ($wezDownloadUrl -ne $installedWezUrl) {
-            Write-Host "Hay una nueva versión de WezTerm disponible para actualizar." -ForegroundColor Yellow
-            $shouldInstallOrUpdateWez = $true
+            Write-Host "Hay una nueva versión de WezTerm disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
+            $choice = Read-Host "¿Deseás descargar e instalar la actualización de WezTerm? (s/n)"
+            if ($choice -match "^[sS]$") {
+                $shouldInstallOrUpdateWez = $true
+            } else {
+                Write-Host "Omitiendo actualización de WezTerm." -ForegroundColor DarkGray
+            }
         } else {
             Write-Host "WezTerm ya se encuentra en la versión más reciente ($wezDownloadUrl)." -ForegroundColor Green
         }
