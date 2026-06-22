@@ -47,7 +47,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 ---
 
 ## Fase 6: Configuración de Control de Versiones e Integración GitHub CLI (Completado)
-*   [x] Integración del paquete `mingw-w64-clang-x86_64-github-cli` en MSYS2.
+*   [x] Integración de GitHub CLI (`gh`) de manera portable descargado directamente desde sus releases oficiales en GitHub y guardado en `bin/gh.exe`.
 *   [x] Diseño del script [configure-git.sh](file:///home/mrtin/dev/p1/entorno/bin/configure-git.sh) para automatizar:
     1. Firma de autoría de commits (`user.name` y `user.email`).
     2. Almacenamiento aislado de credenciales HTTPS de Git dentro del directorio portable (`home/.git-credentials`) mediante el helper `store`.
