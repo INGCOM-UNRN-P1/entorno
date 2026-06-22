@@ -28,11 +28,12 @@ Write-Host "* Limpiando caché de paquetes de pacman..."
 & $bashPath --login -c "pacman -Scc --noconfirm"
 
 # 3. Preparación del directorio temporal de empaquetado
-$tempPackDir = Join-Path $portableRoot "temp_package"
-if (Test-Path $tempPackDir) {
-    Remove-Item -Path $tempPackDir -Recurse -Force
+$tempPackBase = Join-Path $portableRoot "temp_package"
+$tempPackDir = Join-Path $tempPackBase "entorno"
+if (Test-Path $tempPackBase) {
+    Remove-Item -Path $tempPackBase -Recurse -Force
 }
-New-Item -ItemType Directory -Path $tempPackDir | Out-Null
+New-Item -ItemType Directory -Path $tempPackDir -Force | Out-Null
 
 # 4. Copiar los archivos excluyendo metadatos de Git, temporales y copias de seguridad
 Write-Host "`nCopiando estructura del entorno..." -ForegroundColor Cyan
@@ -52,6 +53,23 @@ Get-ChildItem -Path $portableRoot | Where-Object { $_.Name -notin $excludeList }
     Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
 }
 
+# 4.5 Limpiar datos personales de la copia a empaquetar
+Write-Host "`nLimpiando datos personales e historial del paquete..." -ForegroundColor Cyan
+$packHome = Join-Path $tempPackDir "home"
+if (Test-Path $packHome) {
+    Remove-Item (Join-Path $packHome ".bash_history") -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $packHome ".gitconfig") -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $packHome ".git-credentials") -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $packHome ".ssh") -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+$packVscodeUser = Join-Path $tempPackDir "vscode\data\user-data\User"
+if (Test-Path $packVscodeUser) {
+    Remove-Item (Join-Path $packVscodeUser "History") -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $packVscodeUser "workspaceStorage") -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $packVscodeUser "globalStorage") -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 # 5. Comprimir el directorio temporal en un único archivo ZIP
 if (Test-Path $outputZip) {
     Write-Host "`nEliminando archivo ZIP existente..." -ForegroundColor Yellow
@@ -61,12 +79,12 @@ if (Test-Path $outputZip) {
 Write-Host "`nComprimiendo todo el entorno en $outputZip..." -ForegroundColor Cyan
 Write-Host "[NOTA] Esto puede tardar varios minutos debido a la cantidad de binarios en MSYS2 y VS Code." -ForegroundColor Yellow
 
-# Usar el cmdlet nativo Compress-Archive
-Compress-Archive -Path "$tempPackDir\*" -DestinationPath $outputZip -Force
+# Usar el cmdlet nativo Compress-Archive empaquetando la carpeta raíz "entorno"
+Compress-Archive -Path $tempPackDir -DestinationPath $outputZip -Force
 
 # 6. Limpieza del directorio temporal
 Write-Host "`nLimpiando directorio temporal de empaquetado..." -ForegroundColor Cyan
-Remove-Item -Path $tempPackDir -Recurse -Force
+Remove-Item -Path $tempPackBase -Recurse -Force
 
 Write-Host "`n=== PROCESO DE EMPAQUETADO COMPLETADO ===" -ForegroundColor Green
 Write-Host "Archivo generado listo para distribución offline:" -ForegroundColor Green
