@@ -10,6 +10,7 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 *   **Herramientas de Construcción:** `make` (mingw32-make), `cmake`, `ninja`.
 *   **Depurador:** GDB.
 *   **Análisis Estático:** Cppcheck (detección de errores de código, fugas de memoria y comportamientos indefinidos).
+*   **Generador de Documentación:** Doxygen (generación automática de documentación a partir de comentarios de código fuente).
 *   **Lenguaje de Scripting:** Python 3 (nativo Clang64) con `pip` y `uv` (instalador y resolvedor de paquetes de alto rendimiento).
 *   **Editor de Código:** VS Code Portable (incluye extensiones de C/C++, CMake y Python).
 *   **Gestor de Paquetes:** `pacman` (native de MSYS2).

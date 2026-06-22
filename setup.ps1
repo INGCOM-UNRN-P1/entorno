@@ -420,6 +420,7 @@ if ($isUpdateMode -or -not $isMsysComplete) {
         "mingw-w64-clang-x86_64-openssl",
         "mingw-w64-clang-x86_64-sqlite3",
         "mingw-w64-clang-x86_64-curl",
+        "mingw-w64-clang-x86_64-doxygen",
         "git"
     )
 

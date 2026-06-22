@@ -25,7 +25,7 @@ LOG_FILE="diagnose.log"
     echo ""
 
     echo "=== Versiones de Herramientas Clave ==="
-    for cmd in clang clang++ mingw32-make cmake ninja gdb python python3 pip pip3 uv cppcheck git gh; do
+    for cmd in clang clang++ mingw32-make cmake ninja gdb python python3 pip pip3 uv cppcheck doxygen git gh; do
         if command -v "$cmd" &> /dev/null; then
             echo -e "$cmd: \e[32m$(which "$cmd")\e[0m"
             # Mostrar la versión del comando
@@ -39,6 +39,7 @@ LOG_FILE="diagnose.log"
                 ninja) echo "versión $("$cmd" --version 2>&1)" ;;
                 gdb) "$cmd" --version 2>&1 | head -n 1 ;;
                 cppcheck) "$cmd" --version 2>&1 ;;
+                doxygen) "$cmd" --version 2>&1 ;;
                 git) "$cmd" --version 2>&1 ;;
                 gh) "$cmd" --version 2>&1 | head -n 1 ;;
             esac

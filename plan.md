@@ -127,7 +127,7 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 *   [ ] 1. Ejecutar `package-env.ps1` en PowerShell.
 *   [ ] 2. Verificar que se genere el archivo `portable-env-offline.zip`.
 *   [ ] 3. Extraer el contenido del archivo ZIP en otro directorio temporal distinto en la máquina.
-*   [ ] 4. Ejecutar `launch.bat` en la nueva carpeta y validar que todas las herramientas (`clang`, `python`, `git`, `gh`) sigan estando en el PATH de sesión sin requerir conexiones a internet.
+*   [ ] 4. Ejecutar `launch.bat` en la nueva carpeta y validar que todas las herramientas (`clang`, `python`, `git`, `gh`, `doxygen`) sigan estando en el PATH de sesión sin requerir conexiones a internet.
 
 ### Prueba H: Limpieza de Seguridad en Hosts Compartidos
 *   [ ] 1. Ejecutar `clean-shared-host.ps1` en PowerShell.
