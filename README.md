@@ -6,7 +6,7 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 *   **Terminal de Consola:** WezTerm Portable (GPU-accelerated, configurado con el tema Tokyo Night y la tipografía JetBrains Mono).
 *   **Userland Unix:** Bash, coreutils, grep, sed, awk, tar, git, ssh y GitHub CLI (`gh`).
-*   **Compilador de C:** Clang (MinGW-w64 Clang64) optimizado para UCRT (Universal C Runtime).
+*   **Compilador de C:** GCC (MinGW-w64 GCC) optimizado para UCRT (Universal C Runtime).
 *   **Herramientas de Construcción:** `make` (mingw32-make), `cmake`, `ninja`.
 *   **Depurador:** GDB.
 *   **Análisis Estático:** Cppcheck (detección de errores de código, fugas de memoria y comportamientos indefinidos).
@@ -99,7 +99,7 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
     *   *Si por alguna razón no se encuentra WezTerm localmente, los lanzadores caerán de vuelta de forma segura iniciando la terminal Bash integrada en la consola clásica.*
 *   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
 
-Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador Clang, Make, CMake y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
+Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador GCC, Make, CMake y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
 
 ---
 
