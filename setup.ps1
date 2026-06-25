@@ -406,22 +406,20 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     # 3. Instalación de Clang y Python
     # ==========================================
     $packages = @(
-        "mingw-w64-clang-x86_64-clang",
-        "mingw-w64-clang-x86_64-lld",
-        "mingw-w64-clang-x86_64-make",
-        "mingw-w64-clang-x86_64-cmake",
-        "mingw-w64-clang-x86_64-ninja",
-        "mingw-w64-clang-x86_64-gdb",
-        "mingw-w64-clang-x86_64-python",
-        "mingw-w64-clang-x86_64-python-pip",
-        "mingw-w64-clang-x86_64-uv",
-        "mingw-w64-clang-x86_64-cppcheck",
-        "mingw-w64-clang-x86_64-zlib",
-        "mingw-w64-clang-x86_64-openssl",
-        "mingw-w64-clang-x86_64-sqlite3",
-        "mingw-w64-clang-x86_64-curl",
-        "mingw-w64-clang-x86_64-doxygen",
-        "git"
+        "mingw-w64-ucrt-x86_64-toolchain",          # Metapaquete: GCC, Binutils y GDB para compilación nativa y depuración bajo la ABI UCRT.
+        "mingw-w64-ucrt-x86_64-cmake",              # Generador de sistemas de build; gestiona dependencias y metaprogramación del proyecto.
+        "mingw-w64-ucrt-x86_64-ninja",              # Sistema de build concurrente de bajo nivel, altamente optimizado para integrarse con CMake.
+        "mingw-w64-ucrt-x86_64-python",             # Intérprete embebido para automatización, tooling del repositorio o scripts de testing.
+        "mingw-w64-ucrt-x86_64-python-pip",         # Gestor estándar de paquetes de Python (PyPI).
+        "mingw-w64-ucrt-x86_64-uv",                 # Resolvedor/instalador de dependencias Python en Rust (reemplazo drop-in hiper-rápido para pip/virtualenv).
+        "mingw-w64-ucrt-x86_64-cppcheck",           # Linter de análisis estático; evalúa el AST de C/C++ buscando vulnerabilidades y optimizaciones.
+        "mingw-w64-ucrt-x86_64-zlib",               # Biblioteca base de compresión DEFLATE; dependencia estricta para manipulación de streams y empaquetado.
+        "mingw-w64-ucrt-x86_64-openssl",            # Toolkit criptográfico; provee implementaciones TLS/SSL y primitivas de hashing/encripción.
+        "mingw-w64-ucrt-x86_64-sqlite3",            # Motor de motor de base de datos SQL embebido, operando sobre archivos locales (I/O directo).
+        "mingw-w64-ucrt-x86_64-curl",               # API de transferencia de datos multiprotocolo (HTTP/S, FTP, etc.), estáticamente vinculable a OpenSSL/zlib.
+        "mingw-w64-ucrt-x86_64-doxygen",            # Parseador de código fuente para generación automatizada de documentación técnica (HTML, LaTeX, man pages).
+        "mingw-w64-ucrt-x86_64-clang-tools-extra",  # Herramientas adicionales de Clang (ej: clang-tidy, clang-format, etc.) para análisis y formateo de código.
+        "git"                                       # Sistema de control de versiones distribuido.
     )
 
     $pkgString = $packages -join " "
