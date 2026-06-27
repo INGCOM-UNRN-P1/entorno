@@ -142,10 +142,9 @@ $usrPath   = Join-Path $portableRoot "msys64\usr\bin"
 $env:PATH  = "$binPath;$gccPath;$usrPath;$env:PATH"
 
 # Variables específicas del Toolchain de C/C++
-$env:GCC_EXEC_PREFIX    = "$gccPath\"
-$env:LIBRARY_PATH       = $gccPath
-$env:C_INCLUDE_PATH     = Join-Path $gccPath "include"
-$env:CPLUS_INCLUDE_PATH = Join-Path $gccPath "include\c++"
+# (No se definen GCC_EXEC_PREFIX, LIBRARY_PATH, ni INCLUDE_PATH manualmente
+# porque GCC en MSYS2 resuelve automáticamente sus directorios internos 
+# relativos a la ubicación de gcc.exe en ucrt64)
 
 $env:CC  = "gcc"
 $env:CXX = "g++"
