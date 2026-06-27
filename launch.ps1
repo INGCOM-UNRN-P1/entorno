@@ -69,7 +69,7 @@ if (-not (Test-Path $bashrcPath)) {
 # Agregar bin portable al PATH convirtiendo la ruta a formato Unix
 if [ -n "$PORTABLE_ROOT" ]; then
     UNIX_ROOT=$(cygpath -u "$PORTABLE_ROOT")
-    export PATH="${UNIX_ROOT}bin:${UNIX_ROOT}msys64/mingw64/bin:${UNIX_ROOT}msys64/usr/bin:${PATH}"
+    export PATH="${UNIX_ROOT}bin:${UNIX_ROOT}msys64/ucrt64/bin:${UNIX_ROOT}msys64/usr/bin:${PATH}"
 fi
 '@
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
@@ -78,7 +78,7 @@ fi
 # Inyectar variables de entorno de sesión
 $env:PORTABLE_ROOT = $portableRoot
 $env:HOME = $homeDir
-$env:MSYSTEM = "MINGW64"
+$env:MSYSTEM = "UCRT64"
 $env:CHERE_INVOKING = "1"
 $env:LANG = "es_AR.UTF-8"
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
@@ -118,18 +118,18 @@ end
         $pathRepl = @'
 if path_env then path_env = path_env:gsub("[\\/]+", "/") else path_env = "" end
 
-local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/mingw64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
+local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
 '@
         $content = $content -replace '(?s)if path_env then path_env = path_env:gsub\([^)]+\) end', $pathRepl
         $content = $content -replace 'PATH = path_env', 'PATH = custom_path'
     }
     
-    # Actualizar MSYSTEM a MINGW64 si estaba en CLANG64
-    $content = $content -replace 'MSYSTEM\s*=\s*"CLANG64"', 'MSYSTEM = "MINGW64"'
+    # Actualizar MSYSTEM a UCRT64 si estaba en CLANG64 o MINGW64
+    $content = $content -replace 'MSYSTEM\s*=\s*"(CLANG|MINGW)64"', 'MSYSTEM = "UCRT64"'
 
     # Inyectar herencia y raíz explícita a MSYS2
     if ($content -notmatch 'MSYS2_PATH_TYPE\s*=') {
-        $content = $content -replace 'MSYSTEM\s*=\s*"MINGW64",', "`$0`r`n  MSYS2_PATH_TYPE = `"inherit`",`r`n  PORTABLE_ROOT = portable_root,"
+        $content = $content -replace 'MSYSTEM\s*=\s*"UCRT64",', "`$0`r`n  MSYS2_PATH_TYPE = `"inherit`",`r`n  PORTABLE_ROOT = portable_root,"
     }
     
     [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
@@ -137,7 +137,7 @@ local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/mingw64/
 
 # Agregar scripts internos, compilador y userland de MSYS2 al Path
 $binPath   = Join-Path $portableRoot "bin"
-$gccPath   = Join-Path $portableRoot "msys64\mingw64\bin"
+$gccPath   = Join-Path $portableRoot "msys64\ucrt64\bin"
 $usrPath   = Join-Path $portableRoot "msys64\usr\bin"
 $env:PATH  = "$binPath;$gccPath;$usrPath;$env:PATH"
 
@@ -155,8 +155,8 @@ $env:LD  = "ld"
 $env:CPP = "cpp"
 $env:CFLAGS  = "-O2 -Wall"
 $env:LDFLAGS = ""
-$env:PKG_CONFIG_PATH   = "$(Join-Path $portableRoot 'msys64\mingw64\lib\pkgconfig');$(Join-Path $portableRoot 'msys64\usr\lib\pkgconfig');$env:PKG_CONFIG_PATH"
-$env:CMAKE_PREFIX_PATH = "$(Join-Path $portableRoot 'msys64\mingw64');$(Join-Path $portableRoot 'msys64\usr');$env:CMAKE_PREFIX_PATH"
+$env:PKG_CONFIG_PATH   = "$(Join-Path $portableRoot 'msys64\ucrt64\lib\pkgconfig');$(Join-Path $portableRoot 'msys64\usr\lib\pkgconfig');$env:PKG_CONFIG_PATH"
+$env:CMAKE_PREFIX_PATH = "$(Join-Path $portableRoot 'msys64\ucrt64');$(Join-Path $portableRoot 'msys64\usr');$env:CMAKE_PREFIX_PATH"
 
 # Variables de entorno para integración
 $env:VSCODE_ROOT  = Join-Path $portableRoot "vscode"
