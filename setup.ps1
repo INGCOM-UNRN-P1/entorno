@@ -16,10 +16,27 @@ if (-not ($HomeDirName -match "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$")) {
     $HomeDirName = "home"
 }
 $msysDir = Join-Path $portableRoot "msys64"
-$tempDir = Join-Path $portableRoot "downloads"
+$descargasDir = Join-Path $portableRoot "descargas"
 $homeDir = Join-Path $portableRoot $HomeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
 $isUpdateMode = Test-Path (Join-Path $portableRoot ".install_complete")
+
+# Función para extraer el nombre de archivo de una URL o usar un fallback
+function Get-FileNameFromUrl {
+    param(
+        [string]$Url,
+        [string]$DefaultName
+    )
+    if ([string]::IsNullOrEmpty($Url)) { return $DefaultName }
+    $leaf = $Url.Split('/')[-1]
+    if ($leaf -match "\?") {
+        $leaf = $leaf.Split('?')[0]
+    }
+    if ($leaf -match "\.(zip|exe|tar|gz|sfx)$") {
+        return $leaf
+    }
+    return $DefaultName
+}
 
 # Iniciar log de instalación
 $logPath = Join-Path $portableRoot "install.log"
@@ -175,7 +192,7 @@ try {
     $envFilePath = Join-Path $portableRoot ".env"
     Set-Content -Path $envFilePath -Value ('set "HOME_DIR_NAME={0}"' -f $HomeDirName)
 
-# Asegurar que el archivo .env y el directorio personalizado estén excluidos en .gitignore
+# Asegurar que el archivo .env, el directorio personalizado y la carpeta descargas estén excluidos en .gitignore
 $gitignorePath = Join-Path $portableRoot ".gitignore"
 if (Test-Path $gitignorePath) {
     $gitignoreContent = Get-Content $gitignorePath -Raw
@@ -185,6 +202,9 @@ if (Test-Path $gitignorePath) {
     $ignoreRule = "$HomeDirName/"
     if (-not $gitignoreContent.Contains($ignoreRule)) {
         Add-Content -Path $gitignorePath -Value "`n# Custom home folder`n$ignoreRule"
+    }
+    if (-not $gitignoreContent.Contains("descargas/")) {
+        Add-Content -Path $gitignorePath -Value "`n# Persistent downloads cache`ndescargas/"
     }
 }
 
@@ -244,8 +264,8 @@ if (-not (Test-Path $bashrcPath)) {
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
 
-if (-not (Test-Path $tempDir)) {
-    New-Item -ItemType Directory -Path $tempDir | Out-Null
+if (-not (Test-Path $descargasDir)) {
+    New-Item -ItemType Directory -Path $descargasDir | Out-Null
 }
 
 # ==========================================
@@ -293,7 +313,7 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
         Write-Host "Fallback URL: $downloadUrl" -ForegroundColor Yellow
     }
 
-    $exePath = Join-Path $tempDir $fileName
+    $exePath = Join-Path $descargasDir $fileName
     $shaPath = "$exePath.sha256"
     $shaUrl = "$downloadUrl.sha256"
     $isDownloadedAndValid = $false
@@ -481,8 +501,6 @@ if ($isUpdateMode -or -not $isMsysComplete) {
 # 4. Gestión e Instalación de VS Code Portable
 # ==========================================
 $vscodeZipUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive"
-$vscodeZipName = "vscode_archive.zip"
-$vscodeZipPath = Join-Path $tempDir $vscodeZipName
 $isCodeInstalled = Test-Path (Join-Path $vscodeDir "Code.exe")
 $isCodeComplete = Test-Path (Join-Path $portableRoot ".vscode_complete")
 
@@ -535,9 +553,13 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
             Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
         }
 
+        # Resolver nombre de archivo de forma dinámica e identificar versión
+        $vscodeZipName = Get-FileNameFromUrl -Url $resolvedVscodeUrl -DefaultName "vscode_archive.zip"
+        $vscodeZipPath = Join-Path $descargasDir $vscodeZipName
+
         $vscodeZipValid = $false
         if (Test-Path $vscodeZipPath) {
-            Write-Host "Se detectó una descarga previa de VS Code. Verificando..." -ForegroundColor Yellow
+            Write-Host "Se detectó una descarga previa de VS Code ($vscodeZipName). Verificando..." -ForegroundColor Yellow
             try {
                 $fileSize = (Get-Item $vscodeZipPath).Length
                 if ($fileSize -gt 50MB) {
@@ -552,7 +574,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
         }
         
         if (-not $vscodeZipValid) {
-            Write-Host "Descargando VS Code..." -ForegroundColor Cyan
+            Write-Host "Descargando VS Code desde $resolvedVscodeUrl..." -ForegroundColor Cyan
             Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing
         }
         
@@ -638,7 +660,6 @@ if (Test-Path $codeCmd) {
 # 5.5. Gestión e Instalación de GitHub CLI (gh)
 # ==========================================
 $ghExe = Join-Path $portableRoot "bin\gh.exe"
-$ghZipPath = Join-Path $tempDir "gh_archive.zip"
 $isGhInstalled = Test-Path $ghExe
 $isGhComplete = Test-Path (Join-Path $portableRoot ".gh_complete")
 
@@ -695,8 +716,30 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
             Remove-Item -Path $ghExe -Force -ErrorAction SilentlyContinue
         }
 
-        Write-Host "Descargando GitHub CLI..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing
+        # Resolver nombre de archivo de forma dinámica
+        $ghZipName = Get-FileNameFromUrl -Url $ghDownloadUrl -DefaultName "gh_archive.zip"
+        $ghZipPath = Join-Path $descargasDir $ghZipName
+
+        $isGhZipValid = $false
+        if (Test-Path $ghZipPath) {
+            Write-Host "Se detectó un archivo ZIP de GitHub CLI descargado previamente ($ghZipName). Verificando..." -ForegroundColor Yellow
+            try {
+                $fileSize = (Get-Item $ghZipPath).Length
+                if ($fileSize -gt 5MB) {
+                    $isGhZipValid = $true
+                    Write-Host "El archivo ZIP previo de GitHub CLI es válido. Se omitirá la descarga." -ForegroundColor Green
+                } else {
+                    Write-Host "El archivo ZIP previo de GitHub CLI está incompleto. Se volverá a descargar." -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Host "No se pudo verificar el archivo ZIP previo de GitHub CLI. Se volverá a descargar." -ForegroundColor Yellow
+            }
+        }
+
+        if (-not $isGhZipValid) {
+            Write-Host "Descargando GitHub CLI desde $ghDownloadUrl..." -ForegroundColor Cyan
+            Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing
+        }
 
         $ghTempDir = Join-Path $portableRoot "gh_temp"
         if (Test-Path $ghTempDir) {
@@ -720,7 +763,7 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
         }
 
         Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path $ghZipPath -Force -ErrorAction SilentlyContinue
+        # No removemos el archivo zip para mantener la caché de descargas
 
         Set-Content -Path (Join-Path $portableRoot "bin\.gh_version") -Value $ghDownloadUrl
         Set-Content -Path (Join-Path $portableRoot ".gh_complete") -Value "Complete"
@@ -732,8 +775,6 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
 # 6. Gestión e Instalación de WezTerm Portable
 # ==========================================
 $wezDir = Join-Path $portableRoot "wezterm"
-$wezZipName = "wezterm_archive.zip"
-$wezZipPath = Join-Path $tempDir $wezZipName
 $isWezInstalled = Test-Path (Join-Path $wezDir "wezterm.exe")
 $isWezComplete = Test-Path (Join-Path $portableRoot ".wezterm_complete")
 
@@ -793,9 +834,13 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
             Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
         }
 
+        # Resolver nombre de archivo de forma dinámica
+        $wezZipName = Get-FileNameFromUrl -Url $wezDownloadUrl -DefaultName "wezterm_archive.zip"
+        $wezZipPath = Join-Path $descargasDir $wezZipName
+
         $isWezZipValid = $false
         if (Test-Path $wezZipPath) {
-            Write-Host "Se detectó un archivo ZIP de WezTerm descargado previamente. Verificando..." -ForegroundColor Yellow
+            Write-Host "Se detectó un archivo ZIP de WezTerm descargado previamente ($wezZipName). Verificando..." -ForegroundColor Yellow
             try {
                 $fileSize = (Get-Item $wezZipPath).Length
                 if ($fileSize -gt 10MB) {
@@ -810,7 +855,7 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         }
 
         if (-not $isWezZipValid) {
-            Write-Host "Descargando WezTerm..." -ForegroundColor Cyan
+            Write-Host "Descargando WezTerm desde $wezDownloadUrl..." -ForegroundColor Cyan
             Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
         }
 
@@ -978,10 +1023,7 @@ if ($ImportHostConfig) {
 # ==========================================
 # 8. Limpieza final de temporales
 # ==========================================
-if (Test-Path $tempDir) {
-    Write-Host "Limpiando archivos temporales..."
-    Remove-Item -Path $tempDir -Recurse -Force
-}
+# Se mantiene la carpeta 'descargas' de forma permanente como caché local para acelerar futuras instalaciones.
 
     # Guardar el indicador final de instalación completa exitosa
     Set-Content -Path (Join-Path $portableRoot ".install_complete") -Value "Complete"

@@ -40,6 +40,7 @@ Write-Host "`nCopiando estructura del entorno..." -ForegroundColor Cyan
 $excludeList = @(
     ".git",
     "downloads",
+    "descargas",
     "temp_package",
     "portable-env-offline.zip",
     "vscode_data_backup",
