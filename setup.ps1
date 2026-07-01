@@ -120,6 +120,7 @@ try {
                 "launch.ps1",
                 "launch-vscode.bat",
                 "launch-vscode.ps1",
+                "compile-launch-vscode.ps1",
                 "clean-shared-host.ps1",
                 "customize-terminal.ps1",
                 "customize-terminal.bat",
