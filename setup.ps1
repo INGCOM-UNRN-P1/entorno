@@ -418,7 +418,7 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     & $bashPath --login -c "exit"
 
     # Resolver la ruta de caché local y pasarla a pacman
-    $unixCacheDir = & $bashPath --login -c "cygpath -u '$descargasDir/pacman_cache'"
+    $unixCacheDir = & $bashPath -c "cygpath -u '$descargasDir/pacman_cache'"
     $unixCacheDir = $unixCacheDir.Trim()
 
     Write-Host "Sincronizando base de datos de pacman y actualizando paquetes del sistema..." -ForegroundColor Cyan
