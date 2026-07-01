@@ -126,7 +126,7 @@ try {
                 "package-env.ps1",
                 "bin/install-lib.sh",
                 "bin/configure-git.sh",
-                "bin/update-packages.sh",
+                "bin/download-baseline.sh",
                 "bin/diagnose-env.sh",
                 "README.md",
                 "plan.md",
@@ -416,11 +416,23 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
     & $bashPath --login -c "exit"
 
+    # Resolver la ruta de caché local y pasarla a pacman
+    $unixCacheDir = & $bashPath --login -c "cygpath -u '$descargasDir/pacman_cache'"
+    $unixCacheDir = $unixCacheDir.Trim()
+
     Write-Host "Sincronizando base de datos de pacman y actualizando paquetes del sistema..." -ForegroundColor Cyan
-    & $bashPath --login -c "pacman -Syu --noconfirm"
+    try {
+        & $bashPath --login -c "pacman -Syu --noconfirm --cachedir '$unixCacheDir'"
+    } catch {
+        Write-Warning "No se pudo sincronizar o actualizar pacman (posiblemente sin internet). Intentando instalar paquetes locales..."
+    }
 
     Write-Host "Consolidando actualizaciones del entorno..." -ForegroundColor Cyan
-    & $bashPath --login -c "pacman -Su --noconfirm"
+    try {
+        & $bashPath --login -c "pacman -Su --noconfirm --cachedir '$unixCacheDir'"
+    } catch {
+        Write-Warning "Fallo al consolidar actualizaciones (posiblemente sin internet)."
+    }
 
     # ==========================================
     # 3. Instalación de Clang y Python
@@ -444,7 +456,7 @@ if ($isUpdateMode -or -not $isMsysComplete) {
 
     $pkgString = $packages -join " "
     Write-Host "Instalando compiladores, herramientas de compilación, Python y librerías comunes..." -ForegroundColor Cyan
-    & $bashPath --login -c "pacman -S --needed --noconfirm $pkgString"
+    & $bashPath --login -c "pacman -S --needed --noconfirm --cachedir '$unixCacheDir' $pkgString"
 
     # Configurar alias en el HOME portable
     $bashrcPath = Join-Path $homeDir ".bashrc"
