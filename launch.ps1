@@ -1,4 +1,4 @@
-# launch.ps1 - Lanzador del entorno portable en PowerShell
+﻿# launch.ps1 - Lanzador del entorno portable en PowerShell
 
 $ErrorActionPreference = "Stop"
 
@@ -84,8 +84,51 @@ $env:LANG = "es_AR.UTF-8"
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
 $env:WEZTERM_CONFIG_FILE = $wezConfigPath
 
-# Sanitizar y ajustar wezterm.lua
-if (Test-Path $wezConfigPath) {
+# Asegurar que wezterm.lua exista, si no, crearlo con configuración premium predeterminada (UCRT64)
+if (-not (Test-Path $wezConfigPath)) {
+    $wezConfigContent = @"
+local wezterm = require 'wezterm'
+local config = wezterm.config_builder()
+
+-- Configurar directorio raiz portable de forma determinista
+local portable_root = wezterm.config_dir:gsub("[\\]+", "/")
+if not portable_root:match("/$") then
+  portable_root = portable_root .. "/"
+end
+
+local bash_path = portable_root .. "msys64/usr/bin/bash.exe"
+config.default_prog = { bash_path, "--login", "-i" }
+
+-- Configurar entorno heredado forzando el HOME portable (aislado del sistema host)
+local home_dir = portable_root .. "$homeDirName"
+config.default_cwd = home_dir
+
+local path_env = os.getenv("PATH")
+if path_env then path_env = path_env:gsub("[\\]+", "/") else path_env = "" end
+
+local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
+
+config.set_environment_variables = {
+  MSYSTEM = "UCRT64",
+  MSYS2_PATH_TYPE = "inherit",
+  PORTABLE_ROOT = portable_root,
+  CHERE_INVOKING = "1",
+  HOME = home_dir,
+  PATH = custom_path,
+  LANG = "es_AR.UTF-8",
+}
+
+-- Estetica Premium (Tokyo Night y JetBrains Mono)
+config.color_scheme = 'Tokyo Night'
+config.font = wezterm.font 'JetBrains Mono'
+config.font_size = 11.0
+config.window_background_opacity = 0.95
+config.enable_tab_bar = false
+
+return config
+"@
+    [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
+} else {
     $content = [System.IO.File]::ReadAllText($wezConfigPath, [System.Text.Encoding]::UTF8)
     
     # Sanitizar secuencias de bytes corruptas (doble codificación)
@@ -126,6 +169,9 @@ local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/b
     
     # Actualizar MSYSTEM a UCRT64 si estaba en CLANG64 o MINGW64
     $content = $content -replace 'MSYSTEM\s*=\s*"(CLANG|MINGW)64"', 'MSYSTEM = "UCRT64"'
+
+    # Actualizar rutas de clang64 o mingw64 a ucrt64
+    $content = $content -replace 'msys64/(clang|mingw)64/', 'msys64/ucrt64/'
 
     # Inyectar herencia y raíz explícita a MSYS2
     if ($content -notmatch 'MSYS2_PATH_TYPE\s*=') {
@@ -176,7 +222,7 @@ if (-not (Test-Path $wezExe) -and (Test-Path $wezDir)) {
 if (Test-Path $wezExe) {
     $si = New-Object System.Diagnostics.ProcessStartInfo
     $si.FileName = $wezExe
-    $si.UseShellExecute = $false
+    $si.UseShellExecute = $true
     [System.Diagnostics.Process]::Start($si) | Out-Null
 } else {
     Write-Host "[INFO] WezTerm no encontrado. Lanzando Bash en consola estándar..." -ForegroundColor Yellow
