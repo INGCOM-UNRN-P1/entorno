@@ -40,7 +40,10 @@ if (Test-Path $envFile) {
 $homeDir = Join-Path $portableRoot $homeDirName
 $msysDir = Join-Path $portableRoot "msys64"
 $wezDir  = Join-Path $portableRoot "wezterm"
-$wezExe  = Join-Path $wezDir "wezterm.exe"
+$wezExe  = Join-Path $wezDir "wezterm-gui.exe"
+if (-not (Test-Path $wezExe)) {
+    $wezExe  = Join-Path $wezDir "wezterm.exe"
+}
 $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
 
 # Asegurar existencia del HOME portable y sus archivos de inicio (skel)
