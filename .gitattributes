@@ -1,0 +1,26 @@
+# Configuración de normalización de finales de línea en Git
+# Fuerza a Git a normalizar a LF en el repositorio y a usar el fin de línea correcto al descargar
+
+# Comportamiento por defecto: detectar archivos de texto y normalizarlos a LF
+* text=auto
+
+# Forzar fin de línea Windows (CRLF) para scripts de Windows
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Forzar fin de línea Unix (LF) para scripts Unix, código y configuración
+*.sh text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.lua text eol=lf
+*.md text eol=lf
+Makefile text eol=lf
+
+# Declarar binarios explícitamente para que no sean alterados
+*.exe binary
+*.zip binary
+*.tar.* binary
+*.ico binary
+*.png binary
+*.jpg binary
