@@ -18,7 +18,7 @@ El entorno está diseñado bajo el principio de aislamiento absoluto. A continua
 
 *   **Lanzadores de Sesión (`launch.bat` / `launch.ps1`):** Son las puertas de entrada al entorno. Se encargan de calcular la ruta raíz dinámica (`PORTABLE_ROOT`), inyectar las variables de entorno locales de sesión, sanear el archivo de configuración de WezTerm y lanzar la consola o el editor de código.
 *   **Directorio `bin/` (PATH Local):** Contiene herramientas y scripts de automatización propios del entorno portable. Esta carpeta se prepende al `PATH` de la sesión de manera que sus comandos tengan prioridad.
-*   **Subsistema MSYS2 (`msys64/`):** Provee el userland de estilo Unix (Bash, pacman, git, ssh) en la carpeta `usr/bin` y el compilador Clang junto con las herramientas nativas de desarrollo en la carpeta `clang64/bin`.
+*   **Subsistema MSYS2 (`msys64/`):** Provee el userland de estilo Unix (Bash, pacman, git, ssh) en la carpeta `usr/bin` y el compilador GCC junto con las herramientas nativas de desarrollo en la carpeta `ucrt64/bin`.
 *   **Editor de Código VS Code (`vscode/`):** Instalado en modo portable gracias al subdirectorio `vscode/data/`, que almacena las extensiones (como la extensión de C/C++ y Python) y la configuración de usuario sin alterar los directorios del host.
 *   **HOME Aislado (`home/`):** Funciona como tu directorio personal local. Cualquier configuración de sesión, historial de comandos o claves SSH se guarda aquí.
 
@@ -53,14 +53,14 @@ Si notás problemas con algún compilador o querés verificar el estado de las h
 ```bash
 diagnose-env.sh
 ```
-Este script genera un informe técnico detallado en `diagnose.log` con las versiones de Clang, CMake, Python, Git, Doxygen, los paquetes activos de pacman y el contenido físico de la carpeta `bin/`.
+Este script genera un informe técnico detallado en `diagnose.log` con las versiones de GCC, CMake, Python, Git, Doxygen, los paquetes activos de pacman y el contenido físico de la carpeta `bin/`.
 
-### Sincronización y Actualización de Paquetes
-Para actualizar la base de datos de paquetes locales o instalar dependencias faltantes, ejecutá:
+### Descarga de Baseline de Paquetes (Caché Local)
+Para descargar todos los paquetes de pacman necesarios para la instalación inicial y guardarlos localmente, ejecutá:
 ```bash
-update-packages.sh
+download-baseline.sh
 ```
-El script realiza un `pacman -Syu` de forma segura dentro del subsistema portable y consolida la instalación de herramientas clave.
+Este script descarga los paquetes a la carpeta `descargas/pacman_cache/` de tu entorno. Es crucial para posibilitar instalaciones o actualizaciones rápidas offline en computadoras sin acceso a internet.
 
 ### Configuración Aislada de Git y GitHub
 Para registrar tu identidad de autor para commits de Git e iniciar sesión de forma segura y portable en GitHub CLI (`gh`), ejecutá:
@@ -70,7 +70,7 @@ configure-git.sh
 Tus credenciales de autenticación se guardarán de forma local en tu `home/` portable y no afectarán a las credenciales globales del host.
 
 ### Instalador Automatizado de Librerías de C
-Si necesitás compilar e instalar bibliotecas externas directamente desde repositorios de GitHub en tu prefijo portable de `/clang64`, utilizá:
+Si necesitás compilar e instalar bibliotecas externas directamente desde repositorios de GitHub en tu prefijo portable de `/ucrt64`, utilizá:
 ```bash
 install-lib.sh <usuario/repositorio_github> [rama_o_tag]
 ```

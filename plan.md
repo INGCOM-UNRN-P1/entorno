@@ -5,7 +5,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 ---
 
 ## Fase 1: Arquitectura y Diseño Base (Completado)
-*   [x] **Selección de Plataforma:** MSYS2 con entorno CLANG64 (compilación nativa Windows sobre UCRT).
+*   [x] **Selección de Plataforma:** MSYS2 con entorno UCRT64 (compilación nativa Windows sobre UCRT).
 *   [x] **Gestión de Dependencias:** Pacman para paquetes del sistema, pip y uv para Python.
 *   [x] **Mecanismo de Automatización:** Scripts de PowerShell (`setup.ps1`) para orquestar descargas y actualizaciones de forma desatendida.
 *   [x] **Portabilidad Absoluta:** Aislamiento del directorio `$HOME` para evitar escritura en la máquina host.
@@ -37,7 +37,7 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 ---
 
 ## Fase 5: Gestor de Librerías de C desde GitHub (Completado)
-*   [x] Diseño y desarrollo de [install-lib.sh](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh) para compilar e instalar librerías externas de forma desatendida dentro del prefijo portable `/clang64`.
+*   [x] Diseño y desarrollo de [install-lib.sh](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh) para compilar e instalar librerías externas de forma desatendida dentro del prefijo portable `/ucrt64`.
 *   [x] Soporte para múltiples modos de construcción:
     1. Recetas personalizadas `.portable-recipe.sh` en el repositorio.
     2. Proyectos CMake + Ninja automáticos.
@@ -73,17 +73,17 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 ## Fase 9: Pruebas de Aceptación (Pendiente de Ejecución en Host)
 Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
 
-### Prueba A: Compilación Clang C
+### Prueba A: Compilación GCC C
 *   [ ] 1. Ejecutar `launch.bat` (que iniciará WezTerm).
 *   [ ] 2. Crear un archivo `test.c` con el siguiente contenido:
    ```c
    #include <stdio.h>
    int main() {
-       printf("Hola desde Clang Portable UCRT!\n");
+       printf("Hola desde GCC Portable UCRT!\n");
        return 0;
    }
    ```
-*   [ ] 3. Compilar: `clang test.c -o test.exe`
+*   [ ] 3. Compilar: `gcc test.c -o test.exe`
 *   [ ] 4. Ejecutar: `./test.exe`
 *   [ ] 5. Verificar la salida esperada en consola.
 *   [ ] 6. Realizar análisis estático de código: `cppcheck test.c`
@@ -107,14 +107,14 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 
 ### Prueba D: Validación de VS Code Portable
 *   [ ] 1. Ejecutar `launch-vscode.bat`.
-*   [ ] 2. Verificar que el terminal integrado inicie directamente en `Clang64 Bash`.
+*   [ ] 2. Verificar que el terminal integrado inicie directamente en `UCRT64 Bash`.
 *   [ ] 3. Validar que la compilación de C y Python sea reconocida desde las herramientas de autocompletado en el editor.
 
 ### Prueba E: Instalación de Librerías de GitHub
 *   [ ] 1. Ejecutar `launch.bat`.
 *   [ ] 2. Correr el script: `install-lib.sh davidsiaw/inih r29` (ya agregado al PATH)
-*   [ ] 3. Verificar que los archivos `ini.h` y `libinih.a` estén instalados en `msys64/clang64/include/` y `msys64/clang64/lib/` respectivamente.
-*   [ ] 4. Crear un código simple en C que incluya `<ini.h>` y verificar que compile usando `clang test_ini.c -linih -o test_ini.exe`.
+*   [ ] 3. Verificar que los archivos `ini.h` y `libinih.a` estén instalados en `msys64/ucrt64/include/` y `msys64/ucrt64/lib/` respectivamente.
+*   [ ] 4. Crear un código simple en C que incluya `<ini.h>` y verificar que compile usando `gcc test_ini.c -linih -o test_ini.exe`.
 
 ### Prueba F: Configuración Git y GitHub CLI
 *   [ ] 1. Ejecutar `launch.bat`.

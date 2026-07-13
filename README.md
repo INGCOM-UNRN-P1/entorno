@@ -1,19 +1,19 @@
 # Entorno de Desarrollo Portable en C y Python para Windows
 
-Entorno de desarrollo completamente autocontenido para Windows. Integra una terminal acelerada por GPU basada en WezTerm con userland Unix completo de MSYS2, el compilador Clang nativo, una distribución de Python 3 y un entorno preconfigurado de VS Code Portable.
+Entorno de desarrollo completamente autocontenido para Windows. Integra una terminal acelerada por GPU basada en WezTerm con userland Unix completo de MSYS2, el compilador GCC nativo, una distribución de Python 3 y un entorno preconfigurado de VS Code Portable.
 
 ## Componentes Principales
 
 *   **Terminal de Consola:** WezTerm Portable (GPU-accelerated, configurado con el tema Tokyo Night y la tipografía JetBrains Mono).
 *   **Userland Unix:** Bash, coreutils, grep, sed, awk, tar, git, ssh y GitHub CLI (`gh`).
-*   **Compilador de C:** GCC (MinGW-w64 GCC) optimizado para UCRT (Universal C Runtime).
+*   **Compilador de C/C++:** GCC / G++ (MinGW-w64 GCC) optimizado para UCRT (Universal C Runtime).
 *   **Herramientas de Construcción:** `make` (mingw32-make), `cmake`, `ninja`.
 *   **Depurador:** GDB.
 *   **Análisis Estático:** Cppcheck (detección de errores de código, fugas de memoria y comportamientos indefinidos).
 *   **Generador de Documentación:** Doxygen (generación automática de documentación a partir de comentarios de código fuente).
-*   **Lenguaje de Scripting:** Python 3 (nativo Clang64) con `pip` y `uv` (instalador y resolvedor de paquetes de alto rendimiento).
-*   **Editor de Código:** VS Code Portable (incluye extensiones de C/C++, CMake y Python).
-*   **Gestor de Paquetes:** `pacman` (native de MSYS2).
+*   **Lenguaje de Scripting:** Python 3 (nativo UCRT64) con `pip` y `uv` (instalador y resolvedor de paquetes de alto rendimiento).
+*   **Editor de Código:** VS Code Portable (incluye extensiones de C/C++, CMake y Python, con terminal integrada configurada por defecto en UCRT64 Bash).
+*   **Gestor de Paquetes:** `pacman` (nativo de MSYS2).
 *   **Librerías de C Preinstaladas:** `zlib`, `openssl`, `sqlite3`, `curl`.
 
 ---
@@ -22,26 +22,29 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 El repositorio está organizado para separar las herramientas ejecutables del host de las configuraciones y scripts de inicialización:
 
-*   [`setup.ps1`](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm. Al ejecutarse, actualiza automáticamente todos los scripts del entorno a la última versión (vía Git pull o descargándolos directamente de GitHub) y luego actualiza los componentes instalados (MSYS2, VS Code, WezTerm y extensiones). Valida la ruta de instalación y genera el registro `install.log` para troubleshooting.
+*   [`setup.ps1`](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm. Al ejecutarse, actualiza automáticamente todos los scripts del entorno a la última versión (vía Git pull o descargándolos de GitHub) y luego actualiza los componentes instalados. Valida la ruta de instalación y genera el registro `install.log` para troubleshooting.
 *   [`package-env.ps1`](file:///home/mrtin/dev/p1/entorno/package-env.ps1): Script de PowerShell para empaquetar el entorno completo inicializado en un archivo ZIP para distribución offline.
-*   [`clean-shared-host.ps1`](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1): Script de PowerShell para eliminar credenciales, historial de consola y configuraciones personales cuando se trabaja en una máquina pública o compartida.
+*   [`clean-shared-host.ps1`](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1): Script de PowerShell para eliminar credenciales, historial de consola y configuraciones personales al trabajar en una máquina pública o compartida. Restablece VS Code a la configuración por defecto (incluyendo terminal en UCRT64 Bash).
 *   [`customize-terminal.ps1`](file:///home/mrtin/dev/p1/entorno/customize-terminal.ps1): Script de PowerShell interactivo para personalizar la apariencia de la consola (WezTerm) y el banner de bienvenida de Bash.
 *   [`customize-terminal.bat`](file:///home/mrtin/dev/p1/entorno/customize-terminal.bat): Cargador rápido CMD para lanzar el asistente de personalización de consola.
-*   [`bin/install-lib.sh`](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub (agregado al PATH).
+*   [`add-defender-exclusion.ps1`](file:///home/mrtin/dev/p1/entorno/add-defender-exclusion.ps1): Script de PowerShell para agregar el directorio del entorno portable a las exclusiones de Windows Defender (requiere privilegios de Administrador).
+*   [`fix-antivirus.ps1`](file:///home/mrtin/dev/p1/entorno/fix-antivirus.ps1): Script de PowerShell avanzado para agregar excepciones en Windows Defender, previniendo falsos positivos del antivirus y errores de memoria ("VirtualProtect failed with code 0x5af") durante la compilación.
+*   [`bin/install-lib.sh`](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub en tu prefijo portable `/ucrt64` (agregado al PATH).
 *   [`bin/configure-git.sh`](file:///home/mrtin/dev/p1/entorno/bin/configure-git.sh): Script de Bash para configurar rápidamente tu identidad de Git e iniciar sesión en GitHub CLI de forma aislada (agregado al PATH).
-*   [`bin/update-packages.sh`](file:///home/mrtin/dev/p1/entorno/bin/update-packages.sh): Script de Bash para actualizar la base de datos de pacman, actualizar los paquetes existentes e instalar todas las dependencias obligatorias del entorno portable (agregado al PATH).
-*   [`bin/diagnose-env.sh`](file:///home/mrtin/dev/p1/entorno/bin/diagnose-env.sh): Script de Bash para diagnosticar el estado del entorno portable, las herramientas instaladas (con sus versiones correspondientes), el listado completo de paquetes de pacman y el contenido de bin/ en un informe detallado (agregado al PATH).
-*   [`launch.bat`](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador de consola WezTerm desde CMD.
-*   [`launch.ps1`](file:///home/mrtin/dev/p1/entorno/launch.ps1): Lanzador de consola WezTerm desde PowerShell.
-*   [`launch-vscode.bat`](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador de VS Code desde CMD heredando las variables y compiladores locales.
-*   [`launch-vscode.ps1`](file:///home/mrtin/dev/p1/entorno/launch-vscode.ps1): Lanzador de VS Code desde PowerShell heredando las variables locales.
-*   [`wezterm.lua`](file:///home/mrtin/dev/p1/entorno/wezterm.lua): Configuración portable de WezTerm (apariencia, tipografía y arranque de shell Bash).
+*   [`bin/download-baseline.sh`](file:///home/mrtin/dev/p1/entorno/bin/download-baseline.sh): Script de Bash para descargar los paquetes MSYS2 necesarios para la instalación inicial directamente a la caché local portable (agregado al PATH).
+*   [`bin/diagnose-env.sh`](file:///home/mrtin/dev/p1/entorno/bin/diagnose-env.sh): Script de Bash para diagnosticar el estado del entorno portable, las herramientas instaladas (con sus versiones correspondientes), el listado completo de paquetes de pacman y el contenido de `bin/` en un informe detallado (agregado al PATH).
+*   [`launch.bat`](file:///home/mrtin/dev/p1/entorno/launch.bat): Lanzador silencioso de WezTerm desde CMD.
+*   [`launch.ps1`](file:///home/mrtin/dev/p1/entorno/launch.ps1): Lanzador de consola WezTerm desde PowerShell (configura la sesión en el entorno de MSYS2 UCRT64).
+*   [`launch-vscode.bat`](file:///home/mrtin/dev/p1/entorno/launch-vscode.bat): Lanzador silencioso de VS Code desde CMD.
+*   [`launch-vscode.ps1`](file:///home/mrtin/dev/p1/entorno/launch-vscode.ps1): Lanzador de VS Code desde PowerShell (inyecta la ruta del compilador GCC y las variables locales a la sesión).
+*   [`wezterm.lua`](file:///home/mrtin/dev/p1/entorno/wezterm.lua): Configuración portable de WezTerm (apariencia, tipografía y arranque de shell Bash UCRT64).
+*   [`launcher/`](file:///home/mrtin/dev/p1/entorno/launcher/): Directorio que contiene el código fuente (`launcher.c`) y un `Makefile` para compilar binarios compilados que lanzan la consola o VS Code de forma directa y silenciosa, suprimiendo la ventana negra de PowerShell intermedia.
 *   [plan.md](file:///home/mrtin/dev/p1/entorno/plan.md): Plan de trabajo y hoja de ruta.
 *   [GEMINI.md](file:///home/mrtin/dev/p1/entorno/GEMINI.md): Directrices de desarrollo y reglas de formato de commits semánticos obligatorios para agentes de IA que colaboren en el proyecto.
 *   `home/`: Directorio local que actúa como `$HOME` del usuario. Evita contaminar la carpeta del sistema host. (Creado al inicializar).
 *   `msys64/`: Carpeta contenedora de MSYS2 y binarios (excluida en `.gitignore`).
 *   `vscode/`: Carpeta contenedora del editor y configuraciones locales (excluida en `.gitignore`).
-*   `wezterm/`: Carpeta contenedora de WezTerm terminal local (excluida en `.gitignore`).
+*   `wezterm/`: Carpeta contenedora de la terminal WezTerm (excluida en `.gitignore`).
 
 ---
 
@@ -99,7 +102,7 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
     *   *Si por alguna razón no se encuentra WezTerm localmente, los lanzadores caerán de vuelta de forma segura iniciando la terminal Bash integrada en la consola clásica.*
 *   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
 
-Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador GCC, Make, CMake y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
+Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador GCC, Make, CMake, Ninja y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
 
 ---
 
@@ -130,7 +133,7 @@ Si usás este entorno en un pendrive y programás en computadoras compartidas (l
    ```
 3. El script te detallará los archivos que serán eliminados. Confirmá con `s`.
 
-*Este comando borrará tu historial de comandos, llaves SSH privadas, datos de usuario, extensiones personalizadas instaladas en VS Code y, lo más importante, los tokens y contraseñas guardados en `.git-credentials` sin requerir que borres los compiladores ni el editor de código, dejándolos listos para que los use otro usuario de forma segura.*
+*Este comando borrará tu historial de comandos, llaves SSH privadas, datos de usuario, extensiones personalizadas instaladas en VS Code y los tokens y contraseñas guardados en `.git-credentials` sin requerir que borres los compiladores ni el editor de código, dejándolos listos para que los use otro usuario de forma segura.*
 
 ---
 
@@ -164,7 +167,7 @@ Dado que el entorno es portátil y no utiliza los directorios locales del host, 
 
 ## Gestión de Librerías de C desde GitHub
 
-El entorno incluye el script `install-lib.sh` (ubicado en `bin/` y disponible en el `PATH`) para instalar librerías directamente en el entorno portátil de compilación desde cualquier repositorio de GitHub.
+El entorno incluye el script `install-lib.sh` (ubicado en `bin/` y disponible en el `PATH`) para instalar librerías directamente en el entorno portátil de compilación en el prefijo `/ucrt64` desde cualquier repositorio de GitHub.
 
 ### Ejecución básica
 Iniciá el terminal (`launch.bat`) y ejecutá:
