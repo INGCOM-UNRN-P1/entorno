@@ -1,4 +1,4 @@
-﻿# launch-vscode.ps1 - Lanzador de VS Code con entorno portable
+# launch-vscode.ps1 - Lanzador de VS Code con entorno portable
 
 $ErrorActionPreference = "Stop"
 
@@ -45,13 +45,13 @@ if (-not (Test-Path $homeDir)) {
 
 # Inyectar variables de entorno de sesión
 $env:HOME = $homeDir
-$env:MSYSTEM = "CLANG64"
+$env:MSYSTEM = "UCRT64"
 $env:CHERE_INVOKING = "1"
 
-# Prepend de paths de MSYS2 y Clang a la sesión de VS Code
-$clangPath = Join-Path $portableRoot "msys64\clang64\bin"
+# Prepend de paths de MSYS2 y GCC a la sesión de VS Code
+$gccPath = Join-Path $portableRoot "msys64\ucrt64\bin"
 $usrPath = Join-Path $portableRoot "msys64\usr\bin"
-$env:PATH = "$clangPath;$usrPath;$env:PATH"
+$env:PATH = "$gccPath;$usrPath;$env:PATH"
 
 # Validar existencia de VS Code
 if (-not (Test-Path $codeExe)) {

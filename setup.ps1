@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
     [switch]$SkipUpdate
@@ -120,7 +120,6 @@ try {
                 "launch.ps1",
                 "launch-vscode.bat",
                 "launch-vscode.ps1",
-                "compile-launch-vscode.ps1",
                 "clean-shared-host.ps1",
                 "customize-terminal.ps1",
                 "customize-terminal.bat",
@@ -632,12 +631,12 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                     "*" = $false
                 }
                 "terminal.integrated.profiles.windows" = @{
-                    "Clang64 Bash" = @{
+                    "UCRT64 Bash" = @{
                         "path" = "bash.exe"
                         "args" = @("--login", "-i")
                     }
                 }
-                "terminal.integrated.defaultProfile.windows" = "Clang64 Bash"
+                "terminal.integrated.defaultProfile.windows" = "UCRT64 Bash"
             } | ConvertTo-Json -Depth 10
             
             Set-Content -Path $settingsJsonPath -Value $defaultSettings
@@ -1012,15 +1011,15 @@ if ($ImportHostConfig) {
         $settingsObj | Add-Member -NotePropertyName "chat.disableAIFeatures" -NotePropertyValue $true -Force
         $settingsObj | Add-Member -NotePropertyName "github.copilot.enable" -NotePropertyValue @{ "*" = $false } -Force
         
-        # Configurar el perfil de terminal Bash Clang64
+        # Configurar el perfil de terminal Bash UCRT64
         $terminalProfiles = @{
-            "Clang64 Bash" = @{
+            "UCRT64 Bash" = @{
                 "path" = "bash.exe"
                 "args" = @("--login", "-i")
             }
         }
         $settingsObj | Add-Member -NotePropertyName "terminal.integrated.profiles.windows" -NotePropertyValue $terminalProfiles -Force
-        $settingsObj | Add-Member -NotePropertyName "terminal.integrated.defaultProfile.windows" -NotePropertyValue "Clang64 Bash" -Force
+        $settingsObj | Add-Member -NotePropertyName "terminal.integrated.defaultProfile.windows" -NotePropertyValue "UCRT64 Bash" -Force
         
         # Guardar configuración fusionada
         $mergedSettingsJson = $settingsObj | ConvertTo-Json -Depth 10

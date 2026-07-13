@@ -22,11 +22,11 @@ set "HOME=%PORTABLE_ROOT%%HOME_DIR_NAME%"
 if not exist "%HOME%" mkdir "%HOME%"
 
 :: Inyectar variables para MSYS2
-set "MSYSTEM=CLANG64"
+set "MSYSTEM=UCRT64"
 set "CHERE_INVOKING=1"
 
 :: Agregar compilador y userland Unix al PATH temporal de la sesión
-set "PATH=%PORTABLE_ROOT%msys64\clang64\bin;%PORTABLE_ROOT%msys64\usr\bin;%PATH%"
+set "PATH=%PORTABLE_ROOT%msys64\ucrt64\bin;%PORTABLE_ROOT%msys64\usr\bin;%PATH%"
 
 :: Verificar que exista VS Code
 if not exist "%PORTABLE_ROOT%vscode\Code.exe" (

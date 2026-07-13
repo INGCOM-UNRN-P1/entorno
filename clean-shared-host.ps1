@@ -1,4 +1,4 @@
-﻿# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
+# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
 # Diseñado para usarse antes de desconectarse o cerrar sesión en computadoras compartidas.
 
 $ErrorActionPreference = "Stop"
@@ -126,12 +126,12 @@ $defaultSettings = @{
         "*" = $false
     }
     "terminal.integrated.profiles.windows" = @{
-        "Clang64 Bash" = @{
+        "UCRT64 Bash" = @{
             "path" = "bash.exe"
             "args" = @("--login", "-i")
         }
     }
-    "terminal.integrated.defaultProfile.windows" = "Clang64 Bash"
+    "terminal.integrated.defaultProfile.windows" = "UCRT64 Bash"
 } | ConvertTo-Json -Depth 10
 
 Set-Content -Path $settingsJsonPath -Value $defaultSettings
