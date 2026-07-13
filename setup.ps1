@@ -21,6 +21,10 @@ $homeDir = Join-Path $portableRoot $HomeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
 $isUpdateMode = Test-Path (Join-Path $portableRoot ".install_complete")
 
+# Configurar codificaciones UTF-8 globales (con y sin BOM)
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$utf8WithBom = New-Object System.Text.UTF8Encoding($true)
+
 # Función para extraer el nombre de archivo de una URL o usar un fallback
 function Get-FileNameFromUrl {
     param(
@@ -154,7 +158,6 @@ try {
                             Invoke-WebRequest -Uri $fileUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
                             if ($file -like "*.ps1") {
                                 $content = [System.IO.File]::ReadAllText($destinationPath, [System.Text.Encoding]::UTF8)
-                                $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
                                 [System.IO.File]::WriteAllText($destinationPath, $content, $utf8WithBom)
                             }
                             $success = $true
@@ -258,14 +261,12 @@ if (-not (Test-Path $homeDir)) {
 $bashProfilePath = Join-Path $homeDir ".bash_profile"
 if (-not (Test-Path $bashProfilePath)) {
     $bashProfileContent = "if [ -f `"`${HOME}/.bashrc`" ] ; then`n  source `"`${HOME}/.bashrc`"`nfi"
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($bashProfilePath, $bashProfileContent, $utf8NoBom)
 }
 
 $bashrcPath = Join-Path $homeDir ".bashrc"
 if (-not (Test-Path $bashrcPath)) {
     $bashrcContent = "# .bashrc`n# Aquí podés agregar tus alias y funciones personalizadas.`n`n# Agregar bin portable al PATH convirtiendo la ruta a formato Unix`nif [ -n `"`$PORTABLE_ROOT`" ]; then`n    UNIX_ROOT=`$`(cygpath -u `"`$PORTABLE_ROOT`"`)`n    export PATH=`"`${UNIX_ROOT}bin:`$PATH`"`nfi`n"
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
 
@@ -943,7 +944,6 @@ config.enable_tab_bar = false
 
 return config
 "@
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
     Write-Host "Configuración wezterm.lua creada/actualizada." -ForegroundColor Green
 }
