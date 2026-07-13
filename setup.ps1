@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
     [switch]$SkipUpdate
@@ -152,6 +152,11 @@ try {
                         $attempts++
                         try {
                             Invoke-WebRequest -Uri $fileUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
+                            if ($file -like "*.ps1") {
+                                $content = [System.IO.File]::ReadAllText($destinationPath, [System.Text.Encoding]::UTF8)
+                                $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
+                                [System.IO.File]::WriteAllText($destinationPath, $content, $utf8WithBom)
+                            }
                             $success = $true
                         } catch {
                             if ($attempts -lt 3) {
