@@ -1050,6 +1050,10 @@ finally {
         Write-Host "`n======================================================================"
         Write-Host "FIN DE LA INSTALACIÓN: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
         Write-Host "======================================================================"
-        Stop-Transcript -ErrorAction SilentlyContinue | Out-Null
+        try {
+            Stop-Transcript -ErrorAction SilentlyContinue | Out-Null
+        } catch {
+            # Ignorar si no está transcribiendo en este momento
+        }
     }
 }
