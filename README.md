@@ -18,6 +18,17 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 ---
 
+## Manuales y Documentación
+
+En la carpeta [`docs/`](file:///home/mrtin/dev/p1/entorno/docs/) disponés de guías completas detalladas:
+
+*   [Manual del Entorno Portable](file:///home/mrtin/dev/p1/entorno/docs/entorno.md): Arquitectura, inicialización y arranque de servicios.
+*   [Casos de Uso del Entorno](file:///home/mrtin/dev/p1/entorno/docs/casos-de-uso.md): Situaciones educativas y logísticas (desarrollo offline, laboratorios públicos, consistencia de cátedra) que resuelve el proyecto.
+*   [Documentación de Scripts](file:///home/mrtin/dev/p1/entorno/docs/scripts.md): Detalle técnico exhaustivo del funcionamiento interno, parámetros y comportamiento de cada script del entorno.
+*   [Manual de Compilación con GCC](file:///home/mrtin/dev/p1/entorno/docs/compilacion-gcc.md): Flujo de compilación (preprocesado, compilación, ensamble, enlazado) y optimización en C.
+
+---
+
 ## Estructura del Repositorio
 
 El repositorio está organizado para separar las herramientas ejecutables del host de las configuraciones y scripts de inicialización:

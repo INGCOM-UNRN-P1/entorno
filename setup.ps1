@@ -178,7 +178,13 @@ try {
                     "bin/diagnose-env.sh",
                     "README.md",
                     "plan.md",
-                    "GEMINI.md"
+                    "GEMINI.md",
+                    "docs/entorno.md",
+                    "docs/casos-de-uso.md",
+                    "docs/scripts.md",
+                    "docs/compilacion-gcc.md",
+                    "docs/images/arquitectura_entorno.svg",
+                    "docs/images/flujo_compilacion.svg"
                 )
                 
                 foreach ($file in $filesToCopy) {
