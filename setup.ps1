@@ -582,7 +582,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
         $installedVscodeVersionFile = Join-Path $vscodeDir ".version"
         $installedVscodeUrl = ""
         if (Test-Path $installedVscodeVersionFile) {
-            $installedVscodeUrl = Get-Content $installedVscodeVersionFile -Raw
+            $installedVscodeUrl = (Get-Content $installedVscodeVersionFile -Raw).Trim()
         }
         
         if ($resolvedVscodeUrl -ne $installedVscodeUrl) {
@@ -746,7 +746,7 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
         $installedGhVersionFile = Join-Path $portableRoot "bin\.gh_version"
         $installedGhUrl = ""
         if (Test-Path $installedGhVersionFile) {
-            $installedGhUrl = Get-Content $installedGhVersionFile -Raw
+            $installedGhUrl = (Get-Content $installedGhVersionFile -Raw).Trim()
         }
         if ($ghDownloadUrl -ne $installedGhUrl) {
             Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
@@ -863,7 +863,7 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         $installedWezVersionFile = Join-Path $wezDir ".version"
         $installedWezUrl = ""
         if (Test-Path $installedWezVersionFile) {
-            $installedWezUrl = Get-Content $installedWezVersionFile -Raw
+            $installedWezUrl = (Get-Content $installedWezVersionFile -Raw).Trim()
         }
         
         if ($wezDownloadUrl -ne $installedWezUrl) {
