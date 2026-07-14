@@ -521,9 +521,12 @@ if ($isUpdateMode -or -not $isMsysComplete) {
         [System.IO.File]::WriteAllText($aliasesFile, ($customAliases -join "`n") + "`n", $utf8NoBom)
         
         $sourceLine = "if [ -f ~/.bash_aliases ]; then source ~/.bash_aliases; fi"
-        $content = Get-Content $bashrcPath -Raw
+        $content = [System.IO.File]::ReadAllText($bashrcPath, $utf8NoBom)
+        
+        $isModified = $false
         if (-not $content.Contains("source ~/.bash_aliases")) {
-            Add-Content -Path $bashrcPath -Value "`n$sourceLine"
+            $content += "`r`n$sourceLine"
+            $isModified = $true
         }
 
         # Agregar banner institucional (UNRN Andina - Programación 1)
@@ -546,12 +549,15 @@ if ($isUpdateMode -or -not $isMsysComplete) {
             $endInstMarker
         ) -join "`r`n"
         
-        $content = Get-Content $bashrcPath -Raw
         if (-not $content.Contains($startInstMarker)) {
-            Add-Content -Path $bashrcPath -Value $instBanner
+            $content += "`r`n$instBanner"
+            $isModified = $true
         }
         
-        Write-Host "Configuración de terminal personalizada guardada." -ForegroundColor Green
+        if ($isModified) {
+            [System.IO.File]::WriteAllText($bashrcPath, $content, $utf8NoBom)
+            Write-Host "Configuración de terminal personalizada guardada." -ForegroundColor Green
+        }
     }
     Set-Content -Path (Join-Path $portableRoot ".msys_complete") -Value "Complete"
 } else {

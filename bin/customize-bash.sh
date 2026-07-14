@@ -139,17 +139,18 @@ fi
 # Escribir en .bashrc reemplazando el bloque existente o agregándolo al final
 TEMP_BASHRC=$(mktemp)
 
+export BANNER_BLOCK
 if grep -q "$START_MARKER" "$BASHRC_PATH"; then
-    # Usamos awk para reemplazar todo lo contenido entre los marcadores de banner de bienvenida
-    awk -v r="$BANNER_BLOCK" '
+    # Usamos awk y ENVIRON para evitar la interpolación de caracteres de escape en el paso de variables
+    awk '
     BEGIN {print_flag=1}
-    /# === START WELCOME BANNER ===/ {print r; print_flag=0; next}
+    /# === START WELCOME BANNER ===/ {print ENVIRON["BANNER_BLOCK"]; print_flag=0; next}
     /# === END WELCOME BANNER ===/ {print_flag=1; next}
     {if (print_flag) print}
     ' "$BASHRC_PATH" > "$TEMP_BASHRC"
 else
     cp "$BASHRC_PATH" "$TEMP_BASHRC"
-    echo -e "\n\n$BANNER_BLOCK" >> "$TEMP_BASHRC"
+    printf '\n\n%s\n' "$BANNER_BLOCK" >> "$TEMP_BASHRC"
 fi
 
 mv "$TEMP_BASHRC" "$BASHRC_PATH"
