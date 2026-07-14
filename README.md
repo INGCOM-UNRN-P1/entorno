@@ -108,6 +108,15 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
 
 Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador GCC, Make, CMake, Ninja y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
 
+> [!TIP]
+> **Traducción de VS Code al Español:**
+> Por defecto, VS Code se instala en inglés. Si preferís tener la interfaz en español, podés instalar de forma muy sencilla la extensión oficial de idioma:
+> 1. Abrí VS Code portable usando `launch-vscode.bat`.
+> 2. Presioná `Ctrl + Shift + X` (o hacé clic en el ícono de extensiones en la barra de actividades de la izquierda).
+> 3. Buscá `Spanish Language Pack for VS Code` (desarrollada por Microsoft) o instalala directamente desde: [Spanish Language Pack for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-es).
+> 4. Hacé clic en **Install** (Instalar).
+> 5. Al finalizar la instalación, se mostrará una notificación abajo a la derecha consultando si querés cambiar el idioma y reiniciar. Hacé clic en **Change Language and Restart**.
+
 ---
 
 ## Personalización Estética de la Consola
