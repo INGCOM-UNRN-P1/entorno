@@ -155,6 +155,11 @@ if ($configureBanner -match "^[sS]$") {
             'echo "======================================================================"',
             'echo "  UNRN Andina - Programación 1"',
             'echo "======================================================================"',
+            'echo "  Pasos sugeridos para iniciar:"',
+            'echo "  * Ejecutá ''configure-git.sh'' para configurar tu identidad de Git."',
+            'echo "  * Podés personalizar esta consola ejecutando ''customize-terminal.bat''"',
+            'echo "    (o ''customize-terminal.ps1'' desde PowerShell)."',
+            'echo "======================================================================"',
             'echo -e "\e[0m"',
             $endInstMarker
         ) -join "`r`n"
