@@ -28,12 +28,6 @@ echo -e "  ${GREEN}install-lib.sh <repo>${RESET} - Instala librerías C desde Gi
 echo -e "  ${GREEN}diagnose-env.sh${RESET}       - Diagnostica el estado del entorno y las versiones de herramientas."
 echo ""
 
-echo -e "${CYAN}${BOLD}[ Scripts en la Raíz (Ejecutar desde PowerShell/CMD en el Host) ]${RESET}"
-echo -e "  ${YELLOW}customize-terminal.bat${RESET} - Personaliza la consola WezTerm (colores, fuente, opacidad, tabs)."
-echo -e "  ${YELLOW}clean-shared-host.ps1${RESET}  - Limpia historiales y credenciales al trabajar en PCs públicas."
-echo -e "  ${YELLOW}package-env.ps1${RESET}        - Empaqueta el entorno portable completo en un archivo ZIP."
-echo -e "  ${YELLOW}setup.ps1${RESET}              - Instala, repara o actualiza componentes del entorno portable."
-echo ""
 
 echo -e "${CYAN}${BOLD}[ Comandos del Entorno de Desarrollo ]${RESET}"
 echo -e "  ${BLUE}gcc${RESET} / ${BLUE}clang${RESET}             - Compiladores nativos de C en el terminal."
