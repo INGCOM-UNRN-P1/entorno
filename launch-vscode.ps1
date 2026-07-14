@@ -61,4 +61,8 @@ if (-not (Test-Path $codeExe)) {
 }
 
 # Lanzar VS Code heredando el ambiente
-Start-Process -FilePath $codeExe -ArgumentList $args
+if ($args) {
+    Start-Process -FilePath $codeExe -ArgumentList $args
+} else {
+    Start-Process -FilePath $codeExe
+}
