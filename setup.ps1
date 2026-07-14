@@ -116,65 +116,99 @@ try {
         }
         
         if ($shouldUpdate) {
-            Write-Host "No se detectó un repositorio de Git (carpeta standalone). Descargando última versión de los scripts..." -ForegroundColor Cyan
+            Write-Host "No se detectó un repositorio de Git (carpeta standalone). Descargando snapshot del repositorio..." -ForegroundColor Cyan
             
-            $filesToDownload = @(
-                "setup.ps1",
-                "launch.bat",
-                "launch.ps1",
-                "launch-vscode.bat",
-                "launch-vscode.ps1",
-                "clean-shared-host.ps1",
-                "customize-terminal.ps1",
-                "customize-terminal.bat",
-                "package-env.ps1",
-                "bin/install-lib.sh",
-                "bin/configure-git.sh",
-                "bin/download-baseline.sh",
-                "bin/diagnose-env.sh",
-                "README.md",
-                "plan.md",
-                "GEMINI.md"
-            )
+            if (-not (Test-Path $descargasDir)) {
+                New-Item -ItemType Directory -Path $descargasDir | Out-Null
+            }
             
-            foreach ($file in $filesToDownload) {
-                $fileUrl = "$rawBaseUrl/$file"
-                $destinationPath = Join-Path $portableRoot $file
-                
-                # Asegurar la existencia del directorio padre (ej: bin/)
-                $parentDir = Split-Path -Parent $destinationPath
-                if (-not (Test-Path $parentDir)) {
-                    New-Item -ItemType Directory -Path $parentDir | Out-Null
-                }
-
-                try {
-                    Write-Host "Actualizando $file..." -ForegroundColor Gray
-                    # Descarga con reintentos
-                    $attempts = 0
-                    $success = $false
-                    while (-not $success -and $attempts -lt 3) {
-                        $attempts++
-                        try {
-                            Invoke-WebRequest -Uri $fileUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
-                            if ($file -like "*.ps1") {
-                                $content = [System.IO.File]::ReadAllText($destinationPath, [System.Text.Encoding]::UTF8)
-                                [System.IO.File]::WriteAllText($destinationPath, $content, $utf8WithBom)
-                            }
-                            $success = $true
-                        } catch {
-                            if ($attempts -lt 3) {
-                                Start-Sleep -Seconds 1
-                            } else {
-                                throw $_
-                            }
+            $zipUrl = "https://github.com/$repoOwner/$repoName/archive/refs/heads/$branch.zip"
+            $zipPath = Join-Path $descargasDir "repo_temp.zip"
+            $extractTempDir = Join-Path $descargasDir "repo_extracted"
+            
+            # Limpiar directorio de extracción si ya existía
+            if (Test-Path $extractTempDir) {
+                Remove-Item -Path $extractTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            
+            try {
+                Write-Host "Descargando snapshot del repositorio desde GitHub..." -ForegroundColor Gray
+                # Descarga con reintentos
+                $attempts = 0
+                $success = $false
+                while (-not $success -and $attempts -lt 3) {
+                    $attempts++
+                    try {
+                        Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
+                        $success = $true
+                    } catch {
+                        if ($attempts -lt 3) {
+                            Start-Sleep -Seconds 1
+                        } else {
+                            throw $_
                         }
                     }
-                } catch {
-                    Write-Warning "No se pudo actualizar el archivo $($file): $_"
+                }
+                
+                Write-Host "Extrayendo archivos del snapshot..." -ForegroundColor Gray
+                Expand-Archive -Path $zipPath -DestinationPath $extractTempDir -Force
+                
+                $extractedRepoDir = Join-Path $extractTempDir "$repoName-$branch"
+                if (-not (Test-Path $extractedRepoDir)) {
+                    throw "No se pudo encontrar la carpeta extraída '$repoName-$branch' en el archivo zip."
+                }
+                
+                $filesToCopy = @(
+                    "setup.ps1",
+                    "launch.bat",
+                    "launch.ps1",
+                    "launch-vscode.bat",
+                    "launch-vscode.ps1",
+                    "clean-shared-host.ps1",
+                    "customize-terminal.ps1",
+                    "customize-terminal.bat",
+                    "package-env.ps1",
+                    "bin/install-lib.sh",
+                    "bin/configure-git.sh",
+                    "bin/download-baseline.sh",
+                    "bin/diagnose-env.sh",
+                    "README.md",
+                    "plan.md",
+                    "GEMINI.md"
+                )
+                
+                foreach ($file in $filesToCopy) {
+                    $srcPath = Join-Path $extractedRepoDir $file
+                    $destPath = Join-Path $portableRoot $file
+                    if (Test-Path $srcPath) {
+                        # Asegurar directorio destino
+                        $parentDir = Split-Path -Parent $destPath
+                        if (-not (Test-Path $parentDir)) {
+                            New-Item -ItemType Directory -Path $parentDir | Out-Null
+                        }
+                        # Copiar archivo
+                        Copy-Item -Path $srcPath -Destination $destPath -Force
+                        # Guardar con UTF-8 BOM si es un script PS
+                        if ($file -like "*.ps1") {
+                            $content = [System.IO.File]::ReadAllText($destPath, [System.Text.Encoding]::UTF8)
+                            [System.IO.File]::WriteAllText($destPath, $content, $utf8WithBom)
+                        }
+                    }
+                }
+                
+                Write-Host "Actualización de scripts completada con éxito.`n" -ForegroundColor Green
+                $didUpdate = $true
+            } catch {
+                Write-Warning "Fallo al descargar o extraer la actualización de los scripts: $_"
+            } finally {
+                # Limpieza final de temporales
+                if (Test-Path $extractTempDir) {
+                    Remove-Item -Path $extractTempDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                if (Test-Path $zipPath) {
+                    Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
                 }
             }
-            Write-Host "Actualización de scripts completada.`n" -ForegroundColor Green
-            $didUpdate = $true
         }
     }
 
