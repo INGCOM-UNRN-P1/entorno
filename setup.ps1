@@ -170,6 +170,7 @@ try {
                     "package-env.ps1",
                     "bin/install-lib.sh",
                     "bin/build-launcher.sh",
+                    "bin/customize-bash.sh",
                     "bin/configure-git.sh",
                     "bin/download-baseline.sh",
                     "bin/diagnose-env.sh",

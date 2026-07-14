@@ -54,8 +54,7 @@ Clear-Host
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host "        Asistente de Personalización de Consola Portable" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "Este script te permite personalizar la estética de la consola (WezTerm)"
-Write-Host "y el banner de bienvenida del terminal Bash de forma sencilla.`n"
+Write-Host "Este script te permite personalizar la estética de la consola WezTerm.`n"
 
 # Asegurar existencia del HOME portable
 if (-not (Test-Path $homeDir)) {
@@ -65,146 +64,9 @@ if (-not (Test-Path $homeDir)) {
 }
 
 # ---------------------------------------------------------
-# Parte 1: Personalización del Banner de Bienvenida (Bash)
+# Parte 1: Personalización de la Terminal (WezTerm)
 # ---------------------------------------------------------
-$configureBanner = $null
-while ($configureBanner -notmatch "^[sSnN]$") {
-    $configureBanner = Read-Host "¿Querés configurar o modificar el mensaje de bienvenida de la consola? (s/n)"
-}
-
-if ($configureBanner -match "^[sS]$") {
-    Write-Host "`nElegí el tipo de banner de bienvenida:" -ForegroundColor Cyan
-    Write-Host "1) Mensaje limpio estándar (con información del entorno)"
-    Write-Host "2) Mensaje de texto personalizado"
-    Write-Host "3) Desactivar banner (consola limpia)"
-    
-    $bannerChoice = ""
-    while ($bannerChoice -notmatch "^[123]$") {
-        $bannerChoice = Read-Host "Seleccioná una opción (1-3)"
-    }
-    
-    $bannerLines = @()
-    $enableWelcomeMessage = "s"
-    
-    if ($bannerChoice -eq "1") {
-        $bannerLines = @(
-            "  ENTORNO PORTABLE C + PYTHON (CLANG64)",
-            "  Consola interactiva inicializada con éxito.",
-            "  Herramientas de C: clang, make, cmake, ninja, cppcheck",
-            "  Entorno Python: python, pip, uv",
-            "  Editor de código: VS Code Portable",
-            "  ",
-            "  Escribí 'exit' para cerrar la consola."
-        )
-    } elseif ($bannerChoice -eq "2") {
-        Write-Host "`nEscribí tu mensaje de bienvenida línea por línea."
-        Write-Host "Cuando termines, escribí 'FIN' en una línea vacía y presioná Enter:" -ForegroundColor Yellow
-        $customLine = ""
-        while ($true) {
-            $customLine = Read-Host "Línea"
-            if ($customLine.Trim().ToUpper() -eq "FIN") {
-                break
-            }
-            $bannerLines += $customLine
-        }
-    } else {
-        $enableWelcomeMessage = "n"
-    }
-    
-    $bashColorCode = "36" # Celeste predeterminado
-    if ($enableWelcomeMessage -eq "s") {
-        Write-Host "`nElegí el color del banner:" -ForegroundColor Cyan
-        Write-Host "1) Celeste (Cyan)"
-        Write-Host "2) Verde (Green)"
-        Write-Host "3) Amarillo (Yellow)"
-        Write-Host "4) Violeta (Purple)"
-        Write-Host "5) Blanco (White)"
-        
-        $colorChoice = ""
-        while ($colorChoice -notmatch "^[12345]$") {
-            $colorChoice = Read-Host "Seleccioná una opción de color (1-5)"
-        }
-        
-        $colorMap = @{
-            "1" = "36"
-            "2" = "32"
-            "3" = "33"
-            "4" = "35"
-            "5" = "37"
-        }
-        $bashColorCode = $colorMap[$colorChoice]
-    }
-    
-    # Procesar actualización en el archivo .bashrc
-    $bashrcPath = Join-Path $homeDir ".bashrc"
-    
-    $bashrcContent = ""
-    if (Test-Path $bashrcPath) {
-        $bashrcContent = Get-Content $bashrcPath -Raw
-    }
-    
-    $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
-    $endInstMarker = "# === END INSTITUTIONAL BANNER ==="
-    
-    # Asegurar la existencia del banner institucional (va antes del banner del estudiante)
-    if (-not $bashrcContent.Contains($startInstMarker)) {
-        $instBanner = @(
-            $startInstMarker,
-            "clear",
-            'echo -e "\e[35m"', # Violeta
-            'echo "======================================================================"',
-            'echo "  UNRN Andina - Programación 1"',
-            'echo "======================================================================"',
-            'echo "  Pasos sugeridos para iniciar:"',
-            'echo "  * Ejecutá ''configure-git.sh'' para configurar tu identidad de Git."',
-            'echo "  * Podés personalizar esta consola ejecutando ''customize-terminal.bat''"',
-            'echo "    (o ''customize-terminal.ps1'' desde PowerShell)."',
-            'echo "======================================================================"',
-            'echo -e "\e[0m"',
-            $endInstMarker
-        ) -join "`r`n"
-        if ($bashrcContent.Trim().Length -gt 0) {
-            $bashrcContent = $instBanner + "`r`n`r`n" + $bashrcContent
-        } else {
-            $bashrcContent = $instBanner
-        }
-    }
-    
-    $startMarker = "# === START WELCOME BANNER ==="
-    $endMarker = "# === END WELCOME BANNER ==="
-    
-    # Generar el bloque nuevo para la personalización del estudiante
-    $newBannerBlock = "$startMarker`r`n"
-    if ($enableWelcomeMessage -eq "s") {
-        # Se remueve el clear para no borrar el banner institucional previo
-        $newBannerBlock += "echo -e ""\e[${bashColorCode}m""`r`n"
-        $newBannerBlock += "echo ""======================================================================""`r`n"
-        foreach ($line in $bannerLines) {
-            $escapedLine = $line.Replace('"', '\"')
-            $newBannerBlock += "echo ""$escapedLine""`r`n"
-        }
-        $newBannerBlock += "echo ""======================================================================""`r`n"
-        $newBannerBlock += "echo -e ""\e[0m""`r`n"
-    }
-    $newBannerBlock += "$endMarker"
-    
-    if ($bashrcContent -match "(?s)$startMarker.*?$endMarker") {
-        $bashrcContent = $bashrcContent -replace "(?s)$startMarker.*?$endMarker", $newBannerBlock
-    } else {
-        # Agregar una nueva línea al final de .bashrc
-        if ($bashrcContent.Trim().Length -gt 0) {
-            $bashrcContent += "`r`n`r`n$newBannerBlock"
-        } else {
-            $bashrcContent = $newBannerBlock
-        }
-    }
-    
-    Write-Host "`nEscribiendo cambios en .bashrc..." -ForegroundColor Cyan
-    Execute-WithRetry -Action {
-        Set-Content -Path $bashrcPath -Value $bashrcContent -Force
-    } -ErrorMessage "Fallo al escribir en el archivo .bashrc de la consola."
-    Write-Host "Mensaje de bienvenida guardado correctamente." -ForegroundColor Green
-}
+# (La personalización del banner de bienvenida y entorno Bash se maneja por medio de customize-bash.sh)
 
 # ---------------------------------------------------------
 # Parte 2: Personalización de la Terminal (WezTerm)
@@ -295,6 +157,16 @@ if ($configureWez -match "^[sS]$") {
             }
         }
     }
+
+    # Barra de pestañas (Tabs)
+    $enableTabBar = $null
+    while ($enableTabBar -notmatch "^[sSnN]$") {
+        $enableTabBar = Read-Host "¿Querés habilitar la barra de pestañas (múltiples tabs) en la terminal? (s/n)"
+    }
+    $selectedTabBar = "false"
+    if ($enableTabBar -match "^[sS]$") {
+        $selectedTabBar = "true"
+    }
     
     # Generar contenido final de wezterm.lua
     $wezConfigContent = @"
@@ -334,7 +206,7 @@ config.color_scheme = '$selectedScheme'
 config.font = wezterm.font 'JetBrains Mono'
 config.font_size = $selectedFontSize
 config.window_background_opacity = $selectedOpacity
-config.enable_tab_bar = false
+config.enable_tab_bar = $selectedTabBar
 
 return config
 "@
