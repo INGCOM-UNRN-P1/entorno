@@ -43,11 +43,13 @@ fi
 
 echo -e "\e[32m-> Compilando ejecutables del lanzador...\e[0m"
 
-# Si make está disponible, lo usamos pasando el CC correspondiente
+# Si make o mingw32-make están disponibles, los usamos pasando el CC correspondiente
 if command -v make >/dev/null 2>&1; then
     make CC="$CC"
+elif command -v mingw32-make >/dev/null 2>&1; then
+    mingw32-make CC="$CC"
 else
-    echo -e "\e[33m-> make no está instalado. Compilando manualmente con $CC...\e[0m"
+    echo -e "\e[33m-> make o mingw32-make no está instalado. Compilando manualmente con $CC...\e[0m"
     CFLAGS="-O2 -Wall -mwindows"
     $CC $CFLAGS -o ../launch_vscode.exe launcher.c
     $CC $CFLAGS -o ../launch-vscode.exe launcher.c

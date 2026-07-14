@@ -44,14 +44,33 @@ if (-not (Test-Path $homeDir)) {
 }
 
 # Inyectar variables de entorno de sesión
+$env:PORTABLE_ROOT = $portableRoot
 $env:HOME = $homeDir
 $env:MSYSTEM = "UCRT64"
 $env:CHERE_INVOKING = "1"
+$env:LANG = "es_AR.UTF-8"
 
-# Prepend de paths de MSYS2 y GCC a la sesión de VS Code
+# Prepend de paths de MSYS2, GCC y bin local a la sesión de VS Code
+$binPath = Join-Path $portableRoot "bin"
 $gccPath = Join-Path $portableRoot "msys64\ucrt64\bin"
 $usrPath = Join-Path $portableRoot "msys64\usr\bin"
-$env:PATH = "$gccPath;$usrPath;$env:PATH"
+$env:PATH = "$binPath;$gccPath;$usrPath;$env:PATH"
+
+# Variables específicas del Toolchain de C/C++
+$env:CC  = "gcc"
+$env:CXX = "g++"
+$env:AR  = "ar"
+$env:AS  = "as"
+$env:LD  = "ld"
+$env:CPP = "cpp"
+$env:CFLAGS  = "-O2 -Wall"
+$env:LDFLAGS = ""
+$env:PKG_CONFIG_PATH   = "$(Join-Path $portableRoot 'msys64\ucrt64\lib\pkgconfig');$(Join-Path $portableRoot 'msys64\usr\lib\pkgconfig');$env:PKG_CONFIG_PATH"
+$env:CMAKE_PREFIX_PATH = "$(Join-Path $portableRoot 'msys64\ucrt64');$(Join-Path $portableRoot 'msys64\usr');$env:CMAKE_PREFIX_PATH"
+
+# Variables de entorno para integración
+$env:VSCODE_ROOT  = Join-Path $portableRoot "vscode"
+$env:WEZTERM_ROOT = Join-Path $portableRoot "wezterm"
 
 # Validar existencia de VS Code
 if (-not (Test-Path $codeExe)) {
