@@ -75,3 +75,22 @@ Si necesitás compilar e instalar bibliotecas externas directamente desde reposi
 install-lib.sh <usuario/repositorio_github> [rama_o_tag]
 ```
 El script descargará, compilará y copiará las cabeceras e instalables de manera desatendida.
+
+### Descarga y Compilación del Lanzador del Entorno
+Si necesitás descargar y compilar los accesos directos ejecutables de la raíz (`.exe`) a partir del código fuente del lanzador en C, ejecutá:
+```bash
+build-launcher.sh
+```
+El script descargará los archivos fuente si faltan y los compilará usando el compilador UCRT64 GCC.
+
+### Personalización del Mensaje de Bienvenida de Bash
+Para configurar el mensaje que se muestra al abrir la consola interactiva Bash, sus colores o elegir entre plantillas sugeridas y frases motivacionales, ejecutá:
+```bash
+customize-bash.sh
+```
+
+### Guía de Ayuda Rápida
+Para consultar rápidamente el listado de todos los comandos y scripts útiles disponibles en el entorno portable, simplemente ejecutá:
+```bash
+ayuda
+```
