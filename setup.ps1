@@ -575,16 +575,32 @@ $isCodeComplete = Test-Path (Join-Path $portableRoot ".vscode_complete")
 $resolvedVscodeUrl = $vscodeZipUrl
 if ($isUpdateMode -or -not $isCodeComplete) {
     try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
         $request = [System.Net.WebRequest]::Create($vscodeZipUrl)
         $request.Method = "HEAD"
-        $request.AllowAutoRedirect = $true
+        $request.AllowAutoRedirect = $false
         $request.Timeout = 10000
         $response = $request.GetResponse()
-        $resolvedVscodeUrl = $response.ResponseUri.AbsoluteUri
+        $resolvedVscodeUrl = $response.Headers["Location"]
         $response.Close()
+        if ([string]::IsNullOrEmpty($resolvedVscodeUrl)) {
+            $resolvedVscodeUrl = $vscodeZipUrl
+        }
     } catch {
-        Write-Warning "No se pudo resolver la URL final de redirección de VS Code. Se usará la URL directa."
+        try {
+            $request = [System.Net.WebRequest]::Create($vscodeZipUrl)
+            $request.Method = "GET"
+            $request.AllowAutoRedirect = $false
+            $request.Timeout = 10000
+            $response = $request.GetResponse()
+            $resolvedVscodeUrl = $response.Headers["Location"]
+            $response.Close()
+            if ([string]::IsNullOrEmpty($resolvedVscodeUrl)) {
+                $resolvedVscodeUrl = $vscodeZipUrl
+            }
+        } catch {
+            Write-Warning "No se pudo resolver la URL final de redirección de VS Code. Se usará la URL directa."
+        }
     }
 }
 
