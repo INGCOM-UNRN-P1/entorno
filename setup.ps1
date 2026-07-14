@@ -169,6 +169,7 @@ try {
                     "customize-terminal.bat",
                     "package-env.ps1",
                     "bin/install-lib.sh",
+                    "bin/build-launcher.sh",
                     "bin/configure-git.sh",
                     "bin/download-baseline.sh",
                     "bin/diagnose-env.sh",
