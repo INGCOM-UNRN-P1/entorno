@@ -63,15 +63,15 @@ Tenés dos opciones para realizar la instalación inicial:
 ### Opción A: Ejecución Directa desde Internet (Recomendada)
 Podés descargar y ejecutar el script directamente en PowerShell sin necesidad de descargar o clonar el repositorio previamente. Abrí PowerShell en la carpeta donde quieras instalar el entorno y ejecutá:
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1 | iex
+Set-ExecutionPolicy Bypass -Scope Process -Force; (irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1).TrimStart([char]0xFEFF) | iex
 ```
 *Si deseás personalizar el nombre de la carpeta de configuraciones portátiles (por defecto `home`), podés pasar el parámetro `-HomeDirName`:*
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Command -ScriptBlock ([scriptblock]::Create((irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1))) -ArgumentList @("-HomeDirName", "developer")
+Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Command -ScriptBlock ([scriptblock]::Create(((irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1).TrimStart([char]0xFEFF)))) -ArgumentList @("-HomeDirName", "developer")
 ```
 *Si deseás importar la configuración del host base (SSH, Git y settings.json de VS Code) para conservarla como base en tu entorno portable, podés pasar el switch `-ImportHostConfig`:*
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Command -ScriptBlock ([scriptblock]::Create((irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1))) -ArgumentList @("-HomeDirName", "home", $true)
+Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Command -ScriptBlock ([scriptblock]::Create(((irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1).TrimStart([char]0xFEFF)))) -ArgumentList @("-HomeDirName", "home", $true)
 ```
 > [!NOTE]
 > Al omitir `$true` (o no pasar el switch), el script dejará de lado las configuraciones del host y generará un entorno portable completamente limpio. En ningún caso se modificarán o borrarán los archivos originales en el equipo host.
