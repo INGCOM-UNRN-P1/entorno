@@ -89,6 +89,12 @@ Para configurar el mensaje que se muestra al abrir la consola interactiva Bash, 
 customize-bash.sh
 ```
 
+### Actualización del Entorno Portable
+Para actualizar todos los scripts del entorno a la última versión disponible en GitHub, y opcionalmente relanzar la actualización de las herramientas nativas (VS Code, MSYS2, gcc, etc.), ejecutá:
+```bash
+update-env.sh
+```
+
 ### Guía de Ayuda Rápida
 Para consultar rápidamente el listado de todos los comandos y scripts útiles disponibles en el entorno portable, simplemente ejecutá:
 ```bash
