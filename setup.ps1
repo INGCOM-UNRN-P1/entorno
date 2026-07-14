@@ -787,12 +787,19 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
             $installedGhUrl = (Get-Content $installedGhVersionFile -Raw).Trim()
         }
         if ($ghDownloadUrl -ne $installedGhUrl) {
-            Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-            $choice = Read-Host "¿Deseás descargar e instalar la actualización de GitHub CLI? (s/n)"
-            if ($choice -match "^[sS]$") {
-                $shouldInstallOrUpdateGh = $true
+            # Si se usó la URL de fallback porque falló la API y ya hay una versión instalada,
+            # asumimos que la instalada es válida para no sugerir un downgrade o alertar innecesariamente.
+            $isFallback = ($ghDownloadUrl -eq "https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.zip")
+            if ($isFallback -and $installedGhUrl) {
+                Write-Host "Omitiendo comprobación de actualización de GitHub CLI (la API de GitHub no está disponible)." -ForegroundColor Green
             } else {
-                Write-Host "Omitiendo actualización de GitHub CLI." -ForegroundColor DarkGray
+                Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
+                $choice = Read-Host "¿Deseás descargar e instalar la actualización de GitHub CLI? (s/n)"
+                if ($choice -match "^[sS]$") {
+                    $shouldInstallOrUpdateGh = $true
+                } else {
+                    Write-Host "Omitiendo actualización de GitHub CLI." -ForegroundColor DarkGray
+                }
             }
         } else {
             Write-Host "GitHub CLI ya se encuentra en la versión más reciente ($ghDownloadUrl)." -ForegroundColor Green
