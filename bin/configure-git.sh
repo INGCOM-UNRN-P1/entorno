@@ -29,8 +29,11 @@ if [ -n "$GIT_EMAIL" ]; then
 fi
 
 # Configurar Credential Helper Portable
-# Guarda las credenciales en un archivo de texto en el HOME portable del pendrive/carpeta.
 echo "Configurando almacenamiento de credenciales portable..."
+# Usar gh (GitHub CLI) de forma portable para github.com y gist.github.com (compartido con VS Code)
+git config --global credential.https://github.com.helper "!gh auth git-credential"
+git config --global credential.https://gist.github.com.helper "!gh auth git-credential"
+# Usar store como fallback para otros servidores (GitLab, etc.) en el HOME portable
 git config --global credential.helper 'store --file ~/.git-credentials'
 
 # Configuración básica recomendada
