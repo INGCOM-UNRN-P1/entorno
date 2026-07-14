@@ -55,9 +55,10 @@ $env:PATH = "$gccPath;$usrPath;$env:PATH"
 
 # Validar existencia de VS Code
 if (-not (Test-Path $codeExe)) {
-    Write-Error "No se encuentra VS Code. Corré 'powershell -File setup.ps1' para instalarlo."
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show("No se encuentra la instalación de VS Code en la ruta:`n$vscodeDir`n`nPor favor, ejecutá setup.ps1 primero para instalar el entorno completo.", "Error - Lanzador Portable", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
     return
 }
 
 # Lanzar VS Code heredando el ambiente
-Start-Process -FilePath $codeExe -ArgumentList $args -NoNewWindow
+Start-Process -FilePath $codeExe -ArgumentList $args
