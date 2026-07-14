@@ -74,7 +74,11 @@ if [[ "$config_banner" =~ ^[sS]$ ]]; then
                 "\"El único modo de hacer un gran trabajo es amar lo que haces.\" - Steve Jobs"
                 "\"La simplicidad es la clave de la brillantez.\" - Edsger Dijkstra"
                 "\"Los programas deben ser escritos para que la gente los lea, y sólo incidentalmente para que las máquinas los ejecuten.\" - Harold Abelson"
-                "\"No te preocupes si no funciona bien. Si todo funcionara, no tendrías trabajo.\" - Ley de Mosher de la Ingeniería de Software"
+                "\"Primero, resuelve el problema. Después, escribe el código.\" - John Johnson"
+                "\"Controlar la complejidad es la esencia de la programación.\" - Brian Kernighan"
+                "\"La mejor forma de predecir el futuro es inventarlo.\" - Alan Kay"
+                "\"Hablar es barato. Muéstrame el código.\" - Linus Torvalds"
+                "\"El código es como el humor. Cuando tienes que explicarlo, es malo.\" - Cory House"
             )
             RANDOM_INDEX=$(( RANDOM % ${#FRASES[@]} ))
             BANNER_LINES+=(
