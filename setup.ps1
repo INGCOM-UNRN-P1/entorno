@@ -912,12 +912,19 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         }
         
         if ($wezDownloadUrl -ne $installedWezUrl) {
-            Write-Host "Hay una nueva versión de WezTerm disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-            $choice = Read-Host "¿Deseás descargar e instalar la actualización de WezTerm? (s/n)"
-            if ($choice -match "^[sS]$") {
-                $shouldInstallOrUpdateWez = $true
+            # Si se usó la URL de fallback porque falló la API y ya hay una versión instalada,
+            # asumimos que la instalada es válida para no sugerir un downgrade o alertar innecesariamente.
+            $isFallback = ($wezDownloadUrl -eq "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip")
+            if ($isFallback -and $installedWezUrl) {
+                Write-Host "Omitiendo comprobación de actualización de WezTerm (la API de GitHub no está disponible)." -ForegroundColor Green
             } else {
-                Write-Host "Omitiendo actualización de WezTerm." -ForegroundColor DarkGray
+                Write-Host "Hay una nueva versión de WezTerm disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
+                $choice = Read-Host "¿Deseás descargar e instalar la actualización de WezTerm? (s/n)"
+                if ($choice -match "^[sS]$") {
+                    $shouldInstallOrUpdateWez = $true
+                } else {
+                    Write-Host "Omitiendo actualización de WezTerm." -ForegroundColor DarkGray
+                }
             }
         } else {
             Write-Host "WezTerm ya se encuentra en la versión más reciente ($wezDownloadUrl)." -ForegroundColor Green
