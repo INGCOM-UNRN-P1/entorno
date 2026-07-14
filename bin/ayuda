@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# ayuda - Guía rápida del Entorno Portable de Desarrollo
+
+set -e
+
+# Colores ANSI para una salida premium
+GOLD="\e[38;5;220m"
+CYAN="\e[36m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+BLUE="\e[34m"
+RESET="\e[0m"
+BOLD="\e[1m"
+
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "${GOLD}${BOLD}             GUÍA RÁPIDA DE COMANDOS Y SCRIPTS DEL ENTORNO             ${RESET}"
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "Este entorno portable integra compiladores de C, Python, WezTerm y VS Code."
+echo -e "A continuación se listan las herramientas principales disponibles:"
+echo ""
+
+echo -e "${CYAN}${BOLD}[ Scripts de Utilidad (en bin/) ]${RESET}"
+echo -e "  ${GREEN}ayuda${RESET}                 - Muestra esta guía rápida de comandos."
+echo -e "  ${GREEN}configure-git.sh${RESET}      - Configura tu identidad de Git e inicia sesión en GitHub."
+echo -e "  ${GREEN}customize-bash.sh${RESET}     - Cambia los colores y el banner de bienvenida de Bash."
+echo -e "  ${GREEN}build-launcher.sh${RESET}     - Compila o regenera los accesos directos (.exe) de la raíz."
+echo -e "  ${GREEN}install-lib.sh <repo>${RESET} - Instala librerías C desde GitHub (Ej: davidsiaw/inih)."
+echo -e "  ${GREEN}diagnose-env.sh${RESET}       - Diagnostica el estado del entorno y las versiones de herramientas."
+echo ""
+
+echo -e "${CYAN}${BOLD}[ Scripts en la Raíz (Ejecutar desde PowerShell/CMD en el Host) ]${RESET}"
+echo -e "  ${YELLOW}customize-terminal.bat${RESET} - Personaliza la consola WezTerm (colores, fuente, opacidad, tabs)."
+echo -e "  ${YELLOW}clean-shared-host.ps1${RESET}  - Limpia historiales y credenciales al trabajar en PCs públicas."
+echo -e "  ${YELLOW}package-env.ps1${RESET}        - Empaqueta el entorno portable completo en un archivo ZIP."
+echo -e "  ${YELLOW}setup.ps1${RESET}              - Instala, repara o actualiza componentes del entorno portable."
+echo ""
+
+echo -e "${CYAN}${BOLD}[ Comandos del Entorno de Desarrollo ]${RESET}"
+echo -e "  ${BLUE}gcc${RESET} / ${BLUE}clang${RESET}             - Compiladores nativos de C en el terminal."
+echo -e "  ${BLUE}make${RESET}                  - Automatiza la compilación usando archivos Makefile (alias mingw32-make)."
+echo -e "  ${BLUE}python${RESET} / ${BLUE}pip${RESET}          - Intérprete interactivo y gestor de paquetes de Python 3."
+echo -e "  ${BLUE}gh${RESET}                    - Cliente oficial de GitHub CLI."
+echo -e "  ${BLUE}ll${RESET}                    - Alias para ver el directorio en detalle (ls -alF --color)."
+echo ""
+
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "Tip: Escribí cualquiera de estos comandos en esta consola para ejecutarlos."
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"

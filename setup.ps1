@@ -168,6 +168,7 @@ try {
                     "customize-terminal.ps1",
                     "customize-terminal.bat",
                     "package-env.ps1",
+                    "bin/ayuda",
                     "bin/install-lib.sh",
                     "bin/build-launcher.sh",
                     "bin/customize-bash.sh",
