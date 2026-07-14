@@ -105,6 +105,11 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
 *   **Lanzar Terminal (WezTerm):** Ejecutá `launch.bat` (CMD) o `.\launch.ps1` (PowerShell).
     *   *Si por alguna razón no se encuentra WezTerm localmente, los lanzadores caerán de vuelta de forma segura iniciando la terminal Bash integrada en la consola clásica.*
 *   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
+*   **Generar Accesos Directos Ejecutables (`.exe`):**
+    Para no depender de los archivos `.bat`, podés generar lanzadores ejecutables nativos de Windows directos e invisibles (`launch-vscode.exe` y `launch-wezterm.exe`) en la raíz del entorno. Para compilarlos, simplemente iniciá la terminal y ejecutá:
+    ```bash
+    build-launcher.sh
+    ```
 
 Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilador GCC, Make, CMake, Ninja y Python en su variable `PATH` de sesión, habilitando la compilación directa desde la terminal integrada sin configuración adicional.
 

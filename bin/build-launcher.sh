@@ -51,10 +51,11 @@ elif command -v mingw32-make >/dev/null 2>&1; then
 else
     echo -e "\e[33m-> make o mingw32-make no está instalado. Compilando manualmente con $CC...\e[0m"
     CFLAGS="-O2 -Wall -mwindows"
-    $CC $CFLAGS -o ../launch_vscode.exe launcher.c
     $CC $CFLAGS -o ../launch-vscode.exe launcher.c
-    $CC $CFLAGS -o ../launch_wezterm.exe launcher.c
     $CC $CFLAGS -o ../launch-wezterm.exe launcher.c
 fi
+
+# Eliminar ejecutables antiguos con guion bajo si existen para evitar confusiones
+rm -f ../launch_vscode.exe ../launch_wezterm.exe
 
 echo -e "\e[32m=== Compilación completada con éxito. Ejecutables generados en la raíz del entorno ===\e[0m"
