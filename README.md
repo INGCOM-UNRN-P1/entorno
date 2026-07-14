@@ -126,17 +126,29 @@ Al iniciar VS Code o WezTerm a través de los cargadores, heredarán el compilad
 
 ## Personalización Estética de la Consola
 
-Podés personalizar el mensaje de bienvenida de Bash y la apariencia visual de la terminal WezTerm (esquema de color, tamaño de fuente y opacidad del fondo) ejecutando el asistente interactivo:
+Podés personalizar el mensaje de bienvenida de Bash y la apariencia visual de la terminal WezTerm (esquema de color, tamaño de fuente, opacidad del fondo y barra de pestañas) de la siguiente manera:
 
-*   **Desde CMD:** Hacé doble clic en `customize-terminal.bat` o ejecutalo desde consola.
+### 1. Personalización de la Terminal (WezTerm)
+Ejecutá el asistente interactivo de WezTerm desde el sistema host:
+*   **Desde CMD:** Hacé doble clic en `customize-terminal.bat` o ejecutalo desde la consola.
 *   **Desde PowerShell:** Ejecutá `.\customize-terminal.ps1`.
 
 El asistente te guiará para:
-1.  **Configurar el Banner de Bienvenida:** Elegir entre un mensaje informativo limpio predeterminado, un mensaje de texto personalizado o limpiar la consola al iniciar. También te permite seleccionar el color del banner (Celeste, Verde, Amarillo, Violeta, Blanco).
-2.  **Modificar la Apariencia de WezTerm:** Seleccionar esquemas de color premium (Tokyo Night, Dracula, Gruvbox, Nord, One Half Dark), ajustar el tamaño de fuente y configurar la opacidad de fondo para lograr efectos de transparencia.
+*   **Modificar la Apariencia:** Seleccionar esquemas de color premium (Tokyo Night, Dracula, Gruvbox, Nord, One Half Dark), ajustar el tamaño de la letra y configurar la opacidad del fondo (transparencia).
+*   **Barra de Pestañas (Tabs):** Elegir si deseás habilitar o deshabilitar la barra superior de pestañas para trabajar con múltiples terminales en una sola ventana.
+
+### 2. Personalización del Entorno de Bash (Mensaje de Bienvenida)
+Iniciá tu terminal portable y ejecutá el siguiente script de Bash:
+```bash
+customize-bash.sh
+```
+
+El script te guiará para:
+*   **Configurar el Banner de Bienvenida:** Elegir entre sugerencias/plantillas predefinidas (saludo minimalista con tu nombre de usuario, frases célebres de programación aleatorias, resumen de comandos útiles y rápidos) o escribir tu propia frase personalizada línea por línea (con la opción de desactivarlo por completo).
+*   **Elegir el Color:** Seleccionar el color del banner (Celeste, Verde, Amarillo, Violeta, Blanco).
 
 > [!TIP]
-> El script incluye un sistema de reintentos automáticos para evitar fallos si el archivo de configuración estuviera temporalmente bloqueado por estar en uso por otra aplicación.
+> El asistente de WezTerm incluye un sistema de reintentos automáticos para evitar fallos si el archivo de configuración estuviera temporalmente bloqueado por estar en uso por la terminal.
 
 ---
 
