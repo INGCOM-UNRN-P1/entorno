@@ -726,7 +726,15 @@ $codeCmd = Join-Path $vscodeDir "bin\code.cmd"
 if (Test-Path $codeCmd) {
     if ($isUpdateMode -or -not $isCodeComplete) {
         Write-Host "Verificando e instalando extensiones de VS Code..." -ForegroundColor Cyan
-        $extensions = @("ms-vscode.cpptools", "ms-vscode.cmake-tools", "ms-python.python")
+        $extensions = @(
+            "ms-vscode.cpptools",
+            "ms-vscode.cpptools-extension-pack",
+            "ms-vscode.cmake-tools",
+            "ms-vscode.makefile-tools",
+            "ms-python.python",
+            "GitHub.vscode-pull-request-github",
+            "bierner.github-markdown-preview"
+        )
         foreach ($ext in $extensions) {
             Write-Host "Instalando/verificando extensión: $ext..."
             $process = Start-Process -FilePath $codeCmd -ArgumentList "--install-extension", $ext, "--force" -Wait -NoNewWindow -PassThru
