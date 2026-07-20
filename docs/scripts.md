@@ -97,7 +97,7 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 
 ### `install-lib.sh`
 * **Propósito:** Compilar e instalar dependencias externas de C desde GitHub de forma portable.
-* **Funcionamiento:** Clona el repositorio indicado en una carpeta temporal, detecta el motor de construcción (CMake o Makefile), compila en modo release usando el toolchain portable y copia las cabeceras e instalables dentro del directorio portable `/ucrt64`.
+* **Funcionamiento:** Clona el repositorio indicado en una carpeta temporal y detecta el motor de construcción o la especificación (especificación estructurada `library.spec`, receta personalizada `.portable-recipe.sh`, CMakeLists.txt o Makefile estándar). Compila de forma aislada y copia las cabeceras e instalables resultantes en el prefijo portable del entorno (`/ucrt64`).
 
 ### `configure-git.sh`
 * **Propósito:** Configurar identidad de Git e iniciar sesión en GitHub CLI.

@@ -46,14 +46,49 @@ cd "$TEMP_DIR"
 # FLUJO DE INSTALACIÓN SEGÚN ESPECIFICACIÓN
 # ==========================================
 
-# 1. Receta personalizada (.portable-recipe.sh)
-if [ -f ".portable-recipe.sh" ]; then
+# 1. Especificación de library.spec (Plantilla-Librería)
+if [ -f "library.spec" ]; then
+    echo -e "\e[32m-> Detectada especificación de librería 'library.spec'. Cargando...\e[0m"
+    # shellcheck source=/dev/null
+    source "library.spec"
+    
+    build_cmd="${LIB_BUILD_CMD:-make}"
+    echo -e "\e[32m-> Compilando con: $build_cmd...\e[0m"
+    eval "$build_cmd"
+    
+    echo -e "\e[32m-> Instalando archivos exportados en $PREFIX_DIR...\e[0m"
+    
+    # Exportar cabeceras
+    if [ -n "${LIB_HEADERS+x}" ] && [ ${#LIB_HEADERS[@]} -gt 0 ]; then
+        for item in "${LIB_HEADERS[@]}"; do
+            src="${item%%:*}"
+            dest="${item#*:}"
+            echo "   Cabecera: $src -> $PREFIX_DIR/$dest"
+            mkdir -p "$PREFIX_DIR/$(dirname "$dest")"
+            cp -p "$src" "$PREFIX_DIR/$dest"
+        done
+    fi
+    
+    # Exportar binarios
+    if [ -n "${LIB_BINARIES+x}" ] && [ ${#LIB_BINARIES[@]} -gt 0 ]; then
+        for item in "${LIB_BINARIES[@]}"; do
+            src="${item%%:*}"
+            dest="${item#*:}"
+            echo "   Binario:  $src -> $PREFIX_DIR/$dest"
+            mkdir -p "$PREFIX_DIR/$(dirname "$dest")"
+            cp -p "$src" "$PREFIX_DIR/$dest"
+        done
+    fi
+    echo -e "\e[32m-> Instalación de librería estructurada completada.\e[0m"
+
+# 2. Receta personalizada (.portable-recipe.sh)
+elif [ -f ".portable-recipe.sh" ]; then
     echo -e "\e[32m-> Detectada receta personalizada '.portable-recipe.sh'. Ejecutando...\e[0m"
     chmod +x .portable-recipe.sh
     ./.portable-recipe.sh "$PREFIX_DIR"
     echo -e "\e[32m-> Instalación por receta personalizada completada.\e[0m"
 
-# 2. Construcción con CMake
+# 3. Construcción con CMake
 elif [ -f "CMakeLists.txt" ]; then
     echo -e "\e[32m-> Detectado archivo CMakeLists.txt. Compilando con CMake + Ninja...\e[0m"
     cmake -G Ninja -B build -DCMAKE_INSTALL_PREFIX="$PREFIX_DIR" -DCMAKE_BUILD_TYPE=Release
@@ -61,7 +96,7 @@ elif [ -f "CMakeLists.txt" ]; then
     cmake --install build
     echo -e "\e[32m-> Instalación vía CMake completada en $PREFIX_DIR.\e[0m"
 
-# 3. Construcción con Makefile estándar
+# 4. Construcción con Makefile estándar
 elif [ -f "Makefile" ] || [ -f "makefile" ]; then
     echo -e "\e[32m-> Detectado Makefile. Compilando con mingw32-make...\e[0m"
     mingw32-make -j$(nproc)

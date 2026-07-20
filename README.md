@@ -217,6 +217,9 @@ install-lib.sh immediate-mode-ui/nuklear
 
 # Instalar inih (Librería parser de archivos INI usando CMake)
 install-lib.sh davidsiaw/inih r29
+
+# Instalar una librería estructurada (basada en plantilla-libreria que usa library.spec)
+install-lib.sh mi-usuario/mi-libreria-matematica
 ```
 
 ---
