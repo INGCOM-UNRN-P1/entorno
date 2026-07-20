@@ -79,6 +79,39 @@ if (-not (Test-Path $codeExe)) {
     return
 }
 
+# Configurar la ruta del compilador en settings.json de VS Code para asegurar que IntelliSense lo ubique sin importar la ruta del host
+$settingsUserDir = Join-Path $vscodeDir "data\user-data\User"
+$settingsJsonPath = Join-Path $settingsUserDir "settings.json"
+
+if (Test-Path $vscodeDir) {
+    if (-not (Test-Path $settingsUserDir)) {
+        New-Item -ItemType Directory -Path $settingsUserDir -Force | Out-Null
+    }
+    
+    $settings = @{}
+    if (Test-Path $settingsJsonPath) {
+        try {
+            $settingsContent = Get-Content $settingsJsonPath -Raw
+            $settings = $settingsContent | ConvertFrom-Json
+            if ($null -eq $settings) { $settings = @{} }
+        } catch {
+            $settings = @{}
+        }
+    }
+    
+    # Formatear la ruta de gcc con barras inclinadas hacia adelante
+    $gccExeUrl = (Join-Path $portableRoot "msys64\ucrt64\bin\gcc.exe").Replace("\", "/")
+    
+    # Configurar propiedades para la extensión C/C++
+    $settings | Add-Member -NotePropertyName "C_Cpp.default.compilerPath" -NotePropertyValue $gccExeUrl -Force
+    $settings | Add-Member -NotePropertyName "C_Cpp.default.intelliSenseMode" -NotePropertyValue "windows-gcc-x64" -Force
+    
+    # Guardar con codificación UTF-8 con BOM
+    $settingsJson = $settings | ConvertTo-Json -Depth 10
+    $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
+    [System.IO.File]::WriteAllText($settingsJsonPath, $settingsJson, $utf8WithBom)
+}
+
 # Lanzar VS Code heredando el ambiente
 if ($args) {
     Start-Process -FilePath $codeExe -ArgumentList $args
