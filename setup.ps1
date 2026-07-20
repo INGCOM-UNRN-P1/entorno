@@ -359,135 +359,133 @@ $isMsysInstalled = Test-Path (Join-Path $msysDir "usr\bin\bash.exe")
 $isMsysComplete = Test-Path (Join-Path $portableRoot ".msys_complete")
 
 if (-not $isMsysInstalled -or -not $isMsysComplete) {
-    if ($isMsysInstalled -and -not $isMsysComplete) {
-        Write-Host "Se detectó una instalación previa incompleta de MSYS2. Limpiando para reinstalar base..." -ForegroundColor Yellow
-        if (Test-Path $msysDir) {
-            Remove-Item -Path $msysDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
-    }
-    Write-Host "[Instalación] MSYS2 no detectado o incompleto. Iniciando descarga..." -ForegroundColor Yellow
+    if (-not $isMsysInstalled) {
+        Write-Host "[Instalación] MSYS2 no detectado. Iniciando descarga..." -ForegroundColor Yellow
 
-    $releasesUrl = "https://api.github.com/repos/msys2/msys2-installer/releases"
-    $downloadUrl = $null
-    $fileName = $null
+        $releasesUrl = "https://api.github.com/repos/msys2/msys2-installer/releases"
+        $downloadUrl = $null
+        $fileName = $null
 
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Write-Host "Consultando API de GitHub por la última versión estable de MSYS2..."
-        $releases = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing -TimeoutSec 10
-        # Buscar la primera versión que no sea un build 'nightly' y que contenga el archivo sfx.exe
-        foreach ($release in $releases) {
-            if ($release.tag_name -notlike "*nightly*") {
-                $asset = $release.assets | Where-Object { $_.name -like "msys2-base-x86_64-*.sfx.exe" }
-                if ($asset) {
-                    $downloadUrl = $asset.browser_download_url
-                    $fileName = $asset.name
-                    Write-Host "Última versión estable detectada: $fileName (Tag: $($release.tag_name))" -ForegroundColor Green
-                    break
-                }
-            }
-        }
-    } catch {
-        Write-Warning "Fallo al consultar la API de GitHub. Usando fallback fijo."
-    }
-
-    if (-not $downloadUrl) {
-        $downloadUrl = "https://github.com/msys2/msys2-installer/releases/download/2025-02-21/msys2-base-x86_64-20250221.sfx.exe"
-        $fileName = "msys2-base-x86_64-20250221.sfx.exe"
-        Write-Host "Fallback URL: $downloadUrl" -ForegroundColor Yellow
-    }
-
-    $exePath = Join-Path $descargasDir $fileName
-    $shaPath = "$exePath.sha256"
-    $shaUrl = "$downloadUrl.sha256"
-    $isDownloadedAndValid = $false
-
-    # Verificar si ya existe una descarga previa válida para evitar descargas duplicadas en reintentos
-    if (Test-Path $exePath) {
-        Write-Host "Se detectó un instalador de MSYS2 descargado previamente. Verificando firma..." -ForegroundColor Yellow
         try {
-            if (-not (Test-Path $shaPath)) {
-                Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
-            }
-            $shaContent = (Get-Content $shaPath -Raw).Trim()
-            if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
-                throw "El archivo de firma contiene HTML (posible página de error del servidor)."
-            }
-            $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
-            if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
-                $truncatedHash = $expectedHash
-                if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
-                throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
-            }
-            $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
-            if ($actualHash -eq $expectedHash) {
-                $isDownloadedAndValid = $true
-                Write-Host "El archivo existente es válido. Se omitirá la descarga." -ForegroundColor Green
-            } else {
-                Write-Host "La firma del archivo existente no coincide. Se procederá a descargar nuevamente." -ForegroundColor Yellow
-                Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
-                Remove-Item -Path $exePath -Force -ErrorAction SilentlyContinue
-            }
-        } catch {
-            Write-Host "No se pudo verificar la firma del archivo existente. Se procederá a descargar nuevamente. Detalles: $_" -ForegroundColor Yellow
-            Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
-        }
-    }
-
-    if (-not $isDownloadedAndValid) {
-        Write-Host "Descargando $fileName..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing
-
-        Write-Host "Descargando verificación SHA256..." -ForegroundColor Cyan
-        try {
-            $attempts = 0
-            $success = $false
-            while (-not $success -and $attempts -lt 3) {
-                $attempts++
-                try {
-                    Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
-                    $success = $true
-                } catch {
-                    if ($attempts -lt 3) {
-                        Start-Sleep -Seconds 1
-                    } else {
-                        throw $_
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Write-Host "Consultando API de GitHub por la última versión de MSYS2..."
+            $releases = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing -TimeoutSec 10
+            # Buscar la primera versión que no sea un build 'nightly' y que contenga el archivo sfx.exe
+            foreach ($release in $releases) {
+                if ($release.tag_name -notlike "*nightly*") {
+                    $asset = $release.assets | Where-Object { $_.name -like "msys2-base-x86_64-*.sfx.exe" }
+                    if ($asset) {
+                        $downloadUrl = $asset.browser_download_url
+                        $fileName = $asset.name
+                        Write-Host "Última versión estable detectada: $fileName (Tag: $($release.tag_name))" -ForegroundColor Green
+                        break
                     }
                 }
             }
         } catch {
-            throw "Error fatal al descargar el archivo de firma SHA256 desde: $shaUrl. Detalles: $_"
+            Write-Warning "Fallo al consultar la API de GitHub. Usando fallback fijo."
         }
 
-        try {
-            $shaContent = (Get-Content $shaPath -Raw).Trim()
-            if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
-                throw "El archivo de firma contiene HTML (posible página de error del servidor o rate limit)."
-            }
-            $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
-            if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
-                $truncatedHash = $expectedHash
-                if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
-                throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
-            }
-            $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
-
-            if ($actualHash -ne $expectedHash) {
-                throw "El hash calculado ($actualHash) no coincide con el esperado ($expectedHash)."
-            }
-            Write-Host "Firma SHA256 verificada con éxito." -ForegroundColor Green
-        } catch {
-            Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
-            throw "Falla crítica en la verificación de firma SHA256. La instalación se detiene. Detalles: $_"
+        if (-not $downloadUrl) {
+            $downloadUrl = "https://github.com/msys2/msys2-installer/releases/download/2025-02-21/msys2-base-x86_64-20250221.sfx.exe"
+            $fileName = "msys2-base-x86_64-20250221.sfx.exe"
+            Write-Host "Fallback URL: $downloadUrl" -ForegroundColor Yellow
         }
-    }
 
-    Write-Host "Extrayendo entorno base MSYS2 en: $portableRoot" -ForegroundColor Cyan
-    $process = Start-Process -FilePath $exePath -ArgumentList "-y", "-o$portableRoot" -Wait -NoNewWindow -PassThru
-    if ($process.ExitCode -ne 0) {
-        throw "Error durante la extracción de MSYS2 (código de salida: $($process.ExitCode))"
+        $exePath = Join-Path $descargasDir $fileName
+        $shaPath = "$exePath.sha256"
+        $shaUrl = "$downloadUrl.sha256"
+        $isDownloadedAndValid = $false
+
+        # Verificar si ya existe una descarga previa válida para evitar descargas duplicadas en reintentos
+        if (Test-Path $exePath) {
+            Write-Host "Se detectó un instalador de MSYS2 descargado previamente. Verificando firma..." -ForegroundColor Yellow
+            try {
+                if (-not (Test-Path $shaPath)) {
+                    Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
+                }
+                $shaContent = (Get-Content $shaPath -Raw).Trim()
+                if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
+                    throw "El archivo de firma contiene HTML (posible página de error del servidor)."
+                }
+                $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
+                if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
+                    $truncatedHash = $expectedHash
+                    if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
+                    throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
+                }
+                $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
+                if ($actualHash -eq $expectedHash) {
+                    $isDownloadedAndValid = $true
+                    Write-Host "El archivo existente es válido. Se omitirá la descarga." -ForegroundColor Green
+                } else {
+                    Write-Host "La firma del archivo existente no coincide. Se procederá a descargar nuevamente." -ForegroundColor Yellow
+                    Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
+                    Remove-Item -Path $exePath -Force -ErrorAction SilentlyContinue
+                }
+            } catch {
+                Write-Host "No se pudo verificar la firma del archivo existente. Se procederá a descargar nuevamente. Detalles: $_" -ForegroundColor Yellow
+                Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        if (-not $isDownloadedAndValid) {
+            Write-Host "Descargando $fileName..." -ForegroundColor Cyan
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing
+
+            Write-Host "Descargando verificación SHA256..." -ForegroundColor Cyan
+            try {
+                $attempts = 0
+                $success = $false
+                while (-not $success -and $attempts -lt 3) {
+                    $attempts++
+                    try {
+                        Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
+                        $success = $true
+                    } catch {
+                        if ($attempts -lt 3) {
+                            Start-Sleep -Seconds 1
+                        } else {
+                            throw $_
+                        }
+                    }
+                }
+            } catch {
+                throw "Error fatal al descargar el archivo de firma SHA256 desde: $shaUrl. Detalles: $_"
+            }
+
+            try {
+                $shaContent = (Get-Content $shaPath -Raw).Trim()
+                if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
+                    throw "El archivo de firma contiene HTML (posible página de error del servidor o rate limit)."
+                }
+                $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
+                if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
+                    $truncatedHash = $expectedHash
+                    if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
+                    throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
+                }
+                $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
+
+                if ($actualHash -ne $expectedHash) {
+                    throw "El hash calculado ($actualHash) no coincide con el esperado ($expectedHash)."
+                }
+                Write-Host "Firma SHA256 verificada con éxito." -ForegroundColor Green
+            } catch {
+                Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
+                throw "Falla crítica en la verificación de firma SHA256. La instalación se detiene. Detalles: $_"
+            }
+        }
+
+        Write-Host "Extrayendo entorno base MSYS2 en: $portableRoot" -ForegroundColor Cyan
+        $process = Start-Process -FilePath $exePath -ArgumentList "-y", "-o$portableRoot" -Wait -NoNewWindow -PassThru
+        if ($process.ExitCode -ne 0) {
+            throw "Error durante la extracción de MSYS2 (código de salida: $($process.ExitCode))"
+        }
+        Write-Host "Instalación base de MSYS2 completada con éxito.`n" -ForegroundColor Green
+    } else {
+        Write-Host "Se detectó una instalación previa incompleta de MSYS2. Intentando continuar con la instalación existente..." -ForegroundColor Yellow
     }
-    Write-Host "Instalación base de MSYS2 completada con éxito.`n" -ForegroundColor Green
 } else {
     Write-Host "[Actualización] MSYS2 base ya instalado y verificado." -ForegroundColor Green
 }
@@ -500,20 +498,21 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
     & $bashPath --login -c "exit"
 
-    # Resolver la ruta de caché local y pasarla a pacman
-    $unixCacheDir = & $bashPath -c "cygpath -u '$descargasDir/pacman_cache'"
+    # Resolver la ruta de caché local y pasarla a pacman utilizando el ejecutable cygpath nativo
+    $cygpathExe = Join-Path $msysDir "usr\bin\cygpath.exe"
+    $unixCacheDir = & $cygpathExe -u "$descargasDir/pacman_cache"
     $unixCacheDir = $unixCacheDir.Trim()
 
     Write-Host "Sincronizando base de datos de pacman y actualizando paquetes del sistema..." -ForegroundColor Cyan
     try {
-        & $bashPath --login -c "pacman -Syu --noconfirm --cachedir '$unixCacheDir'"
+        Invoke-PacmanWithRetry -BashPath $bashPath -Arguments "-Syu --noconfirm --cachedir '$unixCacheDir'"
     } catch {
         Write-Warning "No se pudo sincronizar o actualizar pacman (posiblemente sin internet). Intentando instalar paquetes locales..."
     }
 
     Write-Host "Consolidando actualizaciones del entorno..." -ForegroundColor Cyan
     try {
-        & $bashPath --login -c "pacman -Su --noconfirm --cachedir '$unixCacheDir'"
+        Invoke-PacmanWithRetry -BashPath $bashPath -Arguments "-Su --noconfirm --cachedir '$unixCacheDir'"
     } catch {
         Write-Warning "Fallo al consolidar actualizaciones (posiblemente sin internet)."
     }
@@ -540,7 +539,7 @@ if ($isUpdateMode -or -not $isMsysComplete) {
 
     $pkgString = $packages -join " "
     Write-Host "Instalando compiladores, herramientas de compilación, Python y librerías comunes..." -ForegroundColor Cyan
-    & $bashPath --login -c "pacman -S --needed --noconfirm --cachedir '$unixCacheDir' $pkgString"
+    Invoke-PacmanWithRetry -BashPath $bashPath -Arguments "-S --needed --noconfirm --cachedir '$unixCacheDir' $pkgString"
 
     # Configurar alias en el HOME portable
     $bashrcPath = Join-Path $homeDir ".bashrc"
@@ -672,85 +671,109 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
 
     if ($shouldInstallOrUpdateVscode) {
         if (-not $isUpdateMode -and $isCodeInstalled) {
-            Write-Host "Detectada instalación incompleta de VS Code. Reinstalando..." -ForegroundColor Yellow
-            Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
-
-        # Resolver nombre de archivo de forma dinámica e identificar versión
-        $vscodeZipName = Get-FileNameFromUrl -Url $resolvedVscodeUrl -DefaultName "vscode_archive.zip"
-        $vscodeZipPath = Join-Path $descargasDir $vscodeZipName
-
-        $vscodeZipValid = $false
-        if (Test-Path $vscodeZipPath) {
-            Write-Host "Se detectó una descarga previa de VS Code ($vscodeZipName). Verificando..." -ForegroundColor Yellow
-            try {
-                $fileSize = (Get-Item $vscodeZipPath).Length
-                if ($fileSize -gt 50MB) {
-                    $vscodeZipValid = $true
-                    Write-Host "El archivo ZIP previo es válido. Se omitirá la descarga." -ForegroundColor Green
-                } else {
-                    Write-Host "El archivo ZIP previo está incompleto o dañado. Se volverá a descargar." -ForegroundColor Yellow
-                }
-            } catch {
-                Write-Host "No se pudo verificar el archivo ZIP previo. Se volverá a descargar." -ForegroundColor Yellow
-            }
-        }
-        
-        if (-not $vscodeZipValid) {
-            Write-Host "Descargando VS Code desde $resolvedVscodeUrl..." -ForegroundColor Cyan
-            Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing
-        }
-        
-        $backupDataDir = Join-Path $portableRoot "vscode_data_backup"
-        $dataDir = Join-Path $vscodeDir "data"
-        
-        if ($isUpdateMode -and (Test-Path $dataDir)) {
-            Write-Host "Respaldando carpeta data de VS Code..." -ForegroundColor Cyan
-            if (Test-Path $backupDataDir) {
-                Remove-Item -Path $backupDataDir -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            Move-Item -Path $dataDir -Destination $backupDataDir -Force
-        }
-        
-        if (Test-Path $vscodeDir) {
-            Write-Host "Eliminando instalación anterior de VS Code..." -ForegroundColor Cyan
-            Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        New-Item -ItemType Directory -Path $vscodeDir | Out-Null
-        
-        Write-Host "Extrayendo VS Code..." -ForegroundColor Cyan
-        Expand-Archive -Path $vscodeZipPath -DestinationPath $vscodeDir -Force
-        
-        if ($isUpdateMode -and (Test-Path $backupDataDir)) {
-            Write-Host "Restaurando carpeta data..." -ForegroundColor Cyan
-            Move-Item -Path $backupDataDir -Destination $dataDir -Force
-        } else {
-            # Activar el Modo Portable creando la carpeta 'data'
+            Write-Host "Se detectó una instalación previa incompleta de VS Code. Se intentará continuar con la configuración..." -ForegroundColor Yellow
+            $dataDir = Join-Path $vscodeDir "data"
             $userSettingsDir = Join-Path $dataDir "user-data\User"
-            if (-not (Test-Path $userSettingsDir)) {
-                New-Item -ItemType Directory -Path $userSettingsDir | Out-Null
+            $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
+            if (-not (Test-Path $settingsJsonPath)) {
+                if (-not (Test-Path $userSettingsDir)) {
+                    New-Item -ItemType Directory -Path $userSettingsDir -Force | Out-Null
+                }
+                $defaultSettings = @{
+                    "telemetry.telemetryLevel" = "off"
+                    "update.mode" = "none"
+                    "extensions.autoUpdate" = $false
+                    "chat.disableAIFeatures" = $true
+                    "github.copilot.enable" = @{
+                        "*" = $false
+                    }
+                    "terminal.integrated.profiles.windows" = @{
+                        "UCRT64 Bash" = @{
+                            "path" = "bash.exe"
+                            "args" = @("--login", "-i")
+                        }
+                    }
+                    "terminal.integrated.defaultProfile.windows" = "UCRT64 Bash"
+                } | ConvertTo-Json -Depth 10
+                Set-Content -Path $settingsJsonPath -Value $defaultSettings
+            }
+        } else {
+            # Resolver nombre de archivo de forma dinámica e identificar versión
+            $vscodeZipName = Get-FileNameFromUrl -Url $resolvedVscodeUrl -DefaultName "vscode_archive.zip"
+            $vscodeZipPath = Join-Path $descargasDir $vscodeZipName
+
+            $vscodeZipValid = $false
+            if (Test-Path $vscodeZipPath) {
+                Write-Host "Se detectó una descarga previa de VS Code ($vscodeZipName). Verificando..." -ForegroundColor Yellow
+                try {
+                    $fileSize = (Get-Item $vscodeZipPath).Length
+                    if ($fileSize -gt 50MB) {
+                        $vscodeZipValid = $true
+                        Write-Host "El archivo ZIP previo es válido. Se omitirá la descarga." -ForegroundColor Green
+                    } else {
+                        Write-Host "El archivo ZIP previo está incompleto o dañado. Se volverá a descargar." -ForegroundColor Yellow
+                    }
+                } catch {
+                    Write-Host "No se pudo verificar el archivo ZIP previo. Se volverá a descargar." -ForegroundColor Yellow
+                }
             }
             
-            # Escribir configuración inicial de settings.json para aislar telemetría y configurar bash
-            $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
-            $defaultSettings = @{
-                "telemetry.telemetryLevel" = "off"
-                "update.mode" = "none"
-                "extensions.autoUpdate" = $false
-                "chat.disableAIFeatures" = $true
-                "github.copilot.enable" = @{
-                    "*" = $false
-                }
-                "terminal.integrated.profiles.windows" = @{
-                    "UCRT64 Bash" = @{
-                        "path" = "bash.exe"
-                        "args" = @("--login", "-i")
-                    }
-                }
-                "terminal.integrated.defaultProfile.windows" = "UCRT64 Bash"
-            } | ConvertTo-Json -Depth 10
+            if (-not $vscodeZipValid) {
+                Write-Host "Descargando VS Code desde $resolvedVscodeUrl..." -ForegroundColor Cyan
+                Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing
+            }
             
-            Set-Content -Path $settingsJsonPath -Value $defaultSettings
+            $backupDataDir = Join-Path $portableRoot "vscode_data_backup"
+            $dataDir = Join-Path $vscodeDir "data"
+            
+            if ($isUpdateMode -and (Test-Path $dataDir)) {
+                Write-Host "Respaldando carpeta data de VS Code..." -ForegroundColor Cyan
+                if (Test-Path $backupDataDir) {
+                    Remove-Item -Path $backupDataDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                Move-Item -Path $dataDir -Destination $backupDataDir -Force
+            }
+            
+            if (Test-Path $vscodeDir) {
+                Write-Host "Eliminando instalación anterior de VS Code..." -ForegroundColor Cyan
+                Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            New-Item -ItemType Directory -Path $vscodeDir | Out-Null
+            
+            Write-Host "Extrayendo VS Code..." -ForegroundColor Cyan
+            Expand-Archive -Path $vscodeZipPath -DestinationPath $vscodeDir -Force
+            
+            if ($isUpdateMode -and (Test-Path $backupDataDir)) {
+                Write-Host "Restaurando carpeta data..." -ForegroundColor Cyan
+                Move-Item -Path $backupDataDir -Destination $dataDir -Force
+            } else {
+                # Activar el Modo Portable creando la carpeta 'data'
+                $userSettingsDir = Join-Path $dataDir "user-data\User"
+                if (-not (Test-Path $userSettingsDir)) {
+                    New-Item -ItemType Directory -Path $userSettingsDir | Out-Null
+                }
+                
+                # Escribir configuración inicial de settings.json para aislar telemetría y configurar bash
+                $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
+                $defaultSettings = @{
+                    "telemetry.telemetryLevel" = "off"
+                    "update.mode" = "none"
+                    "extensions.autoUpdate" = $false
+                    "chat.disableAIFeatures" = $true
+                    "github.copilot.enable" = @{
+                        "*" = $false
+                    }
+                    "terminal.integrated.profiles.windows" = @{
+                        "UCRT64 Bash" = @{
+                            "path" = "bash.exe"
+                            "args" = @("--login", "-i")
+                        }
+                    }
+                    "terminal.integrated.defaultProfile.windows" = "UCRT64 Bash"
+                } | ConvertTo-Json -Depth 10
+                
+                Set-Content -Path $settingsJsonPath -Value $defaultSettings
+            }
         }
         
         Set-Content -Path (Join-Path $vscodeDir ".version") -Value $resolvedVscodeUrl
@@ -850,58 +873,57 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
 
     if ($shouldInstallOrUpdateGh) {
         if (-not $isUpdateMode -and $isGhInstalled) {
-            Write-Host "Detectada instalación incompleta de GitHub CLI. Reinstalando..." -ForegroundColor Yellow
-            Remove-Item -Path $ghExe -Force -ErrorAction SilentlyContinue
-        }
-
-        # Resolver nombre de archivo de forma dinámica
-        $ghZipName = Get-FileNameFromUrl -Url $ghDownloadUrl -DefaultName "gh_archive.zip"
-        $ghZipPath = Join-Path $descargasDir $ghZipName
-
-        $isGhZipValid = $false
-        if (Test-Path $ghZipPath) {
-            Write-Host "Se detectó un archivo ZIP de GitHub CLI descargado previamente ($ghZipName). Verificando..." -ForegroundColor Yellow
-            try {
-                $fileSize = (Get-Item $ghZipPath).Length
-                if ($fileSize -gt 5MB) {
-                    $isGhZipValid = $true
-                    Write-Host "El archivo ZIP previo de GitHub CLI es válido. Se omitirá la descarga." -ForegroundColor Green
-                } else {
-                    Write-Host "El archivo ZIP previo de GitHub CLI está incompleto. Se volverá a descargar." -ForegroundColor Yellow
-                }
-            } catch {
-                Write-Host "No se pudo verificar el archivo ZIP previo de GitHub CLI. Se volverá a descargar." -ForegroundColor Yellow
-            }
-        }
-
-        if (-not $isGhZipValid) {
-            Write-Host "Descargando GitHub CLI desde $ghDownloadUrl..." -ForegroundColor Cyan
-            Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing
-        }
-
-        $ghTempDir = Join-Path $portableRoot "gh_temp"
-        if (Test-Path $ghTempDir) {
-            Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        New-Item -ItemType Directory -Path $ghTempDir | Out-Null
-        
-        Write-Host "Extrayendo GitHub CLI..." -ForegroundColor Cyan
-        Expand-Archive -Path $ghZipPath -DestinationPath $ghTempDir -Force
-        
-        $extractedGhExe = Get-ChildItem -Path $ghTempDir -Filter "gh.exe" -Recurse | Select-Object -First 1
-        if ($extractedGhExe) {
-            $binDir = Join-Path $portableRoot "bin"
-            if (-not (Test-Path $binDir)) {
-                New-Item -ItemType Directory -Path $binDir | Out-Null
-            }
-            Move-Item -Path $extractedGhExe.FullName -Destination $ghExe -Force
-            Write-Host "GitHub CLI copiado con éxito a $ghExe." -ForegroundColor Green
+            Write-Host "Se detectó una instalación previa incompleta de GitHub CLI. Se continuará con la instalación existente..." -ForegroundColor Yellow
         } else {
-            Write-Error "No se pudo encontrar gh.exe en el paquete extraído."
-        }
+            # Resolver nombre de archivo de forma dinámica
+            $ghZipName = Get-FileNameFromUrl -Url $ghDownloadUrl -DefaultName "gh_archive.zip"
+            $ghZipPath = Join-Path $descargasDir $ghZipName
 
-        Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
-        # No removemos el archivo zip para mantener la caché de descargas
+            $isGhZipValid = $false
+            if (Test-Path $ghZipPath) {
+                Write-Host "Se detectó un archivo ZIP de GitHub CLI descargado previamente ($ghZipName). Verificando..." -ForegroundColor Yellow
+                try {
+                    $fileSize = (Get-Item $ghZipPath).Length
+                    if ($fileSize -gt 5MB) {
+                        $isGhZipValid = $true
+                        Write-Host "El archivo ZIP previo de GitHub CLI es válido. Se omitirá la descarga." -ForegroundColor Green
+                    } else {
+                        Write-Host "El archivo ZIP previo de GitHub CLI está incompleto. Se volverá a descargar." -ForegroundColor Yellow
+                    }
+                } catch {
+                    Write-Host "No se pudo verificar el archivo ZIP previo de GitHub CLI. Se volverá a descargar." -ForegroundColor Yellow
+                }
+            }
+
+            if (-not $isGhZipValid) {
+                Write-Host "Descargando GitHub CLI desde $ghDownloadUrl..." -ForegroundColor Cyan
+                Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing
+            }
+
+            $ghTempDir = Join-Path $portableRoot "gh_temp"
+            if (Test-Path $ghTempDir) {
+                Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            New-Item -ItemType Directory -Path $ghTempDir | Out-Null
+            
+            Write-Host "Extrayendo GitHub CLI..." -ForegroundColor Cyan
+            Expand-Archive -Path $ghZipPath -DestinationPath $ghTempDir -Force
+            
+            $extractedGhExe = Get-ChildItem -Path $ghTempDir -Filter "gh.exe" -Recurse | Select-Object -First 1
+            if ($extractedGhExe) {
+                $binDir = Join-Path $portableRoot "bin"
+                if (-not (Test-Path $binDir)) {
+                    New-Item -ItemType Directory -Path $binDir | Out-Null
+                }
+                Move-Item -Path $extractedGhExe.FullName -Destination $ghExe -Force
+                Write-Host "GitHub CLI copiado con éxito a $ghExe." -ForegroundColor Green
+            } else {
+                Write-Error "No se pudo encontrar gh.exe en el paquete extraído."
+            }
+
+            Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            # No removemos el archivo zip para mantener la caché de descargas
+        }
 
         Set-Content -Path (Join-Path $portableRoot "bin\.gh_version") -Value $ghDownloadUrl
         Set-Content -Path (Join-Path $portableRoot ".gh_complete") -Value "Complete"
@@ -975,50 +997,49 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
 
     if ($shouldInstallOrUpdateWez) {
         if (-not $isUpdateMode -and $isWezInstalled) {
-            Write-Host "Detectada instalación incompleta de WezTerm. Reinstalando..." -ForegroundColor Yellow
-            Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
+            Write-Host "Se detectó una instalación previa incompleta de WezTerm. Se continuará con la instalación existente..." -ForegroundColor Yellow
+        } else {
+            # Resolver nombre de archivo de forma dinámica
+            $wezZipName = Get-FileNameFromUrl -Url $wezDownloadUrl -DefaultName "wezterm_archive.zip"
+            $wezZipPath = Join-Path $descargasDir $wezZipName
 
-        # Resolver nombre de archivo de forma dinámica
-        $wezZipName = Get-FileNameFromUrl -Url $wezDownloadUrl -DefaultName "wezterm_archive.zip"
-        $wezZipPath = Join-Path $descargasDir $wezZipName
-
-        $isWezZipValid = $false
-        if (Test-Path $wezZipPath) {
-            Write-Host "Se detectó un archivo ZIP de WezTerm descargado previamente ($wezZipName). Verificando..." -ForegroundColor Yellow
-            try {
-                $fileSize = (Get-Item $wezZipPath).Length
-                if ($fileSize -gt 10MB) {
-                    $isWezZipValid = $true
-                    Write-Host "El archivo ZIP previo de WezTerm es válido. Se omitirá la descarga." -ForegroundColor Green
-                } else {
-                    Write-Host "El archivo ZIP previo de WezTerm está incompleto. Se volverá a descargar." -ForegroundColor Yellow
+            $isWezZipValid = $false
+            if (Test-Path $wezZipPath) {
+                Write-Host "Se detectó un archivo ZIP de WezTerm descargado previamente ($wezZipName). Verificando..." -ForegroundColor Yellow
+                try {
+                    $fileSize = (Get-Item $wezZipPath).Length
+                    if ($fileSize -gt 10MB) {
+                        $isWezZipValid = $true
+                        Write-Host "El archivo ZIP previo de WezTerm es válido. Se omitirá la descarga." -ForegroundColor Green
+                    } else {
+                        Write-Host "El archivo ZIP previo de WezTerm está incompleto. Se volverá a descargar." -ForegroundColor Yellow
+                    }
+                } catch {
+                    Write-Host "No se pudo verificar el archivo ZIP previo de WezTerm. Se volverá a descargar." -ForegroundColor Yellow
                 }
-            } catch {
-                Write-Host "No se pudo verificar el archivo ZIP previo de WezTerm. Se volverá a descargar." -ForegroundColor Yellow
             }
-        }
 
-        if (-not $isWezZipValid) {
-            Write-Host "Descargando WezTerm desde $wezDownloadUrl..." -ForegroundColor Cyan
-            Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
-        }
+            if (-not $isWezZipValid) {
+                Write-Host "Descargando WezTerm desde $wezDownloadUrl..." -ForegroundColor Cyan
+                Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
+            }
 
-        if (Test-Path $wezDir) {
-            Write-Host "Eliminando instalación anterior de WezTerm..." -ForegroundColor Cyan
-            Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        New-Item -ItemType Directory -Path $wezDir | Out-Null
+            if (Test-Path $wezDir) {
+                Write-Host "Eliminando instalación anterior de WezTerm..." -ForegroundColor Cyan
+                Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            New-Item -ItemType Directory -Path $wezDir | Out-Null
 
-        Write-Host "Extrayendo WezTerm..." -ForegroundColor Cyan
-        Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
-        
-        # Si la descompresión creó un subdirectorio (ej: WezTerm-windows-...), mover su contenido a la raíz de $wezDir
-        $subDir = Get-ChildItem -Path $wezDir -Directory | Where-Object { Test-Path (Join-Path $_.FullName "wezterm.exe") }
-        if ($subDir) {
-            Write-Host "Aplanando estructura de carpetas de WezTerm..." -ForegroundColor Cyan
-            Get-ChildItem -Path $subDir.FullName | Move-Item -Destination $wezDir -Force
-            Remove-Item -Path $subDir.FullName -Recurse -Force
+            Write-Host "Extrayendo WezTerm..." -ForegroundColor Cyan
+            Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
+            
+            # Si la descompresión creó un subdirectorio (ej: WezTerm-windows-...), mover su contenido a la raíz de $wezDir
+            $subDir = Get-ChildItem -Path $wezDir -Directory | Where-Object { Test-Path (Join-Path $_.FullName "wezterm.exe") }
+            if ($subDir) {
+                Write-Host "Aplanando estructura de carpetas de WezTerm..." -ForegroundColor Cyan
+                Get-ChildItem -Path $subDir.FullName | Move-Item -Destination $wezDir -Force
+                Remove-Item -Path $subDir.FullName -Recurse -Force
+            }
         }
         
         Set-Content -Path (Join-Path $wezDir ".version") -Value $wezDownloadUrl
