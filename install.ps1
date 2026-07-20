@@ -25,16 +25,12 @@ try {
     [System.IO.File]::WriteAllText($destPath, $content, $utf8WithBom)
     
     Write-Host "`n======================================================================" -ForegroundColor Green
-    Write-Host " DESCARGA DE SETUP COMPLETADA CON ÉXITO" -ForegroundColor Green
-    Write-Host "======================================================================" -ForegroundColor Green
-    Write-Host "Se ha creado el archivo de instalación: $destPath" -ForegroundColor Gray
-    Write-Host "----------------------------------------------------------------------" -ForegroundColor DarkGray
-    Write-Host "Para iniciar la instalación del entorno, ejecutá:" -ForegroundColor Yellow
-    Write-Host "  .\setup.ps1" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Si querés importar tu configuración actual de SSH, Git y VS Code:" -ForegroundColor Yellow
-    Write-Host "  .\setup.ps1 -ImportHostConfig" -ForegroundColor Cyan
+    Write-Host " DESCARGA DE SETUP COMPLETADA. INICIANDO INSTALACIÓN..." -ForegroundColor Green
     Write-Host "======================================================================`n" -ForegroundColor Green
+    
+    # Ejecutar setup.ps1 pasando los mismos argumentos recibidos en este script
+    & $destPath @args
+    exit $LASTEXITCODE
 } catch {
     Write-Error "Error fatal al descargar setup.ps1: $_"
 }
