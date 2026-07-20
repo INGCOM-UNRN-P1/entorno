@@ -1,4 +1,4 @@
-﻿# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
+# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
 # Diseñado para usarse antes de desconectarse o cerrar sesión en computadoras compartidas.
 
 $ErrorActionPreference = "Stop"
@@ -99,6 +99,7 @@ if (Test-Path $bashPath) {
             'echo "  UNRN Andina - Programación 1"',
             'echo "======================================================================"',
             'echo -e "\e[0m"',
+            'ayuda',
             $endInstMarker
         ) -join "`r`n"
         Add-Content -Path $bashrcPath -Value $instBanner

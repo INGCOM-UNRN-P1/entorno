@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
     [switch]$SkipUpdate
@@ -579,12 +579,8 @@ if ($isUpdateMode -or -not $isMsysComplete) {
             'echo "======================================================================"',
             'echo "  UNRN Andina - Programación 1"',
             'echo "======================================================================"',
-            'echo "  Pasos sugeridos para iniciar:"',
-            'echo "  * Ejecutá ''configure-git.sh'' para configurar tu identidad de Git."',
-            'echo "  * Podés personalizar esta consola ejecutando ''customize-terminal.bat''"',
-            'echo "    (o ''customize-terminal.ps1'' desde PowerShell)."',
-            'echo "======================================================================"',
             'echo -e "\e[0m"',
+            'ayuda',
             $endInstMarker
         ) -join "`r`n"
         

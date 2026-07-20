@@ -39,5 +39,11 @@ echo -e "  ${BLUE}ll${RESET}                    - Alias para ver el directorio e
 echo ""
 
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+if [ ! -f "$HOME/.bash_customized" ]; then
+    echo -e "${YELLOW}${BOLD}[ Pasos sugeridos para iniciar ]${RESET}"
+    echo -e "  * Ejecutá ${GREEN}configure-git.sh${RESET} para configurar tu identidad de Git."
+    echo -e "  * Personalizá esta consola ejecutando ${GREEN}customize-bash.sh${RESET} (o ${GREEN}customize-terminal.bat${RESET} en Windows)."
+    echo ""
+fi
 echo -e "Tip: Escribí cualquiera de estos comandos en esta consola para ejecutarlos."
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"

@@ -154,6 +154,7 @@ else
 fi
 
 mv "$TEMP_BASHRC" "$BASHRC_PATH"
+touch "$HOME/.bash_customized"
 
 echo -e "\n\e[32m=== PERSONALIZACIÓN COMPLETADA ===\e[0m"
 echo "El mensaje de bienvenida se mostrará la próxima vez que abras una terminal."
