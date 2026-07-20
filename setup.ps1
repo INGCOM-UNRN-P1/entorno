@@ -42,6 +42,40 @@ function Get-FileNameFromUrl {
     return $DefaultName
 }
 
+# Función para ejecutar comandos de pacman con reintentos
+function Invoke-PacmanWithRetry {
+    param(
+        [string]$BashPath,
+        [string]$Arguments,
+        [int]$MaxAttempts = 3,
+        [int]$DelaySeconds = 5
+    )
+    
+    $attempts = 0
+    $success = $false
+    
+    while (-not $success -and $attempts -lt $MaxAttempts) {
+        $attempts++
+        if ($attempts -gt 1) {
+            Write-Host "Reintentando comando pacman (Intento $attempts de $MaxAttempts) en $DelaySeconds segundos..." -ForegroundColor Yellow
+            Start-Sleep -Seconds $DelaySeconds
+        }
+        
+        # Ejecutar pacman con los argumentos correspondientes
+        & $BashPath --login -c "pacman $Arguments"
+        
+        if ($LASTEXITCODE -eq 0) {
+            $success = $true
+        } else {
+            Write-Warning "El comando 'pacman $Arguments' falló con código de salida: $LASTEXITCODE"
+        }
+    }
+    
+    if (-not $success) {
+        throw "No se pudo completar la instalación o actualización de paquetes con pacman tras $MaxAttempts intentos."
+    }
+}
+
 # Iniciar log de instalación
 $logPath = Join-Path $portableRoot "install.log"
 $transcriptStarted = $false
