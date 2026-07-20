@@ -1,11 +1,17 @@
-# MSYS2 portable folder
-msys64/
 
-# VS Code portable folder
+# Complete indicator files
+.msys_complete
+.vscode_complete
+.gh_complete
+.wezterm_complete
+.install_complete
 vscode/
 
-# WezTerm portable folder
+# Generated binaries and wezterm
 wezterm/
+wezterm.lua
+
+msys64/
 
 # Local environment configuration
 .env
