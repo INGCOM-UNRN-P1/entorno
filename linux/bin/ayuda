@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# ayuda - Guía rápida del Entorno Portable de Desarrollo (variante Linux)
+
+CYAN="\e[36m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+BLUE="\e[34m"
+GOLD="\e[38;5;220m"
+RESET="\e[0m"
+BOLD="\e[1m"
+
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "${GOLD}${BOLD}             GUÍA RÁPIDA DE COMANDOS DEL ENTORNO (LINUX)              ${RESET}"
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "Este entorno integra compiladores de C, Python y utilidades en una sesión aislada."
+echo -e "Sesión activa : ${HOME:-?}"
+echo ""
+
+echo -e "${CYAN}${BOLD}[ Scripts del Entorno (en linux/bin/) ]${RESET}"
+echo -e "  ${GREEN}ayuda${RESET}                  - Muestra esta guía rápida."
+echo -e "  ${GREEN}configure-git.sh${RESET}       - Configura Git paso a paso e inicia sesión con GitHub CLI (gh)."
+echo -e "  ${GREEN}customize-terminal.sh${RESET}  - Personaliza el banner de bienvenida y el prompt de Bash."
+echo -e "  ${GREEN}install-lib.sh <repo>${RESET}  - Instala librerías C desde GitHub en el prefijo local/."
+echo ""
+echo -e "${CYAN}${BOLD}[ Sesión ]${RESET}"
+echo -e "  ${BLUE}deactivate${RESET}            - Restaura tu sesión original (desactiva el entorno)."
+echo -e "  ${BLUE}<raíz>/linux/bootstrap.sh${RESET} - Verifica dependencias del sistema (--install para instalar)."
+echo ""
+
+echo -e "${CYAN}${BOLD}[ Comandos del Entorno de Desarrollo ]${RESET}"
+for cmd in gcc g++ make cmake ninja gdb python3 pip3 uv cppcheck doxygen git gh; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+        printf "  %b\n" "${BLUE}${cmd}${RESET}"
+    fi
+done
+echo ""
+
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+if [ ! -f "${HOME}/.bash_customized" ]; then
+    echo -e "${YELLOW}${BOLD}[ Pasos sugeridos para iniciar ]${RESET}"
+    echo -e "  * Ejecutá ${GREEN}configure-git.sh${RESET} para configurar tu identidad de Git y GitHub."
+    echo -e "  * Personalizá esta consola ejecutando ${GREEN}customize-terminal.sh${RESET}."
+    echo ""
+fi
+echo -e "Tip: Escribí cualquiera de estos comandos en esta consola para ejecutarlos."
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
