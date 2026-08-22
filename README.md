@@ -53,6 +53,7 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [`launch-vscode.ps1`](file:///home/mrtin/dev/p1/entorno/launch-vscode.ps1): Lanzador de VS Code desde PowerShell (inyecta la ruta del compilador GCC y las variables locales a la sesión).
 *   [`wezterm.lua`](file:///home/mrtin/dev/p1/entorno/wezterm.lua): Configuración portable de WezTerm (apariencia, tipografía y arranque de shell Bash UCRT64).
 *   [`launcher/`](file:///home/mrtin/dev/p1/entorno/launcher/): Directorio que contiene el código fuente (`launcher.c`) y un `Makefile` para compilar binarios compilados que lanzan la consola o VS Code de forma directa y silenciosa, suprimiendo la ventana negra de PowerShell intermedia.
+*   [`linux/`](file:///home/mrtin/dev/p1/entorno/linux/): Variante nativa para Linux: activación de sesión (`source linux/activate.sh`), bootstrap de dependencias y scripts `bin/` portados (gestión de librerías, configuración de Git con GitHub CLI y personalización de la terminal).
 *   [plan.md](file:///home/mrtin/dev/p1/entorno/plan.md): Plan de trabajo y hoja de ruta.
 *   [GEMINI.md](file:///home/mrtin/dev/p1/entorno/GEMINI.md): Directrices de desarrollo y reglas de formato de commits semánticos obligatorios para agentes de IA que colaboren en el proyecto.
 *   `home/`: Directorio local que actúa como `$HOME` del usuario. Evita contaminar la carpeta del sistema host. (Creado al inicializar).
@@ -129,6 +130,31 @@ Al iniciar VS Code o WezTerm a través de cualquiera de los cargadores, heredar�
 > 3. Buscá `Spanish Language Pack for VS Code` (desarrollada por Microsoft) o instalala directamente desde: [Spanish Language Pack for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-es).
 > 4. Hacé clic en **Install** (Instalar).
 > 5. Al finalizar la instalación, se mostrará una notificación abajo a la derecha consultando si querés cambiar el idioma y reiniciar. Hacé clic en **Change Language and Restart**.
+
+---
+
+## Uso en Linux
+
+El repositorio incluye una variante nativa para Linux basada en activación de sesión (no requiere instalación de componentes, solo herramientas del sistema). Requisitos: `git`, `gcc`, `g++`, `make`, `cmake`, `ninja`, `python3`, `pip`, `curl`. Podés verificarlos con:
+
+```bash
+linux/bootstrap.sh             # diagnóstico de dependencias
+linux/bootstrap.sh --install   # ofrece instalar lo que falte (usa sudo)
+```
+
+Para activar el entorno en tu sesión actual de Bash:
+
+```bash
+source linux/activate.sh       # activa HOME portable + toolchain en el PATH
+ayuda                          # guía rápida de comandos
+deactivate                     # restaura tu sesión original
+```
+
+Scripts disponibles una vez activado el entorno (en `linux/bin/`, agregados al `PATH`):
+
+*   `configure-git.sh`: configura Git paso a paso (identidad, preferencias y credenciales) e inicia sesión con GitHub CLI (`gh`). Todo queda aislado en el HOME portable.
+*   `customize-terminal.sh`: asistente para personalizar el banner de bienvenida y el prompt de Bash.
+*   `install-lib.sh <usuario/repositorio> [rama_o_tag]`: compila e instala librerías de C desde GitHub en el prefijo local del entorno (`local/`), resuelto automáticamente por el compilador gracias a las variables exportadas por la activación. También acepta rutas locales a proyectos.
 
 ---
 
