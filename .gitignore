@@ -19,6 +19,9 @@ msys64/
 # Default home folder
 home/
 
+# Linux: prefijo local de librerías (install-lib.sh)
+/local/
+
 
 # Temporary downloads and installers
 *.exe
