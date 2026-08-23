@@ -70,71 +70,14 @@ Este documento detalla la hoja de ruta para la construcción, verificación y ma
 
 ---
 
-## Fase 9: Pruebas de Aceptación (Pendiente de Ejecución en Host)
-Para validar que el entorno cumple con los estándares exigidos, se deben realizar las siguientes pruebas manuales tras la inicialización:
+## Fase 9: Pruebas de Aceptación (Automatizadas + Residual Manual)
+El script [smoke.sh](bin/smoke.sh) (disponible también en `linux/bin/`) automatiza las verificaciones que no requieren interfaz gráfica ni privilegios. Ejecutalo dentro del terminal portable: compila/ejecuta C con cppcheck (**A**), valida Python/pip/uv con instalación aislada en venv del HOME portable (**B**), construye un proyecto CMake+Ninja (**C**), instala/desinstala una librería de prueba con manifiesto (**E-local**) y chequea la identidad de Git (**F-check**).
 
-### Prueba A: Compilación GCC C
-*   [ ] 1. Ejecutar `launch.bat` (que iniciará WezTerm).
-*   [ ] 2. Crear un archivo `test.c` con el siguiente contenido:
-   ```c
-   #include <stdio.h>
-   int main() {
-       printf("Hola desde GCC Portable UCRT!\n");
-       return 0;
-   }
-   ```
-*   [ ] 3. Compilar: `gcc test.c -o test.exe`
-*   [ ] 4. Ejecutar: `./test.exe`
-*   [ ] 5. Verificar la salida esperada en consola.
-*   [ ] 6. Realizar análisis estático de código: `cppcheck test.c`
-*   [ ] 7. Verificar que cppcheck analice el archivo e informe el resultado.
-
-### Prueba B: Ejecución de Python, Pip y UV
-*   [ ] 1. Ejecutar `launch.bat`.
-*   [ ] 2. Verificar versiones de herramientas:
-   ```bash
-   python --version
-   pip --version
-   uv --version
-   ```
-*   [ ] 3. Instalar un paquete de prueba usando uv: `uv pip install requests`
-*   [ ] 4. Verificar que se instale en el HOME local (`home/.local/...`) y no en la máquina host.
-
-### Prueba C: Sistema de Construcción (CMake)
-*   [ ] 1. Crear un `CMakeLists.txt` básico.
-*   [ ] 2. Generar el build con Ninja: `cmake -G Ninja .`
-*   [ ] 3. Compilar con `ninja` o `cmake --build .`.
-
-### Prueba D: Validación de VS Code Portable
-*   [ ] 1. Ejecutar `launch-vscode.bat`.
-*   [ ] 2. Verificar que el terminal integrado inicie directamente en `UCRT64 Bash`.
-*   [ ] 3. Validar que la compilación de C y Python sea reconocida desde las herramientas de autocompletado en el editor.
-
-### Prueba E: Instalación de Librerías de GitHub
-*   [ ] 1. Ejecutar `launch.bat`.
-*   [ ] 2. Correr el script: `install-lib.sh davidsiaw/inih r29` (ya agregado al PATH)
-*   [ ] 3. Verificar que los archivos `ini.h` y `libinih.a` estén instalados en `msys64/ucrt64/include/` y `msys64/ucrt64/lib/` respectivamente.
-*   [ ] 4. Crear un código simple en C que incluya `<ini.h>` y verificar que compile usando `gcc test_ini.c -linih -o test_ini.exe`.
-
-### Prueba F: Configuración Git y GitHub CLI
-*   [ ] 1. Ejecutar `launch.bat`.
-*   [ ] 2. Correr el script: `configure-git.sh` (ya agregado al PATH)
-*   [ ] 3. Ingresar credenciales ficticias o reales de prueba.
-*   [ ] 4. Verificar la creación de los archivos `home/.gitconfig` y `home/.git-credentials`.
-*   [ ] 5. Ejecutar `gh --version` para validar que el CLI de GitHub responde de forma correcta.
-
-### Prueba G: Empaquetamiento y Despliegue Offline
-*   [ ] 1. Ejecutar `package-env.ps1` en PowerShell.
-*   [ ] 2. Verificar que se genere el archivo `portable-env-offline.zip`.
-*   [ ] 3. Extraer el contenido del archivo ZIP en otro directorio temporal distinto en la máquina.
-*   [ ] 4. Ejecutar `launch.bat` en la nueva carpeta y validar que todas las herramientas (`clang`, `python`, `git`, `gh`, `doxygen`) sigan estando en el PATH de sesión sin requerir conexiones a internet.
-
-### Prueba H: Limpieza de Seguridad en Hosts Compartidos
-*   [ ] 1. Ejecutar `clean-shared-host.ps1` en PowerShell.
-*   [ ] 2. Verificar que el script muestre la advertencia detallada y los archivos a eliminar.
-*   [ ] 3. Confirmar la ejecución.
-*   [ ] 4. Validar que la carpeta `home/` sea recreada vacía y que `vscode/data/` sea restablecida a las configuraciones predeterminadas.
-*   [ ] 5. Confirmar que no queden contraseñas o datos personales en el directorio portable.
+Residual manual (requiere host Windows con entorno inicializado):
+*   [ ] **Prueba D:** IntelliSense de C/Python reconocido en VS Code Portable (terminal integrado UCRT64).
+*   [ ] **Prueba G:** redespliegue offline completo: `package-env.ps1` → extraer en otro directorio → `launch.bat` sin internet.
+*   [ ] **Prueba H:** limpieza interactiva en host compartido (`clean-shared-host.ps1`) y verificación de que no queden datos personales.
+*   [ ] **Prueba E-GUI:** compilación contra una librería real instalada (`install-lib.sh davidsiaw/inih r29`) desde un proyecto del alumno.
 
 ---
 
@@ -146,7 +89,9 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 *   [x] **Verificación estricta de firma SHA y detección de estado de instalación:** Se mejora la verificación de firmas SHA256 para el instalador de MSYS2 (haciendo que el script falle inmediatamente ante discrepancias o firmas inválidas en lugar de continuar). Se introduce una lógica avanzada guiada por el estado del entorno (mediante indicadores de completitud `.install_complete`, `.msys_complete`, `.vscode_complete` y `.wezterm_complete`), permitiendo que ejecuciones múltiples del script setup finalicen instalaciones previas incompletas (reusando descargas válidas) o actualicen selectivamente el entorno sin reinstalaciones destructivas (verificando versiones y redirecciones web).
 *   [x] **Script de Actualización de Paquetes (Pacman):** Creación del script [update-packages.sh](bin/update-packages.sh) en `bin/` para actualizar la base de datos de pacman, actualizar los paquetes del sistema e instalar las herramientas obligatorias del entorno portable de forma unificada.
 *   [x] **Script de Diagnóstico de Entorno:** Creación del script [diagnose-env.sh](bin/diagnose-env.sh) en `bin/` para diagnosticar el estado del entorno portable, las herramientas instaladas (con sus versiones correspondientes), el listado completo de paquetes de pacman y el contenido de `bin/` en un informe detallado.
-*   [ ] **Automatización de Descompresión:** Evaluación del diseño de un script ligero de PowerShell `install-offline.ps1` para asistir en la extracción rápida del ZIP distribuido.
+*   [x] **Automatización de Descompresión:** Script [install-offline.ps1](install-offline.ps1) para asistir la instalación del ZIP distribuido: extracción acelerada (tar.exe con fallback), validación estructural, advertencia de rutas conflictivas y arranque opcional del terminal (`-Ejecutar`).
+*   [x] **Actualización Unificada de Paquetes:** Script [update-packages.sh](bin/update-packages.sh) que sincroniza pacman y garantiza el baseline completo leyendo `packages-baseline.txt` (fuente única), usando la caché portable.
+*   [x] **Verificador de Aceptación Automático:** [smoke.sh](bin/smoke.sh) automatiza las Pruebas A/B/C/E-local/F-check de la Fase 9 dentro del terminal portable.
 *   **Estado y siguientes pasos:** el detalle vivo de mejoras implementadas y pendientes se centraliza en [mejoras-y-problemas.md](mejoras-y-problemas.md).
 
 

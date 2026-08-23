@@ -259,6 +259,8 @@ try {
                     "bin/uninstall-lib.sh",
                     "bin/update-packages.sh",
                     "bin/smoke.sh",
+                    "smoke.ps1",
+                    "install-offline.ps1",
                     "bin/nuevo-proyecto",
                     "bin/entregar",
                     "bin/doctor",
