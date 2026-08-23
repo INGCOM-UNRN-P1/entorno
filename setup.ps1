@@ -11,6 +11,15 @@ $ErrorActionPreference = "Stop"
 # Acelerar Invoke-WebRequest en Windows PowerShell 5.1 (la barra de progreso es hasta 10x más lenta)
 $ProgressPreference = "SilentlyContinue"
 
+# Compatibilidad PowerShell 7 (pwsh): el instalador se valida contra Windows PowerShell 5.1.
+# Bajo pwsh funciona en modo informativo, pero diferencias de encoding y ConvertTo-Json
+# pueden producir resultados distintos; ante dudas, ejecutar con 'powershell' clásico.
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    Write-Warning "Estás ejecutando setup.ps1 con PowerShell $($PSVersionTable.PSVersion) (pwsh)."
+    Write-Warning "La validación completa de la cátedra es sobre Windows PowerShell 5.1 ('powershell')."
+    Write-Warning "Si algo falla de forma extraña (encoding, JSON), probá primero con: powershell -ExecutionPolicy Bypass -File setup.ps1"
+}
+
 # Directorio base del script (con fallback al directorio actual si se ejecuta desde internet vía IEX)
 $portableRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($portableRoot)) {
