@@ -215,6 +215,7 @@ try {
                     "bin/configure-git.sh",
                     "bin/download-baseline.sh",
                     "bin/diagnose-env.sh",
+                    "bin/uninstall-lib.sh",
                     "README.md",
                     "plan.md",
                     "GEMINI.md",
@@ -230,6 +231,7 @@ try {
                     "linux/bin/configure-git.sh",
                     "linux/bin/customize-terminal.sh",
                     "linux/bin/install-lib.sh",
+                    "linux/bin/uninstall-lib.sh",
                     "packages-baseline.txt"
                 )
                 

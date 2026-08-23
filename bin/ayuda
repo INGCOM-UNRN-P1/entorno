@@ -26,6 +26,7 @@ echo -e "  ${GREEN}customize-bash.sh${RESET}     - Cambia los colores y el banne
 echo -e "  ${GREEN}update-env.sh${RESET}        - Actualiza los scripts y componentes del entorno portable."
 echo -e "  ${GREEN}build-launcher.sh${RESET}     - Compila o regenera los accesos directos (.exe) de la raíz."
 echo -e "  ${GREEN}install-lib.sh <repo>${RESET} - Instala librerías C desde GitHub (Ej: davidsiaw/inih)."
+echo -e "  ${GREEN}uninstall-lib.sh${RESET}      - Lista o desinstala librerías instaladas con install-lib."
 echo -e "  ${GREEN}diagnose-env.sh${RESET}       - Diagnostica el estado del entorno y las versiones de herramientas."
 echo ""
 

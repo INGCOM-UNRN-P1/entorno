@@ -73,6 +73,24 @@ fi
 cd "$TEMP_DIR"
 
 # ==========================================
+# MANIFIESTO PARA DESINSTALACIÓN (uninstall-lib.sh)
+# ==========================================
+SLUG="$(printf '%s' "$(basename "$URL" .git)" | tr -c 'A-Za-z0-9._-' '_')"
+MANIFEST_DIR="$PREFIX_DIR/portable-libs"
+MANIFEST_FILE="$MANIFEST_DIR/${SLUG}.files"
+mkdir -p "$MANIFEST_DIR"
+: > "$MANIFEST_FILE"
+record_file() {
+    local rel="$1"
+    rel="${rel#"$PREFIX_DIR"/}"
+    rel="${rel#/}"
+    grep -qxF "$rel" "$MANIFEST_FILE" || printf '%s\n' "$rel" >> "$MANIFEST_FILE"
+}
+note_install() {
+    printf '# %s\n' "$1" >> "$MANIFEST_FILE"
+}
+
+# ==========================================
 # FLUJO DE INSTALACIÓN SEGÚN ESPECIFICACIÓN
 # ==========================================
 
@@ -97,6 +115,7 @@ if [ -f "library.spec" ]; then
             echo "   Cabecera: $src -> $PREFIX_DIR/$dest"
             mkdir -p "$PREFIX_DIR/$(dirname "$dest")"
             cp -p "$src" "$PREFIX_DIR/$dest"
+            record_file "$dest"
         done
     fi
 
@@ -109,6 +128,7 @@ if [ -f "library.spec" ]; then
             echo "   Binario:  $src -> $PREFIX_DIR/$dest"
             mkdir -p "$PREFIX_DIR/$(dirname "$dest")"
             cp -p "$src" "$PREFIX_DIR/$dest"
+            record_file "$dest"
         done
     fi
     echo -e "${GREEN}-> Instalación de librería estructurada completada.${RESET}"
@@ -132,6 +152,7 @@ elif [ -f "CMakeLists.txt" ]; then
         cmake -G "$GEN" -B build -DCMAKE_INSTALL_PREFIX="$PREFIX_DIR" -DCMAKE_BUILD_TYPE=Release
         cmake --build build -j"$JOBS"
         cmake --install build
+        note_install "instalación vía cmake: archivos no enumerados individualmente"
         echo -e "${GREEN}-> Instalación vía CMake completada en $PREFIX_DIR.${RESET}"
     else
         echo -e "${RED}[ERROR] El proyecto requiere CMake y no está instalado. Instalalo con tu gestor de paquetes (linux/bootstrap.sh sugiere cómo).${RESET}"
@@ -145,13 +166,23 @@ elif [ -f "Makefile" ] || [ -f "makefile" ]; then
 
     echo -e "${CYAN}-> Intentando instalar en el prefijo $PREFIX_DIR...${RESET}"
     if make install PREFIX="$PREFIX_DIR" prefix="$PREFIX_DIR" DESTDIR="" >/dev/null 2>&1; then
+        note_install "instalación vía 'make install': archivos no enumerados individualmente"
         echo -e "${GREEN}-> Instalación vía Makefile completada.${RESET}"
     else
         echo -e "${YELLOW}[ADVERTENCIA] 'make install' falló. Copiando archivos de forma manual...${RESET}"
         mkdir -p "$PREFIX_DIR/include" "$PREFIX_DIR/lib"
-        find . -maxdepth 2 -name "*.h" -exec cp -p {} "$PREFIX_DIR/include/" \; 2>/dev/null || true
-        find . -maxdepth 2 \( -name "*.a" -o -name "*.so*" \) -exec cp -p {} "$PREFIX_DIR/lib/" \; 2>/dev/null || true
-        find . -maxdepth 2 -type f -perm -u+x -name "*" -path "*bin*" -exec cp -p {} "$PREFIX_DIR/bin/" \; 2>/dev/null || true
+        find . -maxdepth 2 -name "*.h" | while read -r f; do
+            cp -p "$f" "$PREFIX_DIR/include/"
+            record_file "include/$(basename "$f")"
+        done
+        find . -maxdepth 2 \( -name "*.a" -o -name "*.so*" \) | while read -r f; do
+            cp -p "$f" "$PREFIX_DIR/lib/"
+            record_file "lib/$(basename "$f")"
+        done
+        find . -maxdepth 2 -type f -perm -u+x -name "*" -path "*bin*" | while read -r f; do
+            cp -p "$f" "$PREFIX_DIR/bin/"
+            record_file "bin/$(basename "$f")"
+        done
         echo -e "${GREEN}-> Copia manual del Makefile finalizada.${RESET}"
     fi
 
@@ -166,6 +197,7 @@ else
             dest_dir="$PREFIX_DIR/include/$(dirname "$rel")"
             mkdir -p "$dest_dir"
             cp -p "$file" "$dest_dir/"
+            record_file "include/$rel"
         done
         echo -e "${GREEN}-> Copia de archivos de cabecera completada.${RESET}"
     else

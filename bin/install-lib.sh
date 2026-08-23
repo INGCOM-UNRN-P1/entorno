@@ -43,6 +43,24 @@ fi
 cd "$TEMP_DIR"
 
 # ==========================================
+# MANIFIESTO PARA DESINSTALACIÓN (uninstall-lib.sh)
+# ==========================================
+SLUG="$(printf '%s' "$(basename "$URL" .git)" | tr -c 'A-Za-z0-9._-' '_')"
+MANIFEST_DIR="$PREFIX_DIR/portable-libs"
+MANIFEST_FILE="$MANIFEST_DIR/${SLUG}.files"
+mkdir -p "$MANIFEST_DIR"
+: > "$MANIFEST_FILE"
+record_file() {
+    local rel="$1"
+    rel="${rel#"$PREFIX_DIR"/}"
+    rel="${rel#/}"
+    grep -qxF "$rel" "$MANIFEST_FILE" || printf '%s\n' "$rel" >> "$MANIFEST_FILE"
+}
+note_install() {
+    printf '# %s\n' "$1" >> "$MANIFEST_FILE"
+}
+
+# ==========================================
 # FLUJO DE INSTALACIÓN SEGÚN ESPECIFICACIÓN
 # ==========================================
 
@@ -66,6 +84,7 @@ if [ -f "library.spec" ]; then
             echo "   Cabecera: $src -> $PREFIX_DIR/$dest"
             mkdir -p "$PREFIX_DIR/$(dirname "$dest")"
             cp -p "$src" "$PREFIX_DIR/$dest"
+            record_file "$dest"
         done
     fi
     
@@ -77,6 +96,7 @@ if [ -f "library.spec" ]; then
             echo "   Binario:  $src -> $PREFIX_DIR/$dest"
             mkdir -p "$PREFIX_DIR/$(dirname "$dest")"
             cp -p "$src" "$PREFIX_DIR/$dest"
+            record_file "$dest"
         done
     fi
     echo -e "\e[32m-> Instalación de librería estructurada completada.\e[0m"
@@ -94,6 +114,7 @@ elif [ -f "CMakeLists.txt" ]; then
     cmake -G Ninja -B build -DCMAKE_INSTALL_PREFIX="$PREFIX_DIR" -DCMAKE_BUILD_TYPE=Release
     cmake --build build
     cmake --install build
+    note_install "instalación vía cmake: archivos no enumerados individualmente"
     echo -e "\e[32m-> Instalación vía CMake completada en $PREFIX_DIR.\e[0m"
 
 # 4. Construcción con Makefile estándar
@@ -104,14 +125,24 @@ elif [ -f "Makefile" ] || [ -f "makefile" ]; then
     echo -e "\e[36m-> Intentando instalar en el prefijo $PREFIX_DIR...\e[0m"
     # Intentar instalar usando variables comunes de Makefile
     if mingw32-make install PREFIX="$PREFIX_DIR" DESTDIR="" >/dev/null 2>&1; then
+        note_install "instalación vía 'make install': archivos no enumerados individualmente"
         echo -e "\e[32m-> Instalación vía Makefile completada.\e[0m"
     else
         echo -e "\e[33m[ADVERTENCIA] 'make install' falló. Copiando archivos de forma manual...\e[0m"
         # Copia de seguridad si falla la instalación estándar del Makefile
         mkdir -p "$PREFIX_DIR/include" "$PREFIX_DIR/lib"
-        find . -maxdepth 2 -name "*.h" -exec cp -p {} "$PREFIX_DIR/include/" \; 2>/dev/null || true
-        find . -maxdepth 2 -name "*.a" -exec cp -p {} "$PREFIX_DIR/lib/" \; 2>/dev/null || true
-        find . -maxdepth 2 -name "*.dll" -exec cp -p {} "$PREFIX_DIR/bin/" \; 2>/dev/null || true
+        find . -maxdepth 2 -name "*.h" | while read -r f; do
+            cp -p "$f" "$PREFIX_DIR/include/"
+            record_file "include/$(basename "$f")"
+        done
+        find . -maxdepth 2 -name "*.a" | while read -r f; do
+            cp -p "$f" "$PREFIX_DIR/lib/"
+            record_file "lib/$(basename "$f")"
+        done
+        find . -maxdepth 2 -name "*.dll" | while read -r f; do
+            cp -p "$f" "$PREFIX_DIR/bin/"
+            record_file "bin/$(basename "$f")"
+        done
         echo -e "\e[32m-> Copia manual del Makefile finalizada.\e[0m"
     fi
 
@@ -124,9 +155,11 @@ else
         mkdir -p "$PREFIX_DIR/include"
         # Copiar manteniendo estructura relativa o plano si es corto
         find . -name "*.h" -o -name "*.hpp" | while read -r file; do
-            dest_dir="$PREFIX_DIR/include/$(dirname "$file")"
+            rel="${file#./}"
+            dest_dir="$PREFIX_DIR/include/$(dirname "$rel")"
             mkdir -p "$dest_dir"
             cp -p "$file" "$dest_dir/"
+            record_file "include/$rel"
         done
         echo -e "\e[32m-> Copia de archivos de cabecera completada.\e[0m"
     else
