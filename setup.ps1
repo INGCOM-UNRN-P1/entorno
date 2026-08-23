@@ -216,6 +216,8 @@ try {
                     "bin/download-baseline.sh",
                     "bin/diagnose-env.sh",
                     "bin/uninstall-lib.sh",
+                    "bin/nuevo-proyecto",
+                    "bin/entregar",
                     "README.md",
                     "plan.md",
                     "GEMINI.md",

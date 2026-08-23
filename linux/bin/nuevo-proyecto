@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# nuevo-proyecto - Crea la estructura inicial de un proyecto de Programación 1.
+# Funciona en el terminal portable de Windows (MSYS2) y en la variante Linux.
+#
+# Uso: nuevo-proyecto <nombre>
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; CYAN='\033[36m'; RESET='\033[0m'
+
+if [ "${1:-}" = "" ]; then
+    echo -e "${RED}[ERROR] Falta el nombre del proyecto.${RESET}"
+    echo "Uso: nuevo-proyecto <nombre>"
+    exit 1
+fi
+
+NAME="$1"
+if ! printf '%s' "$NAME" | grep -qE '^[a-zA-Z0-9_][a-zA-Z0-9_-]*$'; then
+    echo -e "${RED}[ERROR] Nombre inválido: usá letras, números, guiones y guión bajo.${RESET}"
+    exit 1
+fi
+
+if [ -e "$NAME" ]; then
+    echo -e "${RED}[ERROR] Ya existe un archivo o carpeta llamado '$NAME'.${RESET}"
+    exit 1
+fi
+
+mkdir -p "$NAME"
+
+# main.c de punto de partida (placeholder __NOMBRE__ reemplazado abajo)
+cat > "$NAME/main.c" <<'EOF'
+#include <stdio.h>
+
+/* Proyecto: __NOMBRE__ */
+int main(void) {
+    printf("Hola desde __NOMBRE__!\n");
+    return 0;
+}
+EOF
+sed -i "s/__NOMBRE__/$NAME/g" "$NAME/main.c"
+
+cat > "$NAME/Makefile" <<'EOF'
+# Makefile de cátedra - Programación 1
+CC      ?= gcc
+CFLAGS  ?= -O2 -Wall -std=c11
+TARGET  := __NOMBRE__
+
+all: $(TARGET)
+
+$(TARGET): main.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+clean:
+	rm -f $(TARGET) *.o
+
+.PHONY: all clean
+EOF
+sed -i "s/__NOMBRE__/$NAME/g" "$NAME/Makefile"
+
+cat > "$NAME/.gitignore" <<'EOF'
+# Binarios generados
+__NOMBRE__
+*.o
+*.exe
+build/
+EOF
+sed -i "s/__NOMBRE__/$NAME/g" "$NAME/.gitignore"
+
+echo -e "${GREEN}[ÉXITO] Proyecto '$NAME' creado.${RESET}"
+echo "Estructura:"
+echo "  $NAME/"
+echo "  ├── main.c      (hola mundo listo para compilar)"
+echo "  ├── Makefile    (make / mingw32-make)"
+echo "  └── .gitignore"
+echo ""
+echo -e "${CYAN}Siguiente paso sugerido:${RESET} cd $NAME && make && ./$NAME"
+echo "(Opcional) Inicializá Git con: git init"
