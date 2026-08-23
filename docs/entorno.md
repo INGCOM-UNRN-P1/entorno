@@ -49,11 +49,17 @@ VS Code heredará de forma directa todas las variables de entorno locales (compi
 En la carpeta `bin/` tenés disponibles scripts de Bash agregados al `PATH` para simplificar la administración del entorno. Ejecutalos directamente desde tu terminal:
 
 ### Diagnóstico de Salud del Entorno
-Si notás problemas con algún compilador o querés verificar el estado de las herramientas, ejecutá:
+Si notás problemas con algún compilador o querés verificar el estado de las herramientas, tenés dos comandos complementarios:
 ```bash
-diagnose-env.sh
+doctor              # verificación rápida (compila un programa mínimo y valida el entorno)
+diagnose-env.sh     # informe técnico completo en diagnose.log
 ```
-Este script genera un informe técnico detallado en `diagnose.log` con las versiones de GCC, CMake, Python, Git, Doxygen, los paquetes activos de pacman y el contenido físico de la carpeta `bin/`.
+
+### Comandos de cátedra para trabajos prácticos
+```bash
+nuevo-proyecto tp01 # estructura inicial lista para compilar
+entregar            # ZIP de entrega validado (compila antes de empacar)
+```
 
 ### Descarga de Baseline de Paquetes (Caché Local)
 Para descargar todos los paquetes de pacman necesarios para la instalación inicial y guardarlos localmente, ejecutá:

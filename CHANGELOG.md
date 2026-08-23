@@ -1,0 +1,27 @@
+# Registro de Cambios
+
+Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/);
+versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
+
+## [1.0.0] - 2026-08-22
+
+Primera versión etiquetada tras la consolidación de las dos variantes de la plataforma.
+
+### Windows
+* Instalador desatendido (`setup.ps1`) con canal de versiones reproducible (`versions.json`, flag `-Latest`), modo no interactivo (`-Yes`), actualizaciones atómicas de VS Code/WezTerm, preflight de espacio/rutas, reintentos de descarga y pacman paralelo.
+* Terminal WezTerm + MSYS2 UCRT64, VS Code portable con parcheo quirúrgico de settings.json, GitHub CLI y plantilla canónica compartida en los tres generadores de configuración.
+* Empaquetado offline con poda `-Compact`, extensiones `.vsix` offline (`-ConExtensiones`) y política explícita del prefijo `local/`.
+* Herramientas en consola: gestión de librerías C con manifiesto (`install-lib.sh`/`uninstall-lib.sh`), scaffolding académico (`nuevo-proyecto`, `entregar`), diagnóstico (`doctor`, `diagnose-env.sh`, `bootstrap`), configuración guiada de Git/GitHub CLI.
+* Seguridad: limpieza para hosts compartidos corregida, exclusiones granulares de Defender con detección de antivirus de terceros, paquete sin datos personales.
+
+### Linux
+* Variante nativa por activación de sesión (`source linux/activate.sh`) con HOME portable y cero modificaciones al host ni permisos de administrador.
+* Bootstrap solo diagnóstico, paridad de scripts (`configure-git`, `customize-terminal`, install/uninstall-lib, doctor, nuevo-proyecto, entregar, update-env) y suite propia de pruebas en CI.
+
+### Infraestructura
+* CI con PSScriptAnalyzer, shellcheck, bash -n y pruebas de la variante Linux.
+* Reglas de agente unificadas en AGENTS.md; VERSION visible; CHANGELOG (este archivo).
+
+### Pendiente conocido
+* Validación completa en host Windows de la tanda reciente de cambios de PowerShell.
+* LICENSE pendiente de definición institucional.

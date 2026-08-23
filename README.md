@@ -60,7 +60,11 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [`launcher/`](file:///home/mrtin/dev/p1/entorno/launcher/): Directorio que contiene el código fuente (`launcher.c`) y un `Makefile` para compilar binarios compilados que lanzan la consola o VS Code de forma directa y silenciosa, suprimiendo la ventana negra de PowerShell intermedia.
 *   [`linux/`](file:///home/mrtin/dev/p1/entorno/linux/): Variante nativa para Linux: activación de sesión (`source linux/activate.sh`), bootstrap de dependencias y scripts `bin/` portados (gestión de librerías, configuración de Git con GitHub CLI y personalización de la terminal).
 *   [plan.md](file:///home/mrtin/dev/p1/entorno/plan.md): Plan de trabajo y hoja de ruta.
-*   [GEMINI.md](file:///home/mrtin/dev/p1/entorno/GEMINI.md): Directrices de desarrollo y reglas de formato de commits semánticos obligatorios para agentes de IA que colaboren en el proyecto.
+*   [AGENTS.md](file:///home/mrtin/dev/p1/entorno/AGENTS.md): Directrices normativas para agentes de desarrollo (commits semánticos, aislamiento del host, UCRT64). GEMINI.md se mantiene como stub de compatibilidad.
+*   [versions.json](file:///home/mrtin/dev/p1/entorno/versions.json): Manifiesto de versiones por cuatrimestre (URLs pineadas de MSYS2/VS Code/gh/WezTerm y versiones de extensiones). `null` = última disponible; el flag `-Latest` lo ignora.
+*   [packages-baseline.txt](file:///home/mrtin/dev/p1/entorno/packages-baseline.txt): Fuente única de paquetes pacman del entorno, compartida por setup.ps1 y download-baseline.sh.
+*   VERSION: Versión actual del entorno, visible en `ayuda`, el diagnóstico y el log de instalación.
+*   [mejoras-y-problemas.md](file:///home/mrtin/dev/p1/entorno/mejoras-y-problemas.md): Análisis vivo de mejoras implementadas y pendientes.
 *   `home/`: Directorio local que actúa como `$HOME` del usuario. Evita contaminar la carpeta del sistema host. (Creado al inicializar).
 *   `msys64/`: Carpeta contenedora de MSYS2 y binarios (excluida en `.gitignore`).
 *   `vscode/`: Carpeta contenedora del editor y configuraciones locales (excluida en `.gitignore`).
@@ -105,6 +109,7 @@ Este script descargará el instalador principal (`setup.ps1`) con el formato cor
    Set-ExecutionPolicy Bypass -Scope Process -Force; .\setup.ps1 -ImportHostConfig
    ```
    *(También podés combinar ambos parámetros: `.\setup.ps1 -HomeDirName "developer" -ImportHostConfig`)*
+   *Parámetros adicionales:* `-Yes` ejecuta todo sin preguntas interactivas (ideal para laboratorios); `-Latest` ignora los pines de `versions.json` e instala las últimas versiones disponibles. Para congelar la versión de *scripts* durante el cuatrimestre, definí `CHANNEL=<tag-o-rama>` en tu `.env`.
 
 ---
 
@@ -272,5 +277,5 @@ install-lib.sh mi-usuario/mi-libreria-matematica
 
 ## Regeneración y Actualizaciones Rápidas
 
-*   **Para actualizar todo el entorno (paquetes, VS Code y WezTerm):** Volvé a ejecutar `setup.ps1`. El script respetará tu carpeta `vscode/data` (donde se guardan tus extensiones y configuraciones) actualizando únicamente la base del editor.
-*   **Para regenerar el entorno de cero:** Borrá las carpetas `msys64`, `vscode` y `wezterm` (resguardando `vscode/data` si querés conservar la configuración del editor) y ejecutá nuevamente `setup.ps1`.
+*   **Para actualizar todo el entorno (paquetes, VS Code y WezTerm):** Volvé a ejecutar `setup.ps1`. El script respetará tu carpeta `vscode/data` (donde se guardan tus extensiones y configuraciones) actualizando únicamente la base del editor. Los pines de `versions.json` garantizan que todos obtengan las mismas versiones dentro del cuatrimestre; usá `-Latest` para saltearlos.
+*   **Para regenerar el entorno de cero:** Borrá las carpetas `msys64`, `vscode` y `wezterm` (o ejecutá `desinstalar.ps1`), resguardando `vscode/data` si querés conservar la configuración del editor, y volvé a ejecutar `setup.ps1`.

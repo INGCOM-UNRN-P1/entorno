@@ -147,5 +147,6 @@ Para validar que el entorno cumple con los estándares exigidos, se deben realiz
 *   [x] **Script de Actualización de Paquetes (Pacman):** Creación del script [update-packages.sh](bin/update-packages.sh) en `bin/` para actualizar la base de datos de pacman, actualizar los paquetes del sistema e instalar las herramientas obligatorias del entorno portable de forma unificada.
 *   [x] **Script de Diagnóstico de Entorno:** Creación del script [diagnose-env.sh](bin/diagnose-env.sh) en `bin/` para diagnosticar el estado del entorno portable, las herramientas instaladas (con sus versiones correspondientes), el listado completo de paquetes de pacman y el contenido de `bin/` en un informe detallado.
 *   [ ] **Automatización de Descompresión:** Evaluación del diseño de un script ligero de PowerShell `install-offline.ps1` para asistir en la extracción rápida del ZIP distribuido.
+*   **Estado y siguientes pasos:** el detalle vivo de mejoras implementadas y pendientes se centraliza en [mejoras-y-problemas.md](mejoras-y-problemas.md).
 
 

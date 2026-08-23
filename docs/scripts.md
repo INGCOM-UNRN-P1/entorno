@@ -8,10 +8,13 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 
 ### `setup.ps1`
 * **Propósito:** Automatiza la instalación inicial, reparación, actualización y empaquetado inicial de las herramientas del entorno.
-* **Uso:** `powershell -File setup.ps1 [-ImportHostConfig] [-SkipUpdate]`
+* **Uso:** `powershell -File setup.ps1 [-ImportHostConfig] [-SkipUpdate] [-Yes] [-Latest]`
 * **Parámetros:**
   * `-ImportHostConfig`: Si se pasa este modificador, copia la clave SSH privada, la configuración global de Git (`.gitconfig`) y el archivo `settings.json` de la instalación de VS Code del host local hacia el directorio `home/` portable.
   * `-SkipUpdate`: Saltea la fase de autodescarga e instalación de scripts actualizados de GitHub. Útil cuando se ejecuta localmente durante tareas de depuración o de actualización fuera de línea.
+  * `-Yes`: Modo desatendido: acepta automáticamente todas las preguntas (actualizaciones de componentes, advertencia de ruta conflictiva). Pensado para despliegues masivos en laboratorios.
+  * `-Latest`: Ignora los pines de `versions.json` e instala las últimas versiones disponibles de cada componente. Por defecto el manifiesto manda (reproducibilidad por cuatrimestre); los fallbacks también viven en el manifiesto.
+* **Canal de scripts:** En instalaciones standalone, la variable `CHANNEL=<rama-o-tag>` dentro de `.env` define desde qué canal se descargan los scripts; en repos Git rige la rama local (`git pull`).
 * **Funcionamiento Interno:**
   1. Valida la codificación UTF-8 con BOM y si la ruta de instalación posee espacios o caracteres no ASCII.
   2. Descarga el snapshot ZIP más reciente del repositorio de GitHub (`INGCOM-UNRN-P1/entorno`) y extrae los scripts en la raíz y carpetas de utilidad.
@@ -74,12 +77,22 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 
 ### `package-env.ps1`
 * **Propósito:** Empaqueta el entorno portable en un archivo ZIP listo para distribución offline.
+* **Parámetros:**
+  * `-Compact`: Poda documentación y locales no esenciales de MSYS2 en la copia a empaquetar (reduce tamaño sensiblemente).
+  * `-ConExtensiones`: Descarga los `.vsix` de las extensiones instaladas (pineadas a su versión) hacia `offline-extensions/` dentro del paquete y genera `instalar-extensiones-offline.ps1`, habilitando aulas sin internet.
+  * `-IncluirLibs`: Conserva el prefijo `local/` de librerías propias; por defecto se excluye para que el paquete sea neutro entre estudiantes.
 * **Funcionamiento Interno:**
   1. Excluye carpetas voluminosas no necesarias para la ejecución (logs, temporales, caché de pacman en `downloads/`).
   2. Comprime de forma recursiva los directorios `msys64`, `vscode`, `wezterm`, `bin`, `docs` y los cargadores raíces.
   3. Almacena el resultado con fecha y hora en el directorio raíz.
 
 ---
+
+---
+
+### `desinstalar.ps1`
+* **Propósito:** Eliminar por completo los componentes generados del entorno (MSYS2, VS Code, WezTerm, HOME portable, `local/`, cachés y marcadores), conservando los scripts del repositorio y la carpeta `.git`.
+* **Funcionamiento:** Muestra el detalle de lo que va a borrar, pide confirmación irreversible y procede. No requiere permisos de administrador.
 
 ## 2. Scripts en el Directorio `bin/` (Agregados al PATH)
 
