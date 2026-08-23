@@ -1,0 +1,18 @@
+# Paquetes base del entorno portable
+# Fuente única compartida por setup.ps1 y bin/download-baseline.sh
+# Formato: <paquete> [ # comentario ]
+
+mingw-w64-ucrt-x86_64-toolchain          # Metapaquete: GCC, Binutils y GDB para compilación nativa UCRT
+mingw-w64-ucrt-x86_64-cmake              # Generador de sistemas de build
+mingw-w64-ucrt-x86_64-ninja              # Sistema de build concurrente de bajo nivel
+mingw-w64-ucrt-x86_64-python             # Intérprete Python 3 nativo UCRT64
+mingw-w64-ucrt-x86_64-python-pip         # Gestor estándar de paquetes Python (PyPI)
+mingw-w64-ucrt-x86_64-uv                 # Resolvedor/instalador de dependencias Python ultrarrápido
+mingw-w64-ucrt-x86_64-cppcheck           # Análisis estático de código C/C++
+mingw-w64-ucrt-x86_64-zlib               # Biblioteca base de compresión DEFLATE
+mingw-w64-ucrt-x86_64-openssl            # Toolkit criptográfico TLS/SSL
+mingw-w64-ucrt-x86_64-sqlite3            # Motor SQL embebido sobre archivos locales
+mingw-w64-ucrt-x86_64-curl               # Transferencia multiprotocolo HTTP/S, FTP
+mingw-w64-ucrt-x86_64-doxygen            # Generador de documentación desde el código fuente
+mingw-w64-ucrt-x86_64-clang-tools-extra  # clang-tidy, clang-format y herramientas Clang extra
+git                                      # Sistema de control de versiones distribuido

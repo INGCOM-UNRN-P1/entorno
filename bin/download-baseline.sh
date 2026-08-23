@@ -21,22 +21,13 @@ echo "Sincronizando base de datos de paquetes..."
 pacman -Sy
 
 echo -e "\nDescargando paquetes del baseline y sus dependencias..."
-packages=(
-    "mingw-w64-ucrt-x86_64-toolchain"
-    "mingw-w64-ucrt-x86_64-cmake"
-    "mingw-w64-ucrt-x86_64-ninja"
-    "mingw-w64-ucrt-x86_64-python"
-    "mingw-w64-ucrt-x86_64-python-pip"
-    "mingw-w64-ucrt-x86_64-uv"
-    "mingw-w64-ucrt-x86_64-cppcheck"
-    "mingw-w64-ucrt-x86_64-zlib"
-    "mingw-w64-ucrt-x86_64-openssl"
-    "mingw-w64-ucrt-x86_64-sqlite3"
-    "mingw-w64-ucrt-x86_64-curl"
-    "mingw-w64-ucrt-x86_64-doxygen"
-    "mingw-w64-ucrt-x86_64-clang-tools-extra"
-    "git"
-)
+# Fuente única de paquetes: packages-baseline.txt en la raíz del entorno
+PKG_FILE="${PORTABLE_ROOT}/packages-baseline.txt"
+if [ ! -f "$PKG_FILE" ]; then
+    echo -e "\e[31m[ERROR] No se encontró packages-baseline.txt en ${PORTABLE_ROOT}.\e[0m"
+    exit 1
+fi
+mapfile -t packages < <(sed 's/#.*$//' "$PKG_FILE" | tr -d ' \t\r' | grep -v '^$')
 
 pkg_string="${packages[*]}"
 
