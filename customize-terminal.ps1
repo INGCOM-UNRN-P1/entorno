@@ -168,37 +168,37 @@ if ($configureWez -match "^[sS]$") {
         $selectedTabBar = "true"
     }
     
-    # Generar contenido final de wezterm.lua
+    # Generar contenido final de wezterm.lua (plantilla canónica, idéntica a setup.ps1)
     $wezConfigContent = @"
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
--- Configurar directorio raiz portable
-local portable_root = os.getenv("PORTABLE_ROOT")
-if portable_root then
-  portable_root = portable_root:gsub("\\\\", "/")
-  if not portable_root:match("/$") then
-    portable_root = portable_root .. "/"
-  end
-else
-  portable_root = "./"
+-- Configurar directorio raiz portable de forma determinista
+local portable_root = wezterm.config_dir:gsub("[\\]+", "/")
+if not portable_root:match("/$") then
+  portable_root = portable_root .. "/"
 end
 
 local bash_path = portable_root .. "msys64/usr/bin/bash.exe"
 config.default_prog = { bash_path, "--login", "-i" }
 
--- Configurar entorno heredado
-local home_dir = os.getenv("HOME")
-if home_dir then home_dir = home_dir:gsub("\\\\", "/") end
+-- Configurar entorno heredado forzando el HOME portable (aislado del sistema host)
+local home_dir = portable_root .. "$homeDirName"
+config.default_cwd = home_dir
 
 local path_env = os.getenv("PATH")
-if path_env then path_env = path_env:gsub("\\\\", "/") end
+if path_env then path_env = path_env:gsub("[\\]+", "/") else path_env = "" end
+
+local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
 
 config.set_environment_variables = {
-  MSYSTEM = "CLANG64",
+  MSYSTEM = "UCRT64",
+  MSYS2_PATH_TYPE = "inherit",
+  PORTABLE_ROOT = portable_root,
   CHERE_INVOKING = "1",
   HOME = home_dir,
-  PATH = path_env,
+  PATH = custom_path,
+  LANG = "es_AR.UTF-8",
 }
 
 -- Estetica Premium (Personalizada via customize-terminal.ps1)
