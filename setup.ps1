@@ -6,6 +6,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Acelerar Invoke-WebRequest en Windows PowerShell 5.1 (la barra de progreso es hasta 10x más lenta)
+$ProgressPreference = "SilentlyContinue"
+
 # Directorio base del script (con fallback al directorio actual si se ejecuta desde internet vía IEX)
 $portableRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($portableRoot)) {
@@ -610,7 +613,7 @@ $isCodeComplete = Test-Path (Join-Path $portableRoot ".vscode_complete")
 $resolvedVscodeUrl = $vscodeZipUrl
 if ($isUpdateMode -or -not $isCodeComplete) {
     try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $request = [System.Net.WebRequest]::Create($vscodeZipUrl)
         $request.Method = "HEAD"
         $request.AllowAutoRedirect = $false

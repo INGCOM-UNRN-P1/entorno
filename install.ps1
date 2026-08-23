@@ -3,6 +3,8 @@
 # irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
+# Acelerar Invoke-RestMethod/WebRequest en Windows PowerShell 5.1
+$ProgressPreference = "SilentlyContinue"
 $setupUrl = "https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1"
 $destPath = Join-Path (Get-Location).Path "setup.ps1"
 
