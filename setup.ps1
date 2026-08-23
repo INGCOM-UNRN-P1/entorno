@@ -566,6 +566,9 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
     & $bashPath --login -c "exit"
 
+    # Acelerar la instalación inicial habilitando descargas paralelas en pacman
+    & $bashPath --login -c "sed -i -E 's/^#?[[:space:]]*ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf"
+
     # Resolver la ruta de caché local y pasarla a pacman utilizando el ejecutable cygpath nativo
     $cygpathExe = Join-Path $msysDir "usr\bin\cygpath.exe"
     $unixCacheDir = & $cygpathExe -u "$descargasDir/pacman_cache"
