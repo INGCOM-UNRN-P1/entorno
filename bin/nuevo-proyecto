@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # nuevo-proyecto - Crea la estructura inicial de un proyecto de Programación 1.
 # Funciona en el terminal portable de Windows (MSYS2) y en la variante Linux.
+# Incluye depuración lista para usar (F5 con GDB en VS Code), formato automático
+# (.clang-format) y convenciones de editor (.editorconfig).
 #
 # Uso: nuevo-proyecto <nombre>
 
@@ -25,13 +27,15 @@ if [ -e "$NAME" ]; then
     exit 1
 fi
 
-mkdir -p "$NAME"
+mkdir -p "$NAME/.vscode"
 
 # main.c de punto de partida (placeholder __NOMBRE__ reemplazado abajo)
 cat > "$NAME/main.c" <<'EOF'
 #include <stdio.h>
 
-/* Proyecto: __NOMBRE__ */
+/* Proyecto: __NOMBRE__
+ * Depuración: abrí este proyecto en VS Code y presioná F5.
+ */
 int main(void) {
     printf("Hola desde __NOMBRE__!\n");
     return 0;
@@ -42,7 +46,7 @@ sed -i "s/__NOMBRE__/$NAME/g" "$NAME/main.c"
 cat > "$NAME/Makefile" <<'EOF'
 # Makefile de cátedra - Programación 1
 CC      ?= gcc
-CFLAGS  ?= -O2 -Wall -std=c11
+CFLAGS  ?= -O2 -g -Wall -std=c11
 TARGET  := __NOMBRE__
 
 all: $(TARGET)
@@ -51,7 +55,7 @@ $(TARGET): main.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f $(TARGET) *.o
+	rm -f $(TARGET) $(TARGET).exe *.o
 
 .PHONY: all clean
 EOF
@@ -60,18 +64,115 @@ sed -i "s/__NOMBRE__/$NAME/g" "$NAME/Makefile"
 cat > "$NAME/.gitignore" <<'EOF'
 # Binarios generados
 __NOMBRE__
+__NOMBRE__.exe
 *.o
-*.exe
 build/
+.vs/
 EOF
 sed -i "s/__NOMBRE__/$NAME/g" "$NAME/.gitignore"
 
-echo -e "${GREEN}[ÉXITO] Proyecto '$NAME' creado.${RESET}"
+# --- Tarea de compilación por defecto (Ctrl+Shift+B) ---
+cat > "$NAME/.vscode/tasks.json" <<'EOF'
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "compilar",
+            "type": "shell",
+            "command": "make",
+            "args": [],
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": ["$gcc"],
+            "detail": "Compila el proyecto usando el Makefile de cátedra"
+        }
+    ]
+}
+EOF
+
+# --- Configuración de depuración F5 (variante según plataforma del entorno) ---
+if [ -n "${MSYSTEM:-}" ]; then
+    # Entorno portable Windows: GDB vive dentro del árbol UCRT64 del entorno
+    cat > "$NAME/.vscode/launch.json" <<EOF
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Depurar",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "\${workspaceFolder}/$NAME.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "\${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "\${env:PORTABLE_ROOT}/msys64/ucrt64/bin/gdb.exe",
+            "preLaunchTask": "compilar"
+        }
+    ]
+}
+EOF
+else
+    # Linux: GDB del sistema se resuelve desde el PATH
+    cat > "$NAME/.vscode/launch.json" <<EOF
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Depurar",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "\${workspaceFolder}/$NAME",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "\${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "compilar"
+        }
+    ]
+}
+EOF
+fi
+
+# --- Formato automático de código ---
+cat > "$NAME/.clang-format" <<'EOF'
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AlignConsecutiveMacros: Consecutive
+AllowShortFunctionsOnASingleLine: None
+SortIncludes: CaseSensitive
+EOF
+
+# --- Convenciones de editor ---
+cat > "$NAME/.editorconfig" <<'EOF'
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[Makefile]
+indent_style = tab
+EOF
+
+echo -e "${GREEN}[ÉXITO] Proyecto '$NAME' creado con depuración lista (F5).${RESET}"
 echo "Estructura:"
 echo "  $NAME/"
-echo "  ├── main.c      (hola mundo listo para compilar)"
-echo "  ├── Makefile    (make / mingw32-make)"
-echo "  └── .gitignore"
+echo "  ├── main.c              (hola mundo listo para compilar)"
+echo "  ├── Makefile            (make / mingw32-make, con símbolos -g)"
+echo "  ├── .gitignore"
+echo "  ├── .clang-format       (Shift+Alt+F formatea el código)"
+echo "  ├── .editorconfig"
+echo "  └── .vscode/            (F5 compila y depura con GDB)"
 echo ""
 echo -e "${CYAN}Siguiente paso sugerido:${RESET} cd $NAME && make && ./$NAME"
 echo "(Opcional) Inicializá Git con: git init"
