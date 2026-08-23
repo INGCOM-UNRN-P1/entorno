@@ -1,25 +1,21 @@
 #!/usr/bin/env bash
-# bootstrap.sh - Verifica las dependencias del entorno portable en Linux y,
-# opcionalmente, instala las faltantes con el gestor de paquetes de la distribución.
+# bootstrap.sh - Verifica las dependencias del entorno portable en Linux.
 #
-# Uso:
-#   linux/bootstrap.sh             # sólo diagnóstico (no modifica el sistema)
-#   linux/bootstrap.sh --install   # ofrece instalar lo que falte (usa sudo)
-#   linux/bootstrap.sh --install --yes  # instala sin pedir confirmación
+# SOLO DIAGNÓSTICO: este script nunca instala nada, nunca escribe fuera de la
+# terminal y no requiere permisos de administrador. Se limita a informar qué
+# herramientas faltan y a sugerir los comandos para que cada usuario las
+# instale por su propia cuenta, fuera del entorno.
 
 set -u
 
-DO_INSTALL=0
-ASSUME_YES=0
-for arg in "$@"; do
-    case "$arg" in
-        --install) DO_INSTALL=1 ;;
-        --yes) ASSUME_YES=1 ;;
-        *) echo "Parámetro desconocido: $arg (usá --install y/o --yes)" >&2; exit 2 ;;
-    esac
-done
-
 CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'; RESET='\033[0m'
+
+if [ "${1:-}" = "--install" ] || [ "${1:-}" = "--yes" ]; then
+    echo -e "${YELLOW}[AVISO] El modo de instalación automática fue eliminado.${RESET}"
+    echo "        Por diseño, el entorno nunca modifica el sistema ni usa sudo."
+    echo "        Este script ahora solo diagnostica y sugiere comandos."
+    exit 2
+fi
 
 # Herramientas obligatorias para usar el entorno (candidatos de binario separados por espacio)
 CORE_TOOLS=(
@@ -64,40 +60,43 @@ detect_manager() {
 pkg_for() {
     local mgr="$1" tool="$2"
     case "$mgr:$tool" in
-        apt:gcc)      echo "gcc" ;;
-        apt:g++)      echo "g++" ;;
-        apt:ninja)    echo "ninja-build" ;;
-        apt:pip)      echo "python3-pip" ;;
-        dnf:g++)      echo "gcc-c++" ;;
-        dnf:ninja)    echo "ninja-build" ;;
-        dnf:pip)      echo "python3-pip" ;;
-        yum:g++)      echo "gcc-c++" ;;
-        yum:ninja)    echo "ninja-build" ;;
-        yum:pip)      echo "python3-pip" ;;
-        pacman:gcc|pacman:make) echo "base-devel" ;;
-        pacman:pip)   echo "python-pip" ;;
-        zypper:g++)   echo "gcc-c++" ;;
-        zypper:pip)   echo "python3-pip" ;;
-        apk:gcc|apk:make) echo "build-base" ;;
-        apk:pip)      echo "py3-pip" ;;
-        *)            echo "$tool" ;;
+        apt:ninja)     echo "ninja-build" ;;
+        apt:pip)       echo "python3-pip" ;;
+        dnf|yum:g++)   echo "gcc-c++" ;;
+        dnf|yum:ninja) echo "ninja-build" ;;
+        dnf|yum:pip)   echo "python3-pip" ;;
+        pacman:pip)    echo "python-pip" ;;
+        zypper:g++)    echo "gcc-c++" ;;
+        zypper:pip)    echo "python3-pip" ;;
+        apk:pip)       echo "py3-pip" ;;
+        *)             echo "$tool" ;;
+    esac
+}
+
+install_hint() {
+    local mgr="$1"
+    shift
+    case "$mgr" in
+        apt)    echo "sudo apt install $*" ;;
+        dnf)    echo "sudo dnf install $*" ;;
+        yum)    echo "sudo yum install $*" ;;
+        pacman) echo "sudo pacman -S $*" ;;
+        zypper) echo "sudo zypper install $*" ;;
+        apk)    echo "sudo apk add $*" ;;
+        *)      echo "(instalá estas herramientas con el gestor de tu distribución)" ;;
     esac
 }
 
 echo -e "${CYAN}======================================================================${RESET}"
-echo -e "${CYAN}     Bootstrap del Entorno Portable de Desarrollo (Linux)${RESET}"
+echo -e "${CYAN}     Diagnóstico de Dependencias del Entorno Portable (Linux)${RESET}"
 echo -e "${CYAN}======================================================================${RESET}"
-
-MANAGER="$(detect_manager)"
-if [ -n "$MANAGER" ]; then
-    echo -e "Gestor de paquetes detectado: ${GREEN}$MANAGER${RESET}"
-else
-    echo -e "${YELLOW}No se detectó un gestor de paquetes conocido (apt/dnf/yum/pacman/zypper/apk).${RESET}"
-fi
+echo -e "Modo solo lectura: no se modifica nada del sistema ni se piden permisos."
 echo ""
 
+MANAGER="$(detect_manager)"
 missing_core=()
-missing_opt=()
+missing_pkgs=()
+
 printf "%-12s %s\n" "HERRAMIENTA" "ESTADO"
 printf "%-12s %s\n" "-----------" "------"
 for entry in "${CORE_TOOLS[@]}"; do
@@ -107,8 +106,17 @@ for entry in "${CORE_TOOLS[@]}"; do
     else
         printf "%-12s ${RED}%s${RESET}\n" "$name" "[FALTA]"
         missing_core+=("$name")
+        if [ -n "$MANAGER" ]; then
+            p="$(pkg_for "$MANAGER" "$name")"
+            case " ${missing_pkgs[*]:-} " in
+                *" $p "*) : ;;
+                *) missing_pkgs+=("$p") ;;
+            esac
+        fi
     fi
 done
+
+missing_opt=()
 for entry in "${OPT_TOOLS[@]}"; do
     name="${entry%%:*}"
     if tool_present "${entry#*:}"; then
@@ -119,91 +127,33 @@ for entry in "${OPT_TOOLS[@]}"; do
     fi
 done
 
+echo ""
 if [ "${#missing_core[@]}" -eq 0 ]; then
-    echo ""
     echo -e "${GREEN}[ÉXITO] Todas las herramientas obligatorias están disponibles.${RESET}"
-    if [ "${#missing_opt[@]}" -gt 0 ]; then
-        echo -e "${YELLOW}[INFO] Recomendadas no encontradas: ${missing_opt[*]}${RESET}"
-    fi
-fi
-
-if [ "${#missing_core[@]}" -eq 0 ] || [ "$DO_INSTALL" -eq 0 ] || [ -z "$MANAGER" ]; then
-    if [ "${#missing_core[@]}" -gt 0 ] && [ "$DO_INSTALL" -eq 0 ]; then
-        echo ""
-        echo -e "${YELLOW}[AVISO] Faltan herramientas obligatorias. Ejecutá con --install para instalarlas:${RESET}"
-        echo "        linux/bootstrap.sh --install"
-    fi
-    if [ "${#missing_opt[@]}" -gt 0 ]; then
-        for t in "${missing_opt[@]}"; do
-            [ "$t" = "uv" ] && { echo "        uv (instalador oficial): curl -LsSf https://astral.sh/uv/install.sh | sh"; continue; }
-            [ "$t" = "gh" ] && [ -z "$MANAGER" ] && { echo "        gh: https://github.com/cli/cli#installation"; continue; }
-        done
-    fi
-    [ "${#missing_core[@]}" -eq 0 ] && exit 0 || exit 1
-fi
-
-# --- Modo instalación ---
-install_pkgs=()
-for t in "${missing_core[@]}" "${missing_opt[@]}"; do
-    if [ "$t" = "uv" ]; then continue; fi  # uv se instala por su instalador oficial
-    p="$(pkg_for "$MANAGER" "$t")"
-    case " ${install_pkgs[*]} " in
-        *" $p "*) : ;;
-        *) install_pkgs+=("$p") ;;
-    esac
-done
-
-if [ "${#install_pkgs[@]}" -eq 0 ]; then
-    echo -e "${YELLOW}[INFO] No hay paquetes instalables automáticamente.${RESET}"
-    echo "       uv (instalador oficial): curl -LsSf https://astral.sh/uv/install.sh | sh"
-    exit 0
-fi
-
-SUDO=""
-if [ "$(id -u)" -ne 0 ]; then
-    if command -v sudo >/dev/null 2>&1; then SUDO="sudo"
-    elif command -v doas >/dev/null 2>&1; then SUDO="doas"
+else
+    if [ -n "$MANAGER" ] && [ "${#missing_pkgs[@]}" -gt 0 ]; then
+        echo -e "${YELLOW}Para instalar lo que falta (por tu cuenta, con tus credenciales):${RESET}"
+        echo "    $(install_hint "$MANAGER" "${missing_pkgs[@]}")"
     else
-        echo -e "${RED}[ERROR] Se requieren privilegios de administrador y no se encontró sudo/doas.${RESET}"
-        exit 1
+        echo -e "${YELLOW}Faltan herramientas obligatorias: ${missing_core[*]}${RESET}"
+        echo "    Instalalas con el gestor de paquetes de tu distribución o pedilas al administrador del laboratorio."
     fi
+fi
+
+if [ "${#missing_opt[@]}" -gt 0 ]; then
+    echo ""
+    echo -e "${YELLOW}Recomendadas opcionales no encontradas:${RESET}"
+    for t in "${missing_opt[@]}"; do
+        case "$t" in
+            gh)     echo "  * gh: https://github.com/cli/cli#installation" ;;
+            uv)     echo "  * uv (sin admin, a nivel de usuario): curl -LsSf https://astral.sh/uv/install.sh | sh" ;;
+            *)      p="$(pkg_for "${MANAGER:-x}" "$t")"; echo "  * $t${p:+ (paquete: $p)}" ;;
+        esac
+    done
 fi
 
 echo ""
-echo "Paquetes a instalar ($MANAGER): ${install_pkgs[*]}"
-if [ "$ASSUME_YES" -eq 0 ]; then
-    printf "%s" "¿Continuar con la instalación? (s/n): "
-    read -r answer || answer="n"
-    [[ "$answer" =~ ^[sS]$ ]] || { echo "Instalación cancelada."; exit 1; }
-fi
+echo -e "${CYAN}[INFO] Recordatorio: ejecutá los instaladores ANTES de activar el entorno o${RESET}"
+echo -e "${CYAN}       con la sesión activada si querés que queden dentro del HOME portable.${RESET}"
 
-case "$MANAGER" in
-    apt)
-        $SUDO apt-get update
-        $SUDO apt-get install -y "${install_pkgs[@]}"
-        ;;
-    dnf|yum)
-        $SUDO "$MANAGER" install -y "${install_pkgs[@]}"
-        ;;
-    pacman)
-        $SUDO pacman -Sy --noconfirm --needed "${install_pkgs[@]}"
-        ;;
-    zypper)
-        $SUDO zypper install -y "${install_pkgs[@]}"
-        ;;
-    apk)
-        $SUDO apk add "${install_pkgs[@]}"
-        ;;
-esac
-rc=$?
-
-if [ $rc -eq 0 ]; then
-    echo ""
-    echo -e "${GREEN}[ÉXITO] Instalación finalizada. Volvé a correr este script para verificar:${RESET}"
-    echo "        linux/bootstrap.sh"
-else
-    echo ""
-    echo -e "${RED}[ERROR] La instalación devolvió un error (código $rc). Revisá los mensajes anteriores.${RESET}"
-    echo "        gh puede requerir un repositorio extra: https://github.com/cli/cli#installation"
-fi
-exit $rc
+[ "${#missing_core[@]}" -eq 0 ] && exit 0 || exit 1

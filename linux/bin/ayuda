@@ -24,7 +24,7 @@ echo -e "  ${GREEN}install-lib.sh <repo>${RESET}  - Instala librerías C desde G
 echo ""
 echo -e "${CYAN}${BOLD}[ Sesión ]${RESET}"
 echo -e "  ${BLUE}deactivate${RESET}            - Restaura tu sesión original (desactiva el entorno)."
-echo -e "  ${BLUE}<raíz>/linux/bootstrap.sh${RESET} - Verifica dependencias del sistema (--install para instalar)."
+echo -e "  ${BLUE}<raíz>/linux/bootstrap.sh${RESET} - Verifica dependencias del sistema (solo diagnóstico)."
 echo ""
 
 echo -e "${CYAN}${BOLD}[ Comandos del Entorno de Desarrollo ]${RESET}"
