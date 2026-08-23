@@ -73,7 +73,34 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 23. **`fix-antivirus.ps1` solo cubre Defender:** detectar antivirus de terceros y dar instrucciones específicas.
 24. **Editor por defecto para Git:** `configure-git.sh` podría fijar `core.editor "code --wait"` en ambas plataformas (menor fricción para alumnos en rebase/commit).
 25. **GEMINI.md → AGENTS.md:** adoptar el nombre estándar multi-agente manteniendo GEMINI.md como copia/enlace.
-26. **Docs sin variante Linux:** `docs/entorno.md`, `scripts.md` y los diagramas describen solo Windows; agregar sección o manual propio de Linux.
+26. **Docs sin variante Linux:** ~~resuelto~~ (ver sección 2).
+
+## 3.5 Nueva Ola Detectada (revisión posterior a la implementación)
+
+### Producto / Educativo (mayor valor)
+
+27. **Scaffolding académico:** comandos `nuevo-proyecto <nombre>` (genera estructura C con Makefile/CMakeLists/.gitignore de cátedra) y `entregar <tp>` (empaqueta y valida el TP en ZIP listo para entrega). Es la mejora de mayor impacto directo para Programación 1.
+28. **Extensiones VS Code offline:** el paquete distribuido a aulas sin internet no puede instalar extensiones ni el language pack. Que `package-env.ps1` descargue los `.vsix` pineados y los incluya con un instalador offline.
+29. **`doctor` unificado:** smoke test post-instalación por plataforma (compila hello.c, importa Python, verifica identidad git y sesión gh, valida PATH). Eleva las Pruebas A-D de plan.md a un comando ejecutable por el alumno.
+30. **Canal estable por cuatrimestre:** variable `CHANNEL=<tag>` en `.env` que fije qué versión de scripts/componentes usar (`update-env.sh` y bootstrap remoto apuntan al tag), base simple del manifiesto de versiones pendiente.
+31. **Desinstalación completa del entorno:** `desinstalar.ps1` con confirmación y resumen (hoy solo existe limpieza de datos personales).
+
+### Robustez de instalación
+
+32. **Preflight de recursos:** verificar espacio libre (~4 GB) y advertir sobre límite de rutas >260 chars (LongPaths) antes de descargar; hoy falla recién durante la extracción.
+33. **Reintentos uniformes de descargas grandes:** MSYS2/VS Code/WezTerm/gh se descargan en un solo intento (solo la verificación SHA tiene reintentos).
+34. **Pacman paralelo:** habilitar `ParallelDownloads` en `pacman.conf` durante la inicialización acelera sensiblemente la primera instalación.
+35. **Compatibilidad PowerShell 7:** scripts validados implícitamente contra 5.1; probar/garantizar ejecución bajo `pwsh` (encoding, ConvertTo-Json) o documentar restricción.
+
+### Seguridad y mantenimiento
+
+36. **Exclusiones Defender granulares:** excluir solo `msys64/` y `vscode/` en vez de la raíz completa (menor superficie expuesta, misma performance de compilación).
+37. **Fuente única de reglas de agente:** GEMINI.md duplica AGENTS.md; convertir GEMINI.md en stub que apunte a AGENTS.md para evitar drift.
+38. **Versión visible del entorno:** archivo `VERSION` + línea en banner/ayuda/diagnóstico para identificar builds al pedir soporte.
+39. **Política del prefijo `local/` en el paquete offline:** hoy se empaqueta siempre; decidir si va por defecto, detrás de `-ConLibs`, o excluido (consistencia de cátedra vs tamaño).
+40. **Tests bats para Linux en CI:** activación/desactivación, parsing de `.env`, bloques de `.bashrc`.
+41. **Exit codes estandarizados** y resumen final de setup (éxitos/fallos por componente).
+42. **Paridad de actualización en Linux:** equivalente de `update-env.sh` (git pull consciente) o guía documentada para instalaciones clonadas.
 
 ## 4. Mejoras Propuestas por Eje
 
@@ -114,10 +141,12 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | Hito | Contenido | Esfuerzo estimado |
 |---|---|---|
 | ~~1~~ ✅ | Atomicidad, customize-terminal, settings.json, `-Yes`, OneDrive | Completado |
-| 2 | Manifiesto de versiones por semestre + pin de extensiones + tags semestrales (puntos 4 y 7) | Medio |
-| ~~3~~ ✅ | CI de linters + limpieza de repo (15-17 parcial: falta LICENSE) + AGENTS.md | Completado |
+| 2 | Manifiesto/canal estable por cuatrimestre + pin de extensiones + tags (4, 7, 30) | Medio |
+| ~~3~~ ✅ | CI de linters + limpieza de repo + AGENTS.md | Completado |
 | 4 | Plantilla wezterm.lua en archivo único físico (11-12) | Bajo-Medio |
-| 5 | Verificación activa de hashes, caché API, smoke tests automáticos, launcher.c quoting | Medio |
+| 5 | Verificación activa de hashes, caché API, preflight recursos, pacman paralelo, pwsh (6, 32-35) | Medio |
+| 6 | **Producto educativo:** scaffolding `nuevo-proyecto`/`entregar`, extensiones offline, `doctor`, desinstalador (27-29, 31) | Medio-Alto |
+| 7 | Mantenimiento fino: GEMINI stub, VERSION visible, política local/, bats en CI, exit codes, update-env Linux (37-42) | Bajo |
 
 ---
 *Mantener este documento actualizado en cada corrección: mover ítems resueltos a la sección 2 con referencia de commit.*
