@@ -11,6 +11,9 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 * `update-packages.sh`: actualización unificada de pacman + baseline desde fuente única.
 * `smoke.sh` (+ wrapper `smoke.ps1`): automatización de las pruebas de aceptación A/B/C/E-local/F-check.
 * `install-offline.ps1`: instalador asistido del paquete offline (tar.exe rápido, validación, `-Ejecutar`).
+* Depuración lista en `nuevo-proyecto`: `.vscode/` con F5+GDB por plataforma, `.clang-format` y `.editorconfig`; Makefile con símbolos `-g`.
+* `backup` / `restaurar`: respaldo y recuperación del HOME portable y manifiestos de librerías.
+* Recordatorio de higiene en la ayuda cuando existe sesión activa de GitHub (equipos compartidos) y tip al configurar Git.
 
 ### Cambiado
 * Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).

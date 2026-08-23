@@ -126,7 +126,15 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 
 ### `nuevo-proyecto <nombre>`
 * **Propósito:** Crear la estructura inicial de un proyecto de cátedra.
-* **Funcionamiento:** Genera la carpeta con `main.c` (hola mundo parametrizado), `Makefile` de cátedra (`make` / `mingw32-make`) y `.gitignore`, validando el nombre y colisiones.
+* **Funcionamiento:** Genera la carpeta con `main.c` (hola mundo parametrizado), `Makefile` de cátedra (`make` / `mingw32-make`, con `-g` para depurar) y `.gitignore`, validando el nombre y colisiones. Además deja la depuración lista: `.vscode/tasks.json` (compilación con Ctrl+Shift+B) y `.vscode/launch.json` (F5 compila y lanza con GDB, resolviendo el binario y el debugger según plataforma), más `.clang-format` (Shift+Alt+F) y `.editorconfig`.
+
+### `backup [destino.zip]`
+* **Propósito:** Resguardar los datos del alumno ante pérdida o corrupción del pendrive.
+* **Funcionamiento:** Empaqueta el HOME portable completo (excluyendo `.cache`, `__pycache__`, `*.pyc`) junto con `.env`, `VERSION` y los manifiestos de `local/portable-libs` en `entorno-backup-<fecha>.zip`. Por defecto el ZIP se crea FUERA de la carpeta del entorno; el script recuerda guardarlo en un segundo medio.
+
+### `restaurar [archivo.zip]`
+* **Propósito:** Recuperar un respaldo de `backup`.
+* **Funcionamiento:** Toma el ZIP indicado (o el más reciente disponible), pide confirmación, extrae `home/…` sobre el HOME portable actual, restaura `.env` si faltaba e informa qué librerías hay que reinstalar con `install-lib.sh` según los manifiestos recuperados.
 
 ### `entregar [directorio]`
 * **Propósito:** Empaquetar el trabajo práctico para entrega.
