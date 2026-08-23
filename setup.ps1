@@ -98,6 +98,87 @@ function Get-GitHubApiCached {
     }
 }
 
+# Descarga uniforme con reintentos para archivos grandes (MSYS2, VS Code, gh, WezTerm).
+# Un único punto para ajustar cantidad de intentos y espera entre intentos.
+function Invoke-DownloadWithRetry {
+    param(
+        [string]$Url,
+        [string]$OutFile,
+        [int]$MaxAttempts = 3,
+        [int]$DelaySeconds = 2
+    )
+    $attempts = 0
+    while ($true) {
+        $attempts++
+        try {
+            Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -ErrorAction Stop
+            return
+        } catch {
+            if ($attempts -ge $MaxAttempts) { throw }
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+}
+
+# Espejo regional de pacman: mide latencia contra candidatos (prioridad sudamericana
+# para Red UNRN) y configura el más rápido como primera opción de cada mirrorlist.
+# Devuelve el espejo elegido o $null si ninguno respondió (no toca archivos en ese caso).
+function Select-PacmanMirrorByLatency {
+    param(
+        [string]$MsysDir,
+        [int]$TimeoutSec = 4
+    )
+    $mirrorCandidates = @(
+        "https://mirror.ufro.cl/msys2",
+        "https://repo.msys2.org",
+        "https://mirrors.utexas.edu/msys2",
+        "https://mirrors.ocf.berkeley.edu/msys2"
+    )
+    try {
+        Write-Host "Midiendo latencia de espejos de pacman..." -ForegroundColor Cyan
+        $bestMirror = $null
+        $bestMs = [double]::MaxValue
+        foreach ($candidate in $mirrorCandidates) {
+            try {
+                $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+                Invoke-WebRequest -Uri "$candidate/distrib/" -Method Head -UseBasicParsing -TimeoutSec $TimeoutSec | Out-Null
+                $stopwatch.Stop()
+                Write-Host ("  {0} -> {1} ms" -f $candidate, $stopwatch.ElapsedMilliseconds) -ForegroundColor DarkGray
+                if ($stopwatch.ElapsedMilliseconds -lt $bestMs) {
+                    $bestMs = $stopwatch.ElapsedMilliseconds
+                    $bestMirror = $candidate
+                }
+            } catch {
+                Write-Host "  $candidate -> sin respuesta" -ForegroundColor DarkGray
+            }
+        }
+        if (-not $bestMirror) {
+            Write-Warning "Ningún espejo de pacman respondió; se conservan los servidores por defecto."
+            return $null
+        }
+        Write-Host "Espejo pacman seleccionado: $bestMirror (${bestMs} ms)" -ForegroundColor Green
+        $markerLine = "# Espejo seleccionado automaticamente por setup.ps1 (latencia)"
+        $repoSubPaths = @{
+            "mirrorlist.msys"    = "/msys/x86_64/"
+            "mirrorlist.ucrt64"  = "/mingw/ucrt64/"
+            "mirrorlist.mingw64" = "/mingw/mingw64/"
+            "mirrorlist.clang64" = "/mingw/clang64/"
+        }
+        foreach ($mirrorListName in $repoSubPaths.Keys) {
+            $mirrorListFile = Join-Path (Join-Path $MsysDir "etc\pacman.d") $mirrorListName
+            if (-not (Test-Path $mirrorListFile)) { continue }
+            $existingLines = @(Get-Content $mirrorListFile)
+            $serverLine = "Server = $($bestMirror)$($repoSubPaths[$mirrorListName])"
+            $kept = @($existingLines | Where-Object { $_ -ne $serverLine -and $_ -notmatch 'Espejo seleccionado automaticamente' })
+            Set-Content -Path $mirrorListFile -Value (@($markerLine, $serverLine) + $kept)
+        }
+        return $bestMirror
+    } catch {
+        Write-Warning "Fallo la selección de espejo de pacman; se conservan los servidores por defecto."
+        return $null
+    }
+}
+
 # Configurar codificaciones UTF-8 globales (con y sin BOM)
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
@@ -583,18 +664,7 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
 
         if (-not $isDownloadedAndValid) {
             Write-Host "Descargando $fileName..." -ForegroundColor Cyan
-            # Descarga con reintentos (archivos grandes en conexiones inestables)
-            $attempts = 0
-            $dlSuccess = $false
-            while (-not $dlSuccess -and $attempts -lt 3) {
-                $attempts++
-                try {
-                    Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing -ErrorAction Stop
-                    $dlSuccess = $true
-                } catch {
-                    if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
-                }
-            }
+            Invoke-DownloadWithRetry -Url $downloadUrl -OutFile $exePath
 
             Write-Host "Descargando verificación SHA256..." -ForegroundColor Cyan
             try {
@@ -664,55 +734,9 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     # Acelerar la instalación inicial habilitando descargas paralelas en pacman
     & $bashPath --login -c "sed -i -E 's/^#?[[:space:]]*ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf"
 
-    # Espejo regional de pacman: medir latencia contra candidatos (prioridad
+    # Espejo regional de pacman: medir latencia contra candidatos (con prioridad
     # sudamericana para Red UNRN) y configurar el más rápido como primera opción.
-    try {
-        Write-Host "Midiendo latencia de espejos de pacman..." -ForegroundColor Cyan
-        $mirrorCandidates = @(
-            "https://mirror.ufro.cl/msys2",
-            "https://repo.msys2.org",
-            "https://mirrors.utexas.edu/msys2",
-            "https://mirrors.ocf.berkeley.edu/msys2"
-        )
-        $bestMirror = $null
-        $bestMs = [double]::MaxValue
-        foreach ($candidate in $mirrorCandidates) {
-            try {
-                $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-                Invoke-WebRequest -Uri "$candidate/distrib/" -Method Head -UseBasicParsing -TimeoutSec 4 | Out-Null
-                $stopwatch.Stop()
-                Write-Host ("  {0} -> {1} ms" -f $candidate, $stopwatch.ElapsedMilliseconds) -ForegroundColor DarkGray
-                if ($stopwatch.ElapsedMilliseconds -lt $bestMs) {
-                    $bestMs = $stopwatch.ElapsedMilliseconds
-                    $bestMirror = $candidate
-                }
-            } catch {
-                Write-Host "  $candidate -> sin respuesta" -ForegroundColor DarkGray
-            }
-        }
-        if ($bestMirror) {
-            Write-Host "Espejo pacman seleccionado: $bestMirror (${bestMs} ms)" -ForegroundColor Green
-            $markerLine = "# Espejo seleccionado automaticamente por setup.ps1 (latencia)"
-            $repoSubPaths = @{
-                "mirrorlist.msys"    = "/msys/x86_64/"
-                "mirrorlist.ucrt64"  = "/mingw/ucrt64/"
-                "mirrorlist.mingw64" = "/mingw/mingw64/"
-                "mirrorlist.clang64" = "/mingw/clang64/"
-            }
-            foreach ($mirrorListName in $repoSubPaths.Keys) {
-                $mirrorListFile = Join-Path (Join-Path $msysDir "etc\pacman.d") $mirrorListName
-                if (-not (Test-Path $mirrorListFile)) { continue }
-                $existingLines = @(Get-Content $mirrorListFile)
-                $serverLine = "Server = $($bestMirror)$($repoSubPaths[$mirrorListName])"
-                $kept = @($existingLines | Where-Object { $_ -ne $serverLine -and $_ -notmatch 'Espejo seleccionado automaticamente' })
-                Set-Content -Path $mirrorListFile -Value (@($markerLine, $serverLine) + $kept)
-            }
-        } else {
-            Write-Warning "Ningún espejo de pacman respondió; se conservan los servidores por defecto."
-        }
-    } catch {
-        Write-Warning "Fallo la selección de espejo de pacman; se conservan los servidores por defecto."
-    }
+    $null = Select-PacmanMirrorByLatency -MsysDir $msysDir
 
     # Resolver la ruta de caché local y pasarla a pacman utilizando el ejecutable cygpath nativo
     $cygpathExe = Join-Path $msysDir "usr\bin\cygpath.exe"
@@ -943,17 +967,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
             
             if (-not $vscodeZipValid) {
                 Write-Host "Descargando VS Code desde $resolvedVscodeUrl..." -ForegroundColor Cyan
-                $attempts = 0
-                $dlSuccess = $false
-                while (-not $dlSuccess -and $attempts -lt 3) {
-                    $attempts++
-                    try {
-                        Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing -ErrorAction Stop
-                        $dlSuccess = $true
-                    } catch {
-                        if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
-                    }
-                }
+                Invoke-DownloadWithRetry -Url $resolvedVscodeUrl -OutFile $vscodeZipPath
                 (Get-FileHash -Path $vscodeZipPath -Algorithm SHA256).Hash | Set-Content -Path "$vscodeZipPath.sha256"
             }
             
@@ -1188,17 +1202,7 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
 
             if (-not $isGhZipValid) {
                 Write-Host "Descargando GitHub CLI desde $ghDownloadUrl..." -ForegroundColor Cyan
-                $attempts = 0
-                $dlSuccess = $false
-                while (-not $dlSuccess -and $attempts -lt 3) {
-                    $attempts++
-                    try {
-                        Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing -ErrorAction Stop
-                        $dlSuccess = $true
-                    } catch {
-                        if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
-                    }
-                }
+                Invoke-DownloadWithRetry -Url $ghDownloadUrl -OutFile $ghZipPath
                 (Get-FileHash -Path $ghZipPath -Algorithm SHA256).Hash | Set-Content -Path "$ghZipPath.sha256"
             }
 
@@ -1340,17 +1344,7 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
 
             if (-not $isWezZipValid) {
                 Write-Host "Descargando WezTerm desde $wezDownloadUrl..." -ForegroundColor Cyan
-                $attempts = 0
-                $dlSuccess = $false
-                while (-not $dlSuccess -and $attempts -lt 3) {
-                    $attempts++
-                    try {
-                        Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing -ErrorAction Stop
-                        $dlSuccess = $true
-                    } catch {
-                        if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
-                    }
-                }
+                Invoke-DownloadWithRetry -Url $wezDownloadUrl -OutFile $wezZipPath
                 (Get-FileHash -Path $wezZipPath -Algorithm SHA256).Hash | Set-Content -Path "$wezZipPath.sha256"
             }
 

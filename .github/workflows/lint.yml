@@ -38,3 +38,6 @@ jobs:
             $findings | Format-Table -AutoSize
             exit 1
           }
+      - name: Pruebas de lógica de setup.ps1 (reintentos, caché API, espejos)
+        shell: pwsh
+        run: ./tests/test_windows_logic.ps1
