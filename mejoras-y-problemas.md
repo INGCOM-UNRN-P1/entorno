@@ -104,6 +104,28 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 41. **Exit codes estandarizados** y resumen final de setup (éxitos/fallos por componente).
 42. **Paridad de actualización en Linux:** equivalente de `update-env.sh` (git pull consciente) o guía documentada para instalaciones clonadas.
 
+## 3.6 Ola Propuesta: Pedagogía y Confianza (revisión final)
+
+### Educativa — flujo del alumno (mayor valor)
+
+43. **Depuración lista para usar:** que `nuevo-proyecto` genere además `.vscode/launch.json` + `tasks.json` preconfigurados (F5 compila y lanza con GDB), `.clang-format` y `.editorconfig`. Hoy el alumno enfrenta el depurador sin andamiaje; es el mayor cuello de aprendizaje post-"Hola Mundo".
+44. **Flujo GitHub Classroom:** comando `clonar <url-tp>` (clona el assignment en la carpeta de proyectos y fija upstream) e integración opcional de `entregar` con commit+push al repositorio del alumno, cerrando el ciclo clonar→programar→entregar.
+45. **Corrector local:** convención de tests de cátedra dentro del TP (carpeta `tests/` con casos estándar) y comando `verificar` que los ejecuta antes de permitir `entregar`. Autoevaluación previa a la entrega = menos reentregas.
+46. **Respaldo del entorno:** comandos `backup` / `restaurar` que empaqueten `home/` + manifiestos de `local/portable-libs` en un ZIP fechado. Los pendrives se pierden o corrompen constantemente; el código del alumno vive ahí.
+47. **Higiene en compartidas:** si existe sesión activa de `gh` al abrir terminal en un equipo ajeno, mostrar recordatorio visible de ejecutar `clean-shared-host.ps1` antes de retirarse.
+
+### Infraestructura — confianza de la cátedra
+
+48. **CI real sobre Windows runner:** job (manual `workflow_dispatch` + programado semanal) que ejecute `setup.ps1 -Yes` en `windows-latest`, luego `smoke.ps1`, y cierre el circuito con `package-env.ps1 -Compact` + `install-offline.ps1` en otra carpeta. Es el único camino de validar automáticamente toda la cadena PowerShell que hoy depende de pruebas manuales en host físico.
+49. **Espejo regional de pacman:** durante la inicialización, medir latencia contra espejos sudamericanos y configurar el más rápido en `/etc/pacman.conf`; reduce drásticamente el tiempo de primera instalación desde Red UNRN.
+50. **Comando `soporte`:** genera un único archivo anónimo (diagnóstico + cola de install.log + VERSION + sistema) listo para adjuntar en la consulta al docente, estandarizando el troubleshooting.
+51. **Autorreparación ligera:** `doctor --fix` que regenere skel de `home/`, marcadores de estado y `settings.json` base cuando falten, sin reinstalar componentes.
+
+### Técnica de soporte
+
+52. `uv` como creador de entornos por defecto cuando exista (más rápido y sin dependencias externas que `python -m venv`) con fallback automático.
+53. Mantenedores: `env.common.psm1` (lógica común de lanzadores), caché de respuestas API GitHub y quoting de args en `launcher.c` quedan como deuda técnica menor ya relevada (hito 5).
+
 ## 4. Mejoras Propuestas por Eje
 
 * **Reproducibilidad académica (nuevo eje prioritario)**
@@ -149,6 +171,8 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | 5 | Restantes: caché de respuestas API GitHub, quoting de args en `launcher.c` (21), LICENSE/tag institucional (17 parcial: falta LICENSE) | Bajo-Medio |
 | ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador, smoke automatizado, install-offline (27-31 + Fase 9/10 del plan) | Completado |
 | ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
+| 8 | **Ola pedagógica:** depuración lista (launch/tasks/clang-format), GitHub Classroom (`clonar`+push), corrector `verificar`, `backup`/`restaurar`, higiene compartidas, `soporte`, doctor --fix (43-47, 50-51) | Medio |
+| 9 | Confianza de despliegue: CI real en windows-latest con setup+smoke+roundtrip offline; espejo regional pacman; uv por defecto (48-49, 52) | Medio-Alto |
 
 ---
 *Mantener este documento actualizado en cada corrección: mover ítems resueltos a la sección 2 con referencia de commit.*
