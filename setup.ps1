@@ -372,6 +372,27 @@ if (-not (Test-Path $homeDir)) {
     Write-Host "Creado directorio HOME portable: $homeDir" -ForegroundColor Green
 }
 
+# ==========================================
+# 0.5 Preflight de recursos
+# ==========================================
+# Espacio en disco: la instalación completa requiere ~4 GB libres.
+try {
+    $driveName = ($portableRoot.Substring(0, 2)).TrimEnd('\')
+    $drive = Get-PSDrive -Name $driveName[0] -ErrorAction Stop
+    if ($drive.Free -lt 4GB) {
+        $freeGb = [math]::Round($drive.Free / 1GB, 2)
+        throw "Espacio insuficiente en ${driveName}: hay ${freeGb} GB libres y se necesitan al menos 4 GB."
+    }
+    Write-Host "[OK] Espacio en disco suficiente ($([math]::Round($drive.Free / 1GB, 1)) GB libres)." -ForegroundColor DarkGray
+} catch [System.Management.Automation.PSInvalidOperationException] {
+    Write-Warning "No se pudo verificar el espacio en disco para '$portableRoot'. Continuando..."
+} 
+# Rutas largas: msys64 agrega profundidad significativa; el límite clásico es 260 caracteres.
+if ($portableRoot.Length -gt 100) {
+    Write-Warning ("La ruta de instalación tiene {0} caracteres y puede exceder el límite clásico de 260 al extraer MSYS2." -f $portableRoot.Length)
+    Write-Warning "Si la extracción falla con 'path too long', mové el entorno a una ruta más corta (ej: C:\dev\entorno)."
+}
+
 $bashProfilePath = Join-Path $homeDir ".bash_profile"
 if (-not (Test-Path $bashProfilePath)) {
     $bashProfileContent = "if [ -f `"`${HOME}/.bashrc`" ] ; then`n  source `"`${HOME}/.bashrc`"`nfi"
