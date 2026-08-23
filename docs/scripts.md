@@ -105,8 +105,8 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 * **Funcionamiento:** Permite al alumno seleccionar temas del banner de bienvenida (Minimalista, Motivacional, Comandos rápidos, Libre o Limpio) y modificar el color de visualización del texto escribiendo las marcas correspondientes en `home/.bashrc`. Exporta y lee la variable del bloque mediante `ENVIRON` en `awk` para evitar pérdidas de secuencias de escape ANSI.
 
 ### `build-launcher.sh`
-* **Propósito:** Compila los lanzadores ejecutables de Windows a partir del código fuente.
-* **Funcionamiento:** Descarga `launcher.c` y su `Makefile` si no existen y ejecuta `make` (o `mingw32-make` como fallback) o directamente GCC de UCRT64 para compilar los ejecutables `launch-vscode.exe` y `launch-wezterm.exe` en la raíz, removiendo antiguos ejecutables obsoletos.
+* **Propósito:** Compilar los lanzadores ejecutables de Windows a partir del código fuente.
+* **Funcionamiento:** Descarga `launcher.c` y su `Makefile` si no existen y ejecuta `make` (o `mingw32-make` como fallback) o directamente GCC de UCRT64 para compilar los ejecutables `launch-vscode.exe` y `launch-wezterm.exe` en la raíz, removiendo antiguos ejecutables obsoletos. Los lanzadores re-quoten cada argumento según las reglas de línea de comandos de Windows (rutas con espacios, comillas o barras invertidas viajan como un único argumento) y esperan al proceso hijo con un tope de 10 minutos como guarda contra cuelgues.
 
 ### `install-lib.sh`
 * **Propósito:** Compilar e instalar dependencias externas de C desde GitHub de forma portable.

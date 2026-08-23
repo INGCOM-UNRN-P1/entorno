@@ -3,6 +3,77 @@
 #include <string.h>
 #include <windows.h>
 
+/* Tiempo máximo de espera por el proceso de PowerShell (guarda contra cuelgues).
+ * Los lanzadores normales terminan en segundos; el margen amplio cubre el caso
+ * de diálogos interactivos (avisos del propio launch.ps1) que el usuario atiende. */
+#define LAUNCHER_TIMEOUT_MS (10 * 60 * 1000)
+
+extern char **__argv;
+extern int __argc;
+
+/* Agrega un argumento a 'dst' con el escapado exigido por las reglas de línea
+ * de comandos de Windows (MSVCRT): comillas envolventes cuando hace falta,
+ * duplicado de barras invertidas previas a una comilla y comilla interior como \" . */
+static void append_quoted_arg(char *dst, size_t dst_size, const char *arg) {
+    size_t len = strlen(dst);
+
+    /* Separador entre argumentos */
+    if (len > 0) {
+        if (len + 1 >= dst_size) return;
+        dst[len++] = ' ';
+        dst[len] = '\0';
+    }
+
+    int needs_quotes = (strpbrk(arg, " \t\"") != NULL) || (arg[0] == '\0');
+    if (!needs_quotes) {
+        size_t alen = strlen(arg);
+        if (len + alen >= dst_size) return;
+        strcat(dst, arg);
+        return;
+    }
+
+    if (len + 1 >= dst_size) return;
+    dst[len++] = '"';
+
+    size_t i = 0;
+    while (arg[i] != '\0') {
+        size_t backslashes = 0;
+        while (arg[i] == '\\') {
+            backslashes++;
+            i++;
+        }
+        if (arg[i] == '"') {
+            /* Cada barra previa a la comilla se duplica y la comilla se escapa */
+            size_t emit = backslashes * 2 + 1; /* +1 por la barra de \" */
+            for (size_t k = 0; k < emit; k++) {
+                if (len + 1 >= dst_size) return;
+                dst[len++] = '\\';
+            }
+            dst[len++] = '"';
+            i++;
+        } else if (arg[i] == '\0') {
+            /* Barras al final: se duplican para que la comilla de cierre sea literal */
+            for (size_t k = 0; k < backslashes * 2; k++) {
+                if (len + 1 >= dst_size) return;
+                dst[len++] = '\\';
+            }
+            break;
+        } else {
+            for (size_t k = 0; k < backslashes; k++) {
+                if (len + 1 >= dst_size) return;
+                dst[len++] = '\\';
+            }
+            if (len + 1 >= dst_size) return;
+            dst[len++] = arg[i];
+            i++;
+        }
+    }
+
+    if (len + 2 >= dst_size) return;
+    dst[len++] = '"';
+    dst[len] = '\0';
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     (void)hInstance;
     (void)hPrevInstance;
@@ -52,31 +123,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         snprintf(ps1_path, sizeof(ps1_path), "%s", script_name);
     }
 
-    // Obtener argumentos pasados por línea de comandos
-    char *cmd_line = GetCommandLineA();
-    char *args = "";
-    if (cmd_line != NULL) {
-        if (cmd_line[0] == '"') {
-            cmd_line++;
-            while (*cmd_line != '\0' && *cmd_line != '"') {
-                cmd_line++;
-            }
-            if (*cmd_line == '"') {
-                cmd_line++;
-            }
-        } else {
-            while (*cmd_line != '\0' && *cmd_line != ' ') {
-                cmd_line++;
-            }
-        }
-        while (*cmd_line == ' ') {
-            cmd_line++;
-        }
-        args = cmd_line;
+    // Reconstruir la línea de argumentos con re-quoting seguro (rutas con espacios,
+    // comillas o barras invertidas viajan como un único argumento cada una)
+    static char command[32768];
+    snprintf(command, sizeof(command), "powershell -NoProfile -ExecutionPolicy Bypass -File \"%s\"", ps1_path);
+    for (int i = 1; i < __argc; i++) {
+        append_quoted_arg(command, sizeof(command), __argv[i]);
     }
-
-    char command[MAX_PATH * 2 + 256];
-    snprintf(command, sizeof(command), "powershell -NoProfile -ExecutionPolicy Bypass -File \"%s\" %s", ps1_path, args);
 
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
@@ -88,8 +141,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Ejecutar PowerShell sin ventana de consola (CREATE_NO_WINDOW)
     if (CreateProcessA(NULL, command, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
-        WaitForSingleObject(pi.hProcess, INFINITE);
+        DWORD wait_result = WaitForSingleObject(pi.hProcess, LAUNCHER_TIMEOUT_MS);
         DWORD exit_code = 0;
+        if (wait_result == WAIT_TIMEOUT) {
+            TerminateProcess(pi.hProcess, 1);
+            WaitForSingleObject(pi.hProcess, 5000);
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
+            MessageBoxA(NULL, "El lanzador tardó demasiado en responder y fue cancelado.", "Error - Lanzador Portable", MB_ICONERROR);
+            return 2;
+        }
         GetExitCodeProcess(pi.hProcess, &exit_code);
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);

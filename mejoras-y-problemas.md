@@ -26,7 +26,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 ## 3. Problemas Abiertos
 
-> **Estado tras la implementación sistemática:** quedaron resueltos los puntos **1** (actualizaciones atómicas), **2** (plantilla canónica en customize-terminal), **3** (settings.json quirúrgico), **5** (detección OneDrive), **8** (`-Yes` desatendido), **9** (update-env propaga docs/linux), **10** (packages-baseline.txt), **11-12** (plantilla física única + fin de la migración masiva por regex), **13** (uninstall-lib con manifiesto multiplataforma), **14** (poda `-Compact` + registro y verificación activa de hashes), **15** (test.ps1 eliminado), **16** (links relativos), **22** (log de diagnóstico en raíz), **23** (AV de terceros), **24** (core.editor), **25** (AGENTS.md) y **26** (docs Linux); documentados **19-20** (safe.directory y PEP 668) con CI de linters. El punto **4/7** quedó cubierto por el canal de versiones (`versions.json` + `-Latest` + `CHANNEL` en `.env`); el **6** por verificación activa contra sidecars; y el plan.md cerró su deuda con `smoke.sh`, `update-packages.sh` e `install-offline.ps1`.
+> **Estado tras la implementación sistemática:** quedaron resueltos los puntos **1** (actualizaciones atómicas), **2** (plantilla canónica en customize-terminal), **3** (settings.json quirúrgico), **5** (detección OneDrive), **8** (`-Yes` desatendido), **9** (update-env propaga docs/linux), **10** (packages-baseline.txt), **11-12** (plantilla física única + fin de la migración masiva por regex), **13** (uninstall-lib con manifiesto multiplataforma), **14** (poda `-Compact` + registro y verificación activa de hashes), **15** (test.ps1 eliminado), **16** (links relativos), **22** (log de diagnóstico en raíz), **23** (AV de terceros), **24** (core.editor), **25** (AGENTS.md) y **26** (docs Linux); documentados **19-20** (safe.directory y PEP 668) con CI de linters. El punto **4/7** quedó cubierto por el canal de versiones (`versions.json` + `-Latest` + `CHANNEL` en `.env`); el **6** por verificación activa contra sidecars; el **21** con re-quoting de argumentos según reglas MSVCRT y timeout acotado en los lanzadores; y el plan.md cerró su deuda con `smoke.sh`, `update-packages.sh` e `install-offline.ps1`.
 
 ### Prioridad Alta
 
@@ -124,7 +124,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 ### Técnica de soporte
 
 52. `uv` como creador de entornos por defecto cuando exista (más rápido y sin dependencias externas que `python -m venv`) con fallback automático.
-53. Mantenedores: `env.common.psm1` (lógica común de lanzadores), caché de respuestas API GitHub y quoting de args en `launcher.c` quedan como deuda técnica menor ya relevada (hito 5).
+53. Mantenedores: `env.common.psm1` (lógica común de lanzadores) y caché de respuestas API GitHub quedan como deuda técnica menor ya relevada (hito 5). El quoting de args en `launcher.c` quedó resuelto.
 
 ## 4. Mejoras Propuestas por Eje
 
@@ -168,7 +168,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | ~~2~~ ✅ | Canal de versiones: `versions.json` + `-Latest` + `CHANNEL`; fallbacks migrados al manifiesto; extensiones pineables (4, 7) | Completado |
 | ~~3~~ ✅ | CI de linters + limpieza de repo + AGENTS.md | Completado |
 | ~~4~~ ✅ | Plantilla física única `wezterm.lua.template` + migración mínima residual (11-12) | Completado |
-| 5 | Restantes: caché de respuestas API GitHub, quoting de args en `launcher.c` (21), LICENSE/tag institucional (17 parcial: falta LICENSE) | Bajo-Medio |
+| 5 | Restantes: caché de respuestas API GitHub, LICENSE/tag institucional (17 parcial: falta LICENSE). Quoting de args y timeout en `launcher.c` ✅ | Bajo |
 | ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador, smoke automatizado, install-offline (27-31 + Fase 9/10 del plan) | Completado |
 | ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
 | ~~8~~ ✅ | **Ola pedagógica completa:** depuración lista, `backup`/`restaurar`, higiene compartidas, `doctor --fix`, GitHub Classroom (`clonar`+push), corrector `verificar` y `soporte` (43-47, 50-51) | Completado |
