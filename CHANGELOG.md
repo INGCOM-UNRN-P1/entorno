@@ -22,6 +22,7 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 
 ### Cambiado
 * Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).
+* Distribución formal habilitada: licencia MIT del proyecto y CHANGELOG.
 
 ## [1.0.0] - 2026-08-22
 
@@ -44,4 +45,3 @@ Primera versión etiquetada tras la consolidación de las dos variantes de la pl
 
 ### Pendiente conocido
 * Validación completa en host Windows de la tanda reciente de cambios de PowerShell.
-* LICENSE pendiente de definición institucional.
