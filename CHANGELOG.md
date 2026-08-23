@@ -19,6 +19,9 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 * Corrector local: comando `verificar` ejecuta los casos `tests/caso_NN.in/.out` (o `make test`) con tolerancia a espacios finales; `entregar` lo corre antes de empacar y bloquea la entrega fallida salvo confirmación explícita. `nuevo-proyecto` incluye un caso de ejemplo.
 * Comando `soporte`: informe único anonimizado (doctor + versiones + estado + cola de install.log) para adjuntar en consultas al docente.
 * Caché local de respuestas de la API de GitHub en `setup.ps1` (`descargas/api_cache`, vencimiento 24 h): evita el agotamiento del límite de consultas por IP en aulas con NAT compartido y permite seguir instalando con la última copia si la API cae.
+* Espejo regional de pacman: durante la inicialización se mide la latencia contra candidatos (con prioridad sudamericana) y el más rápido pasa a ser el primer servidor de las listas de repositorios.
+* `uv` como motor predeterminado de entornos virtuales (fallback automático a `python -m venv`); `smoke.sh` informa qué motor usó.
+* CI semanal y manual sobre `windows-latest` con la cadena completa: `setup.ps1 -Yes`, smoke, empaquetado `-Compact` y roundtrip de instalación del paquete en otra carpeta.
 
 ### Cambiado
 * Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).

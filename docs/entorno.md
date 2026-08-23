@@ -138,4 +138,5 @@ Diagnóstico solo lectura de las herramientas obligatorias (`git`, `gcc`, `make`
 ### Notas de Solución de Problemas
 *   **Dubious ownership:** si Git reclama propiedad sobre repos en unidades compartidas, ejecutá dentro del entorno `git config --global safe.directory '<ruta-del-repo>'`.
 *   **pip bloqueado (PEP 668):** en distribuciones modernas usá `pip --user` (con la sesión activada queda dentro del HOME portable) o entornos virtuales; `uv` crea entornos automáticamente.
+*   **Entornos virtuales:** la política del entorno es `uv venv` como creador por defecto cuando existe `uv`, con fallback automático a `python -m venv`; `smoke.sh` reporta qué motor utilizó.
 *   **Locale:** la variante no fuerza idioma; si tu host no tiene `es_AR.UTF-8` generado, los mensajes del sistema seguirán el locale disponible.

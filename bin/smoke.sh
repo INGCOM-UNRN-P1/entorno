@@ -53,10 +53,20 @@ for cmd in python python3 pip uv; do
     fi
 done
 # Instalación aislada: venv dentro del HOME portable (evita PEP 668 y toca solo home/)
-if python -m venv "$WORK/.venv" >/dev/null 2>&1; then
+# Política del entorno: uv es el creador de entornos por defecto cuando existe
+# (más rápido y sin dependencias externas), con fallback automático a python -m venv.
+VENV_CREADO=0
+if command -v uv >/dev/null 2>&1 && uv venv "$WORK/.venv" >/dev/null 2>&1; then
+    VENV_CREADO=1
+    VENV_MOTOR="uv"
+elif python -m venv "$WORK/.venv" >/dev/null 2>&1; then
+    VENV_CREADO=1
+    VENV_MOTOR="python -m venv"
+fi
+if [ "$VENV_CREADO" = 1 ]; then
     if "$WORK/.venv/bin/python" -m pip install --quiet requests >/dev/null 2>&1 && \
        "$WORK/.venv/bin/python" -c "import requests" >/dev/null 2>&1; then
-        ok "venv en HOME portable instala e importa 'requests'"
+        ok "venv en HOME portable instala e importa 'requests' (motor: $VENV_MOTOR)"
     else
         bad "instalación de paquete en entorno virtual"
     fi
