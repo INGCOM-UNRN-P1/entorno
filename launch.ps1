@@ -69,10 +69,13 @@ if (-not (Test-Path $bashrcPath)) {
 # .bashrc
 # Aquí podés agregar tus alias y funciones personalizadas.
 
-# Agregar bin portable al PATH convirtiendo la ruta a formato Unix
+# Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)
 if [ -n "$PORTABLE_ROOT" ]; then
     UNIX_ROOT=$(cygpath -u "$PORTABLE_ROOT")
-    export PATH="${UNIX_ROOT}bin:${UNIX_ROOT}msys64/ucrt64/bin:${UNIX_ROOT}msys64/usr/bin:${PATH}"
+    case ":$PATH:" in
+        *":${UNIX_ROOT}bin:"*) : ;;
+        *) export PATH="${UNIX_ROOT}bin:${UNIX_ROOT}msys64/ucrt64/bin:${UNIX_ROOT}msys64/usr/bin:${PATH}" ;;
+    esac
 fi
 '@
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)

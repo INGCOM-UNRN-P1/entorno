@@ -70,9 +70,12 @@ EOF
 # .bashrc - Entorno Portable de Desarrollo (UNRN Andina - Programación 1)
 # Podés agregar tus alias y funciones personalizadas debajo de este bloque.
 
-# Agregar los scripts del entorno al PATH
+# Agregar los scripts del entorno al PATH (sin duplicar en shells anidados)
 if [ -n "$PORTABLE_ROOT" ]; then
-    export PATH="$PORTABLE_ROOT/linux/bin:$PORTABLE_ROOT/local/bin:$PATH"
+    case ":$PATH:" in
+        *":$PORTABLE_ROOT/linux/bin:"*) : ;;
+        *) export PATH="$PORTABLE_ROOT/linux/bin:$PORTABLE_ROOT/local/bin:$PATH" ;;
+    esac
 fi
 
 alias ll='ls -alF --color=auto'
