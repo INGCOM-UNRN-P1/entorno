@@ -812,8 +812,21 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                 try {
                     $fileSize = (Get-Item $vscodeZipPath).Length
                     if ($fileSize -gt 50MB) {
-                        $vscodeZipValid = $true
-                        Write-Host "El archivo ZIP previo es válido. Se omitirá la descarga." -ForegroundColor Green
+                        # Verificación activa: si existe el hash registrado de una descarga previa, compararlo
+                        $sidecar = "$vscodeZipPath.sha256"
+                        if (Test-Path $sidecar) {
+                            $expectedHash = (Get-Content $sidecar -Raw).Trim()
+                            $actualHash = (Get-FileHash -Path $vscodeZipPath -Algorithm SHA256).Hash
+                            if ($actualHash -ne $expectedHash) {
+                                Write-Host "El ZIP previo de VS Code está corrupto (SHA256 no coincide). Se volverá a descargar." -ForegroundColor Yellow
+                            } else {
+                                $vscodeZipValid = $true
+                                Write-Host "El archivo ZIP previo es válido (SHA256 verificado)." -ForegroundColor Green
+                            }
+                        } else {
+                            $vscodeZipValid = $true
+                            Write-Host "El archivo ZIP previo es válido (sin hash previo registrado)." -ForegroundColor Green
+                        }
                     } else {
                         Write-Host "El archivo ZIP previo está incompleto o dañado. Se volverá a descargar." -ForegroundColor Yellow
                     }
@@ -1045,8 +1058,20 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
                 try {
                     $fileSize = (Get-Item $ghZipPath).Length
                     if ($fileSize -gt 5MB) {
-                        $isGhZipValid = $true
-                        Write-Host "El archivo ZIP previo de GitHub CLI es válido. Se omitirá la descarga." -ForegroundColor Green
+                        $sidecar = "$ghZipPath.sha256"
+                        if (Test-Path $sidecar) {
+                            $expectedHash = (Get-Content $sidecar -Raw).Trim()
+                            $actualHash = (Get-FileHash -Path $ghZipPath -Algorithm SHA256).Hash
+                            if ($actualHash -ne $expectedHash) {
+                                Write-Host "El ZIP previo de GitHub CLI está corrupto (SHA256 no coincide). Se volverá a descargar." -ForegroundColor Yellow
+                            } else {
+                                $isGhZipValid = $true
+                                Write-Host "El ZIP previo de GitHub CLI es válido (SHA256 verificado)." -ForegroundColor Green
+                            }
+                        } else {
+                            $isGhZipValid = $true
+                            Write-Host "El archivo ZIP previo de GitHub CLI es válido (sin hash previo registrado)." -ForegroundColor Green
+                        }
                     } else {
                         Write-Host "El archivo ZIP previo de GitHub CLI está incompleto. Se volverá a descargar." -ForegroundColor Yellow
                     }
@@ -1185,8 +1210,20 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
                 try {
                     $fileSize = (Get-Item $wezZipPath).Length
                     if ($fileSize -gt 10MB) {
-                        $isWezZipValid = $true
-                        Write-Host "El archivo ZIP previo de WezTerm es válido. Se omitirá la descarga." -ForegroundColor Green
+                        $sidecar = "$wezZipPath.sha256"
+                        if (Test-Path $sidecar) {
+                            $expectedHash = (Get-Content $sidecar -Raw).Trim()
+                            $actualHash = (Get-FileHash -Path $wezZipPath -Algorithm SHA256).Hash
+                            if ($actualHash -ne $expectedHash) {
+                                Write-Host "El ZIP previo de WezTerm está corrupto (SHA256 no coincide). Se volverá a descargar." -ForegroundColor Yellow
+                            } else {
+                                $isWezZipValid = $true
+                                Write-Host "El ZIP previo de WezTerm es válido (SHA256 verificado)." -ForegroundColor Green
+                            }
+                        } else {
+                            $isWezZipValid = $true
+                            Write-Host "El archivo ZIP previo de WezTerm es válido (sin hash previo registrado)." -ForegroundColor Green
+                        }
                     } else {
                         Write-Host "El archivo ZIP previo de WezTerm está incompleto. Se volverá a descargar." -ForegroundColor Yellow
                     }
