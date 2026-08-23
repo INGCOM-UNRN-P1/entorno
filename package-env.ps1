@@ -3,10 +3,12 @@
 #   -Compact:         poda documentación y locales de MSYS2 para reducir tamaño.
 #   -ConExtensiones:  incluye los .vsix de las extensiones instaladas + instalador offline
 #                     (útil para aulas sin internet).
+#   -IncluirLibs:     incluye el prefijo local/ de librerías (por defecto se excluye).
 
 param(
     [switch]$Compact,
-    [switch]$ConExtensiones
+    [switch]$ConExtensiones,
+    [switch]$IncluirLibs
 )
 
 $ErrorActionPreference = "Stop"
@@ -57,6 +59,12 @@ $excludeList = @(
     ".gitignore",
     ".gitattributes"
 )
+
+# Política del prefijo local/: por defecto NO viaja en el paquete (las librerías
+# instaladas son propias de cada alumno). -IncluirLibs lo conserva para distribuciones.
+if (-not $IncluirLibs) {
+    $excludeList += "local"
+}
 
 Get-ChildItem -Path $portableRoot | Where-Object { ($_.Name -notin $excludeList) -and ($_.Name -notlike "*.log") } | ForEach-Object {
     $dest = Join-Path $tempPackDir $_.Name
