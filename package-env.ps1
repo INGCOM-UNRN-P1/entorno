@@ -1,4 +1,10 @@
 ﻿# package-env.ps1 - Empaqueta el entorno portable inicializado en un archivo ZIP para distribución offline.
+# Parámetros:
+#   -Compact: poda documentación y locales de MSYS2 en la copia a empaquetar para reducir tamaño.
+
+param(
+    [switch]$Compact
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -82,6 +88,25 @@ if (Test-Path $packVscodeUser) {
     Remove-Item (Join-Path $packVscodeUser "History") -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $packVscodeUser "workspaceStorage") -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $packVscodeUser "globalStorage") -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# 4.7 Poda opcional de contenido no esencial (modo -Compact)
+if ($Compact) {
+    Write-Host "`nModo Compacto: podando documentación y locales no esenciales..." -ForegroundColor Cyan
+    $pruneDirs = @(
+        "msys64\usr\share\doc",
+        "msys64\usr\share\man",
+        "msys64\usr\share\locale",
+        "msys64\ucrt64\share\doc",
+        "msys64\ucrt64\share\man"
+    )
+    foreach ($rel in $pruneDirs) {
+        $prunePath = Join-Path $tempPackDir $rel
+        if (Test-Path $prunePath) {
+            Remove-Item -Path $prunePath -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Host "  -> Podado: $rel"
+        }
+    }
 }
 
 # 5. Comprimir el directorio temporal en un único archivo ZIP

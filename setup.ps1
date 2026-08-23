@@ -731,6 +731,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
             if (-not $vscodeZipValid) {
                 Write-Host "Descargando VS Code desde $resolvedVscodeUrl..." -ForegroundColor Cyan
                 Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing
+                (Get-FileHash -Path $vscodeZipPath -Algorithm SHA256).Hash | Set-Content -Path "$vscodeZipPath.sha256"
             }
             
             $backupDataDir = Join-Path $portableRoot "vscode_data_backup"
@@ -936,6 +937,7 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
             if (-not $isGhZipValid) {
                 Write-Host "Descargando GitHub CLI desde $ghDownloadUrl..." -ForegroundColor Cyan
                 Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing
+                (Get-FileHash -Path $ghZipPath -Algorithm SHA256).Hash | Set-Content -Path "$ghZipPath.sha256"
             }
 
             $ghTempDir = Join-Path $portableRoot "gh_temp"
@@ -1060,6 +1062,7 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
             if (-not $isWezZipValid) {
                 Write-Host "Descargando WezTerm desde $wezDownloadUrl..." -ForegroundColor Cyan
                 Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
+                (Get-FileHash -Path $wezZipPath -Algorithm SHA256).Hash | Set-Content -Path "$wezZipPath.sha256"
             }
 
             # Actualización atómica: extraer y aplanar en un directorio temporal,
