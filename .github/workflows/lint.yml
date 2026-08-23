@@ -1,0 +1,33 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  bash:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxis de scripts Bash
+        run: |
+          find . -type f -name "*.sh" -print0 | xargs -0 -n1 bash -n
+          bash -n bin/ayuda linux/bin/ayuda
+      - name: Shellcheck (nivel error)
+        run: shellcheck --severity=error $(find . -type f -name "*.sh") bin/ayuda linux/bin/ayuda
+
+  powershell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Análisis estático con PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          $findings = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          if ($findings) {
+            $findings | Format-Table -AutoSize
+            exit 1
+          }
