@@ -37,18 +37,29 @@ if (-not (Test-IsAdmin)) {
 
 Write-Host "=== Configuración de Excepciones de Windows Defender ===" -ForegroundColor Cyan
 Write-Host "Ruta del entorno: $portableRoot" -ForegroundColor Cyan
+# Exclusión granular: solo los directorios con binarios que ejecutan compilaciones,
+# en lugar de la carpeta raíz completa (menor superficie expuesta).
+$exclusionTargets = @(
+    @{ Path = Join-Path $portableRoot "msys64";  Desc = "compiladores y toolchain" },
+    @{ Path = Join-Path $portableRoot "vscode";  Desc = "editor y extensiones" },
+    @{ Path = Join-Path $portableRoot "wezterm"; Desc = "terminal GPU" }
+)
 
 try {
     # Verificar si el servicio de Defender está disponible
     $defenderPrefs = Get-MpPreference -ErrorAction Stop
     $exclusions = $defenderPrefs.ExclusionPath
 
-    if ($exclusions -and $exclusions -contains $portableRoot) {
-        Write-Host "`n[OK] La ruta ya se encuentra excluida en Windows Defender." -ForegroundColor Green
-    } else {
-        Write-Host "`nAgregando exclusión en Windows Defender para evitar falsos positivos y bloqueos de memoria..."
-        Add-MpPreference -ExclusionPath $portableRoot
-        Write-Host "[ÉXITO] Exclusión agregada correctamente." -ForegroundColor Green
+    foreach ($target in $exclusionTargets) {
+        if ($exclusions -and $exclusions -contains $target.Path) {
+            Write-Host "`n[OK] Ya excluido: $($target.Path) ($($target.Desc))." -ForegroundColor Green
+        } elseif (Test-Path $target.Path) {
+            Write-Host "`nAgregando exclusión para $($target.Desc): $($target.Path)"
+            Add-MpPreference -ExclusionPath $target.Path
+            Write-Host "[ÉXITO] Exclusión agregada correctamente." -ForegroundColor Green
+        } else {
+            Write-Host "`n[INFO] $($target.Path) no existe aún (¿falta inicializar el entorno?); se omite." -ForegroundColor DarkGray
+        }
     }
 } catch {
     Write-Host "`n[ERROR] Ocurrió un error al intentar modificar Windows Defender." -ForegroundColor Red
