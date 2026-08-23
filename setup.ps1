@@ -99,6 +99,9 @@ $versionFile = Join-Path $portableRoot "VERSION"
 $entornoVersion = "?"
 if (Test-Path $versionFile) { $entornoVersion = (Get-Content $versionFile -Raw).Trim() }
 Write-Host "Versión del Entorno  : $entornoVersion"
+if ($PSVersionTable.PSVersion.Major -ge 6) {
+    Write-Host "Aviso de Compatibilidad: estás ejecutando PowerShell $($PSVersionTable.PSVersion); el instalador está validado principalmente sobre Windows PowerShell 5.1." -ForegroundColor Yellow
+}
 Write-Host "Entorno de Ejecución : $($PSVersionTable.OS) / OS: $($env:OS)"
 Write-Host "Nombre del Equipo    : $($env:COMPUTERNAME)"
 Write-Host "Usuario Ejecutor     : $($env:USERNAME)"
@@ -1336,6 +1339,20 @@ if ($ImportHostConfig) {
 
     # Guardar el indicador final de instalación completa exitosa
     Set-Content -Path (Join-Path $portableRoot ".install_complete") -Value "Complete"
+
+    # Resumen de componentes para el usuario
+    Write-Host "`n--- ESTADO DE COMPONENTES ---" -ForegroundColor Cyan
+    $summaryComponents = @(
+        @{ Name = "MSYS2 (GCC, make, cmake, python)"; Ok = (Test-Path (Join-Path $msysDir "usr\bin\bash.exe")) },
+        @{ Name = "VS Code Portable";                 Ok = (Test-Path (Join-Path $vscodeDir "Code.exe")) },
+        @{ Name = "WezTerm";                          Ok = (Test-Path (Join-Path $portableRoot "wezterm\wezterm.exe")) },
+        @{ Name = "GitHub CLI";                       Ok = (Test-Path (Join-Path $portableRoot "bin\gh.exe")) }
+    )
+    foreach ($comp in $summaryComponents) {
+        $state = if ($comp.Ok) { "[OK]   " } else { "[FALTA]" }
+        $color = if ($comp.Ok) { "Green" } else { "Yellow" }
+        Write-Host ("  {0} {1}" -f $state, $comp.Name) -ForegroundColor $color
+    }
 
     Write-Host "`n=== ENTORNO PORTABLE CONFIGURADO Y LISTO ===" -ForegroundColor Green
     Write-Host "Ejecutá 'launch.bat' para iniciar la consola." -ForegroundColor Green
