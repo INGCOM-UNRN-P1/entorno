@@ -18,6 +18,7 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 * Flujo GitHub Classroom: comando `clonar <url>` (copia el TP a `~/proyectos` con upstream listo) y publicación opcional commit+push al final de `entregar`.
 * Corrector local: comando `verificar` ejecuta los casos `tests/caso_NN.in/.out` (o `make test`) con tolerancia a espacios finales; `entregar` lo corre antes de empacar y bloquea la entrega fallida salvo confirmación explícita. `nuevo-proyecto` incluye un caso de ejemplo.
 * Comando `soporte`: informe único anonimizado (doctor + versiones + estado + cola de install.log) para adjuntar en consultas al docente.
+* Caché local de respuestas de la API de GitHub en `setup.ps1` (`descargas/api_cache`, vencimiento 24 h): evita el agotamiento del límite de consultas por IP en aulas con NAT compartido y permite seguir instalando con la última copia si la API cae.
 
 ### Cambiado
 * Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).

@@ -124,7 +124,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 ### Técnica de soporte
 
 52. `uv` como creador de entornos por defecto cuando exista (más rápido y sin dependencias externas que `python -m venv`) con fallback automático.
-53. Mantenedores: `env.common.psm1` (lógica común de lanzadores) y caché de respuestas API GitHub quedan como deuda técnica menor ya relevada (hito 5). El quoting de args en `launcher.c` quedó resuelto.
+53. Mantenedores: `env.common.psm1` (lógica común de lanzadores) queda como deuda técnica menor ya relevada (hito 5). El quoting de args en `launcher.c` y la caché de respuestas API GitHub quedaron resueltos.
 
 ## 4. Mejoras Propuestas por Eje
 
@@ -168,7 +168,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | ~~2~~ ✅ | Canal de versiones: `versions.json` + `-Latest` + `CHANNEL`; fallbacks migrados al manifiesto; extensiones pineables (4, 7) | Completado |
 | ~~3~~ ✅ | CI de linters + limpieza de repo + AGENTS.md | Completado |
 | ~~4~~ ✅ | Plantilla física única `wezterm.lua.template` + migración mínima residual (11-12) | Completado |
-| 5 | Restantes: caché de respuestas API GitHub, LICENSE/tag institucional (17 parcial: falta LICENSE). Quoting de args y timeout en `launcher.c` ✅ | Bajo |
+| 5 | Restante: LICENSE/tag institucional (17 parcial: falta LICENSE). Quoting de args y timeout en `launcher.c` ✅, caché de respuestas API GitHub ✅ | Bajo |
 | ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador, smoke automatizado, install-offline (27-31 + Fase 9/10 del plan) | Completado |
 | ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
 | ~~8~~ ✅ | **Ola pedagógica completa:** depuración lista, `backup`/`restaurar`, higiene compartidas, `doctor --fix`, GitHub Classroom (`clonar`+push), corrector `verificar` y `soporte` (43-47, 50-51) | Completado |

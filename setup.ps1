@@ -49,6 +49,55 @@ function Get-Pinned([string]$Key) {
     return $null
 }
 
+# Caché de respuestas de la API de GitHub: en aulas con NAT compartido el límite
+# de 60 consultas por hora por IP se agota rápido. Guarda cada respuesta en
+# descargas/api_cache con vencimiento (24 horas) y, si la API no responde o
+# rechaza por límite de peticiones, reutiliza la última copia aunque esté vencida.
+function Get-GitHubApiCached {
+    param([string]$Url)
+    $cacheDir = Join-Path $descargasDir "api_cache"
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
+    } finally {
+        $sha.Dispose()
+    }
+    $hash = [System.BitConverter]::ToString($hashBytes).Replace("-", "").Substring(0, 16).ToLower()
+    $cacheFile = Join-Path $cacheDir "$hash.json"
+    $stampFile = Join-Path $cacheDir "$hash.stamp"
+    $ttlHours = 24
+
+    $cachedJson = $null
+    $cacheFresh = $false
+    if (Test-Path $cacheFile) {
+        $cachedJson = Get-Content $cacheFile -Raw
+        if (Test-Path $stampFile) {
+            try {
+                $stampUtc = [datetimeoffset]::Parse((Get-Content $stampFile -Raw).Trim()).UtcDateTime
+                if (((Get-Date).ToUniversalTime() - $stampUtc).TotalHours -lt $ttlHours) { $cacheFresh = $true }
+            } catch { }
+        }
+        if ($cacheFresh) {
+            Write-Host "Respuesta de la API de GitHub servida desde la caché local." -ForegroundColor DarkGray
+            try { return ($cachedJson | ConvertFrom-Json) } catch { }
+        }
+    }
+
+    try {
+        $response = Invoke-RestMethod -Uri $Url -UseBasicParsing -TimeoutSec 10
+        New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
+        Set-Content -Path $cacheFile -Value ($response | ConvertTo-Json -Depth 20)
+        Set-Content -Path $stampFile -Value (Get-Date).ToUniversalTime().ToString("o")
+        return $response
+    } catch {
+        if (-not [string]::IsNullOrEmpty($cachedJson)) {
+            Write-Warning "Consulta a la API de GitHub fallida; se usa la caché local (aunque vencida)."
+            try { return ($cachedJson | ConvertFrom-Json) } catch { }
+        }
+        throw
+    }
+}
+
 # Configurar codificaciones UTF-8 globales (con y sin BOM)
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
@@ -471,7 +520,7 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
             $releasesUrl = "https://api.github.com/repos/msys2/msys2-installer/releases"
             Write-Host "Consultando API de GitHub por la última versión de MSYS2..."
-            $releases = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing -TimeoutSec 10
+            $releases = Get-GitHubApiCached -Url $releasesUrl
             # Buscar la primera versión que no sea un build 'nightly' y que contenga el archivo sfx.exe
             foreach ($release in $releases) {
                 if ($release.tag_name -notlike "*nightly*") {
@@ -1003,7 +1052,7 @@ if ($isUpdateMode -or -not $isGhComplete -or -not $isGhInstalled) {
     } else {
     try {
         $ghReleaseUrl = "https://api.github.com/repos/cli/cli/releases/latest"
-        $ghRelease = Invoke-RestMethod -Uri $ghReleaseUrl -UseBasicParsing -TimeoutSec 10
+        $ghRelease = Get-GitHubApiCached -Url $ghReleaseUrl
         $ghAsset = $ghRelease.assets | Where-Object { $_.name -like "*windows_amd64.zip" }
         if ($ghAsset) {
             $ghDownloadUrl = $ghAsset.browser_download_url
@@ -1153,7 +1202,7 @@ if ($isUpdateMode -or -not $isWezComplete) {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
         Write-Host "Consultando API de GitHub por la última versión de WezTerm..."
-        $wezRelease = Invoke-RestMethod -Uri $wezReleaseUrl -UseBasicParsing -TimeoutSec 10
+        $wezRelease = Get-GitHubApiCached -Url $wezReleaseUrl
         $wezAsset = $wezRelease.assets | Where-Object { $_.name -like "WezTerm-windows-*.zip" -and $_.name -notlike "*setup*" }
         if ($wezAsset) {
             $wezDownloadUrl = $wezAsset.browser_download_url
