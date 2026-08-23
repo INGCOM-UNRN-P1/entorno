@@ -221,7 +221,13 @@ try {
                     "docs/scripts.md",
                     "docs/compilacion-gcc.md",
                     "docs/images/arquitectura_entorno.svg",
-                    "docs/images/flujo_compilacion.svg"
+                    "docs/images/flujo_compilacion.svg",
+                    "linux/activate.sh",
+                    "linux/bootstrap.sh",
+                    "linux/bin/ayuda",
+                    "linux/bin/configure-git.sh",
+                    "linux/bin/customize-terminal.sh",
+                    "linux/bin/install-lib.sh"
                 )
                 
                 foreach ($file in $filesToCopy) {
