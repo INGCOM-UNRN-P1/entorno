@@ -26,6 +26,8 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 ## 3. Problemas Abiertos
 
+> **Estado tras la implementación sistemática:** quedaron resueltos los puntos **1** (actualizaciones atómicas), **2** (plantilla canónica en customize-terminal), **3** (settings.json quirúrgico), **5** (detección OneDrive), **8** (`-Yes` desatendido), **9** (update-env propaga docs/linux), **10** (packages-baseline.txt), **13** (uninstall-lib con manifiesto multiplataforma), **14 parcial** (poda `-Compact` + registro de hashes), **15** (test.ps1 eliminado), **16** (links relativos), **22** (log de diagnóstico en raíz), **23** (AV de terceros), **24** (core.editor), **25** (AGENTS.md) y **26** (docs Linux); además quedó documentado el punto **19-20** (safe.directory y PEP 668) y agregado CI de linters. Sigue abierta la verificación *activa* de hashes (solo se registran).
+
 ### Prioridad Alta
 
 1. **Actualizaciones no atómicas de componentes** (`setup.ps1`, bloque VS Code y WezTerm): se elimina la instalación previa *antes* de extraer el ZIP nuevo y el respaldo `vscode_data_backup` se mueve sin `try/finally`. Una extracción interrumpida deja el entorno roto o pierde datos del usuario. Propuesta: extraer a directorio temporal, validar presencia del binario clave (`Code.exe`, `wezterm-gui.exe`) y recién entonces hacer swap; restaurar backup en `finally`.
@@ -111,11 +113,11 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 | Hito | Contenido | Esfuerzo estimado |
 |---|---|---|
-| 1 | Puntos 1-3 (atomicidad, customize-terminal, settings.json) | Medio-Alto |
-| 2 | Manifiesto de versiones + pin de extensiones + tags semestrales (4, 7 parcial) | Medio |
-| 3 | CI de linters + limpieza de repo (15-17) + smoke tests básicos | Bajo |
-| 4 | Fuentes únicas de verdad (9, 10, 11) + `-Yes` (8) + detección OneDrive | Medio |
-| 5 | Integridad de descargas, caché API, paquete compacto, install-offline.ps1 | Medio |
+| ~~1~~ ✅ | Atomicidad, customize-terminal, settings.json, `-Yes`, OneDrive | Completado |
+| 2 | Manifiesto de versiones por semestre + pin de extensiones + tags semestrales (puntos 4 y 7) | Medio |
+| ~~3~~ ✅ | CI de linters + limpieza de repo (15-17 parcial: falta LICENSE) + AGENTS.md | Completado |
+| 4 | Plantilla wezterm.lua en archivo único físico (11-12) | Bajo-Medio |
+| 5 | Verificación activa de hashes, caché API, smoke tests automáticos, launcher.c quoting | Medio |
 
 ---
 *Mantener este documento actualizado en cada corrección: mover ítems resueltos a la sección 2 con referencia de commit.*
