@@ -109,4 +109,29 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 
 ### `download-baseline.sh`
 * **Propósito:** Precargar caché de pacman para instalaciones offline.
-* **Funcionamiento:** Ejecuta `pacman -Sw` para descargar localmente a `descargas/pacman_cache` todos los paquetes de compilación estándar de C y Python.
+* **Funcionamiento:** Ejecuta `pacman -Sw` para descargar localmente a `descargas/pacman_cache` todos los paquetes definidos en `packages-baseline.txt` (fuente única compartida con setup.ps1).
+
+### `uninstall-lib.sh`
+* **Propósito:** Desinstalar librerías registradas por `install-lib.sh`.
+* **Funcionamiento:** Lee los manifiestos en `<prefijo>/portable-libs/*.files`, elimina los archivos registrados, poda directorios vacíos y reporta las librerías instaladas vía CMake/make install que solo tienen notas parciales.
+
+---
+
+## 3. Variante Linux (`linux/`)
+
+Entorno por activación de sesión, sin modificaciones al host ni permisos de administrador.
+
+### `linux/activate.sh`
+* **Propósito:** Activar el entorno en la sesión actual de Bash (`source linux/activate.sh`).
+* **Funcionamiento:** Resuelve el nombre del HOME portable desde `.env`, crea el skel base (`.bashrc`/`.bash_profile`), redirige `$HOME`, antepone `linux/bin` y `local/bin` al PATH (con guardia anti-duplicación) y exporta variables del toolchain hacia `local/`. Define la función `deactivate` que restaura la sesión original.
+
+### `linux/bootstrap.sh`
+* **Propósito:** Diagnóstico de dependencias del sistema.
+* **Funcionamiento:** Solo lectura: detecta gestor de paquetes (apt/dnf/yum/pacman/zypper/apk), informa herramientas presentes/faltantes y sugiere comandos; nunca instala ni usa sudo. Rechaza explícitamente el modo de instalación automática eliminado.
+
+### Scripts en `linux/bin/`
+*   `configure-git.sh`: configuración guiada de Git (identidad validada, preferencias, credential helpers de gh y fallback store) aislada en el HOME portable.
+*   `customize-terminal.sh`: asistente de banner de bienvenida y prompt de PS1 entre marcas en `.bashrc`.
+*   `install-lib.sh`: port Linux del instalador de librerías (library.spec, recetas, CMake+Ninja o Makefiles, header-only) hacia `$PORTABLE_PREFIX` (`local/`), con manifiesto para desinstalación.
+*   `uninstall-lib.sh`: desinstalador basado en manifiestos (idéntico al de Windows).
+*   `ayuda`: guía rápida adaptada a la variante Linux.

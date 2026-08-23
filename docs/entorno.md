@@ -100,3 +100,33 @@ Para consultar rápidamente el listado de todos los comandos y scripts útiles d
 ```bash
 ayuda
 ```
+
+---
+
+## 4. Variante Linux
+
+El mismo concepto de entorno portable existe como variante nativa para Linux, bajo el principio de **cero modificaciones al sistema host y cero permisos de administrador**. No instala componentes: usa las herramientas del sistema y las verifica con un diagnóstico que sugiere comandos sin ejecutarlos.
+
+### Activación por Sesión
+```bash
+source linux/activate.sh    # activa HOME portable + toolchain en el PATH
+ayuda                       # guía rápida
+deactivate                  # restaura tu sesión original
+```
+La activación redirige `$HOME` hacia la carpeta portable del repositorio, antepone los scripts del entorno al `PATH` y exporta las variables del toolchain (`CC`, `CPATH`, `LIBRARY_PATH`, `PKG_CONFIG_PATH`, `CMAKE_PREFIX_PATH`) apuntando al prefijo local `local/`.
+
+### Bootstrap de Dependencias
+```bash
+linux/bootstrap.sh
+```
+Diagnóstico solo lectura de las herramientas obligatorias (`git`, `gcc`, `make`, `cmake`, `ninja`, `python3`, `pip`, `curl`) y recomendadas (`gdb`, `cppcheck`, `doxygen`, `gh`, `uv`), con sugerencia del comando de instalación para tu distribución.
+
+### Scripts Específicos (`linux/bin/`)
+*   `configure-git.sh`: identidad, preferencias y credenciales paso a paso con GitHub CLI.
+*   `customize-terminal.sh`: banner de bienvenida y prompt de Bash entre marcas en `.bashrc`.
+*   `install-lib.sh` / `uninstall-lib.sh`: gestión de librerías C desde GitHub en `local/` con manifiesto de desinstalación.
+
+### Notas de Solución de Problemas
+*   **Dubious ownership:** si Git reclama propiedad sobre repos en unidades compartidas, ejecutá dentro del entorno `git config --global safe.directory '<ruta-del-repo>'`.
+*   **pip bloqueado (PEP 668):** en distribuciones modernas usá `pip --user` (con la sesión activada queda dentro del HOME portable) o entornos virtuales; `uv` crea entornos automáticamente.
+*   **Locale:** la variante no fuerza idioma; si tu host no tiene `es_AR.UTF-8` generado, los mensajes del sistema seguirán el locale disponible.
