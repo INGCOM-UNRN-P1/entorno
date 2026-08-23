@@ -9,8 +9,11 @@ GOLD="\e[38;5;220m"
 RESET="\e[0m"
 BOLD="\e[1m"
 
-# Versión del entorno desde la raíz del repositorio
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+# Versión del entorno: buscar VERSION subiendo desde la ubicación del script
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+while [ "$ROOT_DIR" != "/" ] && [ ! -f "$ROOT_DIR/VERSION" ]; do
+    ROOT_DIR="$(dirname "$ROOT_DIR")"
+done
 ENTORNO_VERSION="?"
 [ -f "$ROOT_DIR/VERSION" ] && ENTORNO_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
 
