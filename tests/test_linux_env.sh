@@ -24,6 +24,7 @@ assert() { # assert <descripcion> <comando...>
 # Sandbox: solo hace falta el directorio linux/ dentro de una raíz falsa
 mkdir -p "$SANDBOX/repo"
 cp -r "$REPO_ROOT/linux" "$SANDBOX/repo/linux"
+printf '0.0-test\n' > "$SANDBOX/repo/VERSION"
 
 run_in_sandbox() { # run_in_sandbox <script-bash>
     bash -c "source '$SANDBOX/repo/linux/activate.sh' >/dev/null; $1"
@@ -150,6 +151,14 @@ sed -i 's/Salida rota/Hola desde tpv/' "$TPV/main.c"
 printf 's\n' | run_in_sandbox "cd '$TPV' && entregar" >/dev/null
 assert "entregar genera el ZIP cuando las pruebas pasan" \
     bash -c "ls '$SANDBOX/repo/home'/ENTREGA_tpv_*.zip >/dev/null 2>&1"
+
+# --- Comando soporte: informe único anonimizado ---
+SUP=$(run_in_sandbox "cd '$SANDBOX/repo/home' && soporte >/dev/null && ls '$SANDBOX/repo'/soporte-*.txt | head -n1")
+assert "soporte genera el informe en la raíz del entorno" test -f "$SUP"
+assert "el informe no filtra la ruta real" bash -c "! grep -qF '$SANDBOX' '$SUP'"
+assert "el informe no filtra el nombre de usuario" bash -c "! grep -qF '$(whoami)' '$SUP'"
+assert "el informe incluye versión y diagnóstico" \
+    bash -c "grep -q '^Versión' '$SUP' && grep -q 'DIAGNÓSTICO' '$SUP'"
 
 echo ""
 if [ "$FAIL" -eq 0 ]; then

@@ -36,6 +36,7 @@ echo -e "  ${GREEN}verificar [dir]${RESET}        - Corre las pruebas de cátedr
 echo -e "  ${GREEN}entregar [dir]${RESET}         - Compila, valida y empaca el TP; publica con tu confirmación."
 echo -e "  ${GREEN}doctor${RESET}              - Verificación rápida de salud del entorno."
 echo -e "  ${GREEN}doctor --fix${RESET}       - Reparación ligera: regenera skel, marcadores y settings base."
+echo -e "  ${GREEN}soporte${RESET}            - Genera un informe anónimo para consultar al docente."
 echo -e "  ${GREEN}smoke.sh${RESET}            - Automatiza las pruebas de aceptación del plan (A/B/C/E/F)."
 echo -e "  ${GREEN}backup [dest]${RESET}      - Respalda tu HOME portable y manifiestos en un ZIP."
 echo -e "  ${GREEN}restaurar [zip]${RESET}    - Restaura un respaldo sobre el HOME portable."

@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# soporte - Genera un informe único y ANÓNIMO para pedir ayuda a la cátedra.
+# Reúne diagnóstico rápido (doctor), versiones de herramientas, estado del
+# entorno y la cola del log de instalación, sin datos personales.
+# Funciona en Windows (MSYS2) y Linux.
+#
+# Uso: soporte    (crea soporte-FECHA-HORA.txt en la raíz del entorno)
+
+set -eu
+
+GREEN='\033[32m'; CYAN='\033[36m'; RESET='\033[0m'
+
+# Resolver la raíz del entorno (PORTABLE_ROOT tiene prioridad; luego el script)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="${PORTABLE_ROOT:-}"
+if [ -z "$ROOT" ]; then
+    ROOT="$(dirname "$SCRIPT_DIR")"
+    [ -f "$ROOT/VERSION" ] || ROOT="$(dirname "$SCRIPT_DIR")/../.."
+fi
+ROOT="$(cd "$ROOT" 2>/dev/null && pwd)"
+
+OUT="$ROOT/soporte-$(date +%Y%m%d-%H%M).txt"
+
+# --- Pares de reemplazo literal (FROM<TAB>TO) para anonimizar ---
+PARES=()
+agrega_par() { # agrega_par <de> <a>
+    if [ -n "${1:-}" ] && [ -n "${2:-}" ]; then
+        PARES+=("$1"$'\t'"$2")
+    fi
+}
+WIN_ROOT=""
+command -v cygpath >/dev/null 2>&1 && WIN_ROOT="$(cygpath -w "$ROOT" 2>/dev/null || true)"
+GIT_NAME="$(git config --global user.name 2>/dev/null || true)"
+HOSTNAME_VAL="$(hostname 2>/dev/null | head -n1 || true)"
+
+agrega_par "$ROOT" "<entorno>"
+agrega_par "$WIN_ROOT" "<entorno>"
+agrega_par "$(whoami 2>/dev/null | head -n1 || true)" "<usuario>"
+agrega_par "${USER:-}" "<usuario>"
+agrega_par "${USERNAME:-}" "<usuario>"
+agrega_par "${LOGNAME:-}" "<usuario>"
+agrega_par "$GIT_NAME" "<nombre-git>"
+agrega_par "$HOSTNAME_VAL" "<equipo>"
+
+anonimiza() {
+    local line p desde hasta
+    while IFS= read -r line || [ -n "$line" ]; do
+        for p in "${PARES[@]}"; do
+            desde="${p%%$'\t'*}"
+            hasta="${p#*$'\t'}"
+            [ -n "$desde" ] && line="${line//"$desde"/$hasta}"
+        done
+        printf '%s\n' "$line"
+    done
+}
+
+quita_colores() { sed -e 's/\x1b\[[0-9;]*m//g'; }
+
+seccion() { printf '\n======================================================================\n%s\n======================================================================\n' "$1"; }
+
+{
+    seccion "INFORME DE SOPORTE - ENTORNO PORTABLE (datos anonimizados)"
+    echo "Generado     : $(date '+%Y-%m-%d %H:%M')"
+    [ -f "$ROOT/VERSION" ] && echo "Versión      : $(tr -d '[:space:]' < "$ROOT/VERSION")"
+    echo "Plataforma   : $(uname -s) $(uname -m) ${MSYSTEM:+(MSYS2/$MSYSTEM)}"
+    echo ""
+    echo "Este archivo fue generado por el comando 'soporte'. Adjuntalo tal cual"
+    echo "en tu consulta. Los nombres de usuario, equipo y rutas personales se"
+    echo "reemplazaron automáticamente por marcadores (<usuario>, <entorno>)."
+
+    seccion "DIAGNÓSTICO RÁPIDO (doctor)"
+    DOCTOR="$(dirname "$0")/doctor"
+    if [ -f "$DOCTOR" ]; then
+        bash "$DOCTOR" 2>&1 | quita_colores | anonimiza
+    else
+        echo "(doctor no disponible)"
+    fi
+
+    seccion "VERSIONES DE HERRAMIENTAS"
+    for t in gcc make cmake ninja python3 pip uv git gh cppcheck; do
+        if command -v "$t" >/dev/null 2>&1; then
+            v="$("$t" --version 2>&1 | head -n1)"
+            echo "$t : $v"
+        else
+            echo "$t : (no encontrado)"
+        fi
+    done | anonimiza
+
+    seccion "ESTADO DEL ENTORNO"
+    for m in .install_complete .msys_complete .vscode_complete .gh_complete .wezterm_complete; do
+        [ -f "$ROOT/$m" ] && echo "marcador $m : presente" || echo "marcador $m : ausente"
+    done
+    for d in msys64 vscode wezterm local linux; do
+        [ -d "$ROOT/$d" ] && echo "carpeta  $d/ : presente" || echo "carpeta  $d/ : ausente"
+    done
+    echo "Espacio libre en la raíz: $(df -h "$ROOT" 2>/dev/null | tail -n1 | awk '{print $4}')"
+    for vf in "$ROOT"/vscode/.version "$ROOT"/bin/.gh_version "$ROOT"/bin/.wezterm_version; do
+        if [ -f "$vf" ]; then
+            echo "pin $(basename "$(dirname "$vf")")/$(basename "$vf"): $(head -c 200 "$vf")"
+        fi
+    done | anonimiza
+
+    seccion "COLA DE INSTALL.LOG (últimas 60 líneas)"
+    if [ -f "$ROOT/install.log" ]; then
+        tail -n 60 "$ROOT/install.log" | anonimiza
+    else
+        echo "(no existe install.log en la raíz del entorno)"
+    fi
+
+    seccion "FIN DEL INFORME"
+} > "$OUT" 2>/dev/null || true
+
+echo -e "${GREEN}[ÉXITO] Informe generado:${RESET}"
+echo "  $OUT"
+echo -e "${CYAN}Adjuntá ese archivo en tu consulta al docente.${RESET}"
