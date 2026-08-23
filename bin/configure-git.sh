@@ -40,6 +40,11 @@ git config --global credential.helper 'store --file ~/.git-credentials'
 git config --global core.autocrlf input
 git config --global init.defaultBranch main
 
+# Usar VS Code del entorno como editor de Git si está disponible en el PATH
+if command -v code >/dev/null 2>&1; then
+    git config --global core.editor "code --wait"
+fi
+
 echo -e "\e[32mGit configurado con éxito.\e[0m"
 printf "Nombre:  %s\n" "$(git config --global user.name)"
 printf "Email:   %s\n" "$(git config --global user.email)"

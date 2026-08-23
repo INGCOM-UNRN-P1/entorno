@@ -91,6 +91,12 @@ fi
 git config --global core.autocrlf input
 ok "core.autocrlf = input (finales de línea LF, ideal en Linux)"
 
+# Usar VS Code del entorno como editor de Git si está disponible en el PATH
+if command -v code >/dev/null 2>&1; then
+    git config --global core.editor "code --wait"
+    ok "core.editor = 'code --wait'"
+fi
+
 # ---------------------------------------------------------------
 # Paso 3: Credenciales de GitHub vía GitHub CLI (gh)
 # ---------------------------------------------------------------

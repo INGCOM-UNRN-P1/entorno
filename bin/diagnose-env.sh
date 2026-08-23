@@ -12,7 +12,8 @@ if [ -z "$MSYSTEM_PREFIX" ]; then
     exit 1
 fi
 
-LOG_FILE="diagnose.log"
+# Escribir el informe en la raíz del entorno (no contaminar el directorio actual)
+LOG_FILE="${PORTABLE_ROOT:-.}/diagnose.log"
 {
     echo "======================================================================"
     echo "INFORME DE DIAGNÓSTICO DEL ENTORNO PORTABLE"

@@ -58,5 +58,21 @@ try {
     Write-Host "`nSi usás otro Antivirus, por favor agregá la carpeta del entorno a sus exclusiones manualmente." -ForegroundColor Yellow
 }
 
+# Detectar antivirus de terceros registrados en el Centro de Seguridad de Windows
+try {
+    $thirdPartyAv = Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct -ErrorAction Stop |
+        Where-Object { $_.displayName -notmatch 'Defender|Microsoft' }
+    if ($thirdPartyAv) {
+        Write-Host "`n[AVISO] Se detectaron otros antivirus registrados en el sistema:" -ForegroundColor Yellow
+        foreach ($av in $thirdPartyAv) {
+            Write-Host "  * $($av.displayName)" -ForegroundColor Yellow
+        }
+        Write-Host "La exclusión de Defender no los cubre: agregá manualmente la carpeta del entorno" -ForegroundColor Yellow
+        Write-Host "a las exclusiones de cada uno de esos productos para evitar bloqueos al compilar." -ForegroundColor Yellow
+    }
+} catch {
+    # El namespace SecurityCenter2 puede no estar disponible en algunos sistemas; ignorar silenciosamente.
+}
+
 Write-Host "`nPresioná cualquier tecla para salir..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
