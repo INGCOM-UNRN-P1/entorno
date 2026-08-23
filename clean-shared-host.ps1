@@ -17,7 +17,7 @@ if (Test-Path $envFile) {
 
 $homeDir = Join-Path $portableRoot $homeDirName
 $vscodeDataDir = Join-Path $portableRoot "vscode\data"
-$tempDir = Join-Path $portableRoot "downloads"
+$tempDir = Join-Path $portableRoot "descargas"
 $msysTemp = Join-Path $portableRoot "msys64\tmp"
 
 Write-Host "==========================================================================" -ForegroundColor Red
@@ -42,7 +42,7 @@ Write-Host "   - Extensiones instaladas de forma personalizada."
 Write-Host "   - Historial de archivos abiertos y estados de proyectos."
 Write-Host ""
 Write-Host "3. LIMPIEZA DE TEMPORALES:"
-Write-Host "   Se vaciarán las carpetas de descargas y temporales ('downloads/' y 'msys64/tmp/')."
+Write-Host "   Se vaciarán las carpetas de descargas y temporales ('descargas/' y 'msys64/tmp/')."
 Write-Host "==========================================================================" -ForegroundColor Red
 Write-Host ""
 
@@ -65,8 +65,10 @@ New-Item -ItemType Directory -Path $homeDir | Out-Null
 
 $bashPath = Join-Path $portableRoot "msys64\usr\bin\bash.exe"
 if (Test-Path $bashPath) {
-    # Inicializar bash para que cree el .bashrc base
-    & $bashPath -env "HOME=$homeDir" --login -c "exit"
+    # Inicializar bash con el HOME portable para que cree el .bashrc base.
+    # Nota: bash no acepta '-env'; la variable debe inyectarse en la sesión previamente.
+    $env:HOME = $homeDir
+    & $bashPath --login -c "exit"
     
     $bashrcPath = Join-Path $homeDir ".bashrc"
     if (Test-Path $bashrcPath) {
@@ -138,9 +140,9 @@ $defaultSettings = @{
 Set-Content -Path $settingsJsonPath -Value $defaultSettings
 Write-Host "  -> Datos de VS Code restablecidos a la configuración inicial." -ForegroundColor Green
 
-# 3. Eliminar downloads/
+# 3. Eliminar descargas/
 if (Test-Path $tempDir) {
-    Write-Host "* Vaciando descargas temporales..."
+    Write-Host "* Vaciando caché de descargas..."
     Remove-Item -Path $tempDir -Recurse -Force
 }
 
@@ -151,7 +153,10 @@ if (Test-Path $msysTemp) {
 }
 
 # 5. Eliminar archivos de estado de instalación
-$completeMarkers = @(".install_complete", ".vscode_complete")
+# Solo se elimina '.install_complete': los marcadores por componente se conservan
+# para que el próximo setup.ps1 no re-descargue binarios (VS Code, MSYS2, etc.)
+# que siguen instalados y ya fueron saneados arriba.
+$completeMarkers = @(".install_complete")
 foreach ($marker in $completeMarkers) {
     $markerPath = Join-Path $portableRoot $marker
     if (Test-Path $markerPath) {
