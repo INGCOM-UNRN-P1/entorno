@@ -87,29 +87,48 @@ if (Test-Path $vscodeDir) {
     if (-not (Test-Path $settingsUserDir)) {
         New-Item -ItemType Directory -Path $settingsUserDir -Force | Out-Null
     }
-    
-    $settings = @{}
-    if (Test-Path $settingsJsonPath) {
-        try {
-            $settingsContent = Get-Content $settingsJsonPath -Raw
-            $settings = $settingsContent | ConvertFrom-Json
-            if ($null -eq $settings) { $settings = @{} }
-        } catch {
-            $settings = @{}
-        }
-    }
-    
+
     # Formatear la ruta de gcc con barras inclinadas hacia adelante
     $gccExeUrl = (Join-Path $portableRoot "msys64\ucrt64\bin\gcc.exe").Replace("\", "/")
-    
-    # Configurar propiedades para la extensión C/C++
-    $settings | Add-Member -NotePropertyName "C_Cpp.default.compilerPath" -NotePropertyValue $gccExeUrl -Force
-    $settings | Add-Member -NotePropertyName "C_Cpp.default.intelliSenseMode" -NotePropertyValue "windows-gcc-x64" -Force
-    
-    # Guardar con codificación UTF-8 con BOM
-    $settingsJson = $settings | ConvertTo-Json -Depth 10
-    $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
-    [System.IO.File]::WriteAllText($settingsJsonPath, $settingsJson, $utf8WithBom)
+
+    # Parcheo quirúrgico: modificar únicamente las claves C_Cpp.default.* preservando
+    # el resto del archivo tal cual (comentarios, orden y formato definidos por el usuario).
+    $content = ""
+    if (Test-Path $settingsJsonPath) {
+        $content = Get-Content $settingsJsonPath -Raw
+    }
+    if ([string]::IsNullOrWhiteSpace($content)) { $content = "{}" }
+
+    $originalContent = $content
+    foreach ($entry in @(
+        @{ Key = "C_Cpp.default.compilerPath"; Value = $gccExeUrl },
+        @{ Key = "C_Cpp.default.intelliSenseMode"; Value = "windows-gcc-x64" }
+    )) {
+        $key = $entry.Key
+        $valueJson = '"' + $entry.Value + '"'
+        $pattern = '"' + [regex]::Escape($key) + '"\s*:\s*"[^"]*"'
+        if ($content -match $pattern) {
+            $content = [regex]::Replace($content, $pattern, ('"' + $key + '": ' + $valueJson))
+        } else {
+            # La clave no existe: insertarla como primera entrada del objeto principal
+            $trimmed = $content.TrimStart()
+            if ($trimmed.StartsWith("{") -and -not [string]::IsNullOrWhiteSpace($trimmed.TrimStart("{").Trim())) {
+                $rest = $trimmed.Substring(1)
+                $content = "{`n    `"$key`": $valueJson,`n" + $rest
+            } elseif ($trimmed.StartsWith("{")) {
+                $content = "{ `"$key`": $valueJson }"
+            } else {
+                $content = "{ `"$key`": $valueJson }"
+            }
+        }
+    }
+
+    if ($content -ne $originalContent) {
+        Write-Host "[INFO] Actualizando ruta del compilador en settings.json..." -ForegroundColor DarkGray
+        # Guardar con codificación UTF-8 con BOM
+        $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
+        [System.IO.File]::WriteAllText($settingsJsonPath, $content, $utf8WithBom)
+    }
 }
 
 # Lanzar VS Code heredando el ambiente
