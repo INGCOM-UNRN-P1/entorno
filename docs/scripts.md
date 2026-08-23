@@ -136,13 +136,18 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 * **Propósito:** Recuperar un respaldo de `backup`.
 * **Funcionamiento:** Toma el ZIP indicado (o el más reciente disponible), pide confirmación, extrae `home/…` sobre el HOME portable actual, restaura `.env` si faltaba e informa qué librerías hay que reinstalar con `install-lib.sh` según los manifiestos recuperados.
 
+### `clonar <url | owner/repo> [destino]`
+* **Propósito:** Flujo GitHub Classroom: clonar el trabajo práctico listo para programar.
+* **Funcionamiento:** Clona la URL indicada (acepta atajo `owner/repo` de GitHub) en `$HOME/proyectos/<repo>` dentro del HOME portable, fija el upstream para que `git push` funcione sin argumentos y advierte si falta sesión de GitHub CLI para repos privados. Rechaza clonar sobre una carpeta existente.
+
 ### `entregar [directorio]`
 * **Propósito:** Empaquetar el trabajo práctico para entrega.
-* **Funcionamiento:** Compila el proyecto vía Makefile (validación previa a la entrega) y genera `ENTREGA_<proyecto>_<fecha>.zip` con solo fuentes, excluyendo binarios, `.o`, builds y `.git`, usando Python para máxima portabilidad.
+* **Funcionamiento:** Compila el proyecto vía Makefile (validación previa a la entrega), ejecuta el corrector local si existen pruebas (`verificar`) y genera `ENTREGA_<proyecto>_<fecha>.zip` con solo fuentes, excluyendo binarios, `.o`, builds y `.git`, usando Python para máxima portabilidad. Si el TP vive en un repositorio Git con remoto, ofrece publicar los cambios con commit + push (confirmación explícita del alumno).
 
-### `doctor`
-* **Propósito:** Verificación rápida de salud post-instalación.
+### `doctor [--fix]`
+* **Propósito:** Verificación rápida de salud post-instalación y autorreparación ligera.
 * **Funcionamiento:** Compila, enlaza y ejecuta un programa mínimo; valida make/cmake/ninja, Python, identidad de Git, sesión de gh y presencia de los directorios del entorno en el PATH. Código de salida 0 solo si no hay fallos.
+* **Modo `--fix`:** regenera únicamente lo que falta, sin reinstalar componentes: el skel del HOME portable (`.bashrc`/`.bash_profile` con la variante canónica de cada plataforma), los marcadores de estado (`.msys_complete`, `.vscode_complete`, `.gh_complete`, `.wezterm_complete`, `.install_complete`, solo si el componente correspondiente existe en disco) y el `settings.json` base de VS Code. Nunca sobrescribe archivos del usuario; funciona incluso sin sesión activa resolviendo la raíz desde su propia ubicación.
 
 ### `uninstall-lib.sh`
 * **Propósito:** Desinstalar librerías registradas por `install-lib.sh`.

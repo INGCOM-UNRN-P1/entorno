@@ -9,6 +9,10 @@ set -eu
 
 RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; CYAN='\033[36m'; RESET='\033[0m'
 
+identity_ok() {
+    [ -n "$(git config user.name 2>/dev/null)" ] && [ -n "$(git config user.email 2>/dev/null)" ]
+}
+
 PROJ_DIR="${1:-.}"
 if [ ! -d "$PROJ_DIR" ]; then
     echo -e "${RED}[ERROR] No existe el directorio '$PROJ_DIR'.${RESET}"
@@ -69,3 +73,35 @@ EOF
 
 echo -e "${GREEN}[ÉXITO] Entrega generada: ${OUT}${RESET}"
 echo "Recordá verificar su contenido antes de enviarla."
+
+# --- Publicación opcional en el repositorio remoto (flujo GitHub Classroom) ---
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+   && git remote get-url origin >/dev/null 2>&1; then
+    echo ""
+    if [ -z "$(git status --porcelain)" ]; then
+        echo -e "${CYAN}[INFO] El repositorio no tiene cambios sin publicar.${RESET}"
+    else
+        printf "%b¿Publicar los cambios al repositorio remoto (commit + push)? (s/N): ${RESET}" "${CYAN}"
+        read -r answer || answer="n"
+        if printf '%s' "$answer" | grep -qi '^s'; then
+            BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || echo main)"
+            if ! identity_ok; then
+                echo -e "${RED}[ERROR] Falta identidad de Git. Ejecutá configure-git.sh y volvé a intentar.${RESET}"
+                exit 1
+            fi
+            git add -A
+            if git commit -m "Entrega $BASENAME $(date '+%Y-%m-%d %H:%M')"; then
+                if git push -u origin "$BRANCH"; then
+                    echo -e "${GREEN}[ÉXITO] Cambios publicados en origin/$BRANCH.${RESET}"
+                else
+                    echo -e "${RED}[ERROR] Falló el push. Revisá credenciales con configure-git.sh.${RESET}"
+                    exit 1
+                fi
+            else
+                echo -e "${YELLOW}[AVISO] No se pudo crear el commit (¿nada en staging?).${RESET}"
+            fi
+        else
+            echo -e "${CYAN}[INFO] Publicación omitida: solo se generó el ZIP local.${RESET}"
+        fi
+    fi
+fi

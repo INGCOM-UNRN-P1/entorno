@@ -77,7 +77,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 ## 3.5 Nueva Ola Detectada (revisión posterior a la implementación)
 
-> **Estado de implementación:** ítems **27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41 y 42 quedaron implementados** (35 quedó como aviso informativo de compatibilidad bajo pwsh; la validación completa 5.1/7 requiere host Windows). De esta ola ya están implementados **43** (depuración F5 + clang-format + editorconfig en `nuevo-proyecto`), **46** (`backup`/`restaurar` con exclusión de cachés y reinstalación guiada de librerías) y **47** (recordatorio de higiene en ayuda con sesión gh activa + tip al configurar Git).
+> **Estado de implementación:** ítems **27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41 y 42 quedaron implementados** (35 quedó como aviso informativo de compatibilidad bajo pwsh; la validación completa 5.1/7 requiere host Windows). De esta ola ya están implementados **43** (depuración F5 + clang-format + editorconfig en `nuevo-proyecto`), **44** (flujo GitHub Classroom: comando `clonar` + publicación opcional commit+push en `entregar`), **46** (`backup`/`restaurar` con exclusión de cachés y reinstalación guiada de librerías), **47** (recordatorio de higiene en ayuda con sesión gh activa + tip al configurar Git) y **51** (`doctor --fix`: regenera skel del HOME, marcadores de estado y settings.json base solo cuando falten, sin reinstalar).
 
 ### Producto / Educativo (mayor valor)
 
@@ -171,7 +171,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | 5 | Restantes: caché de respuestas API GitHub, quoting de args en `launcher.c` (21), LICENSE/tag institucional (17 parcial: falta LICENSE) | Bajo-Medio |
 | ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador, smoke automatizado, install-offline (27-31 + Fase 9/10 del plan) | Completado |
 | ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
-| 8 | **Ola pedagógica:** depuración lista (launch/tasks/clang-format) ✅, `backup`/`restaurar` ✅, higiene compartidas ✅; restan GitHub Classroom (44), corrector `verificar` (45), `soporte` (50), doctor --fix (51) | Medio |
+| 8 | **Ola pedagógica:** depuración lista (launch/tasks/clang-format) ✅, `backup`/`restaurar` ✅, higiene compartidas ✅, `doctor --fix` ✅, GitHub Classroom `clonar`+push ✅; restan corrector `verificar` (45) y `soporte` (50) | Medio |
 | 9 | Confianza de despliegue: CI real en windows-latest con setup+smoke+roundtrip offline; espejo regional pacman; uv por defecto (48-49, 52) | Medio-Alto |
 
 ---

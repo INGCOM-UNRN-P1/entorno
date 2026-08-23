@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# clonar - Clona el repositorio de un trabajo práctico (GitHub Classroom u otro)
+# en la carpeta de proyectos del HOME portable y deja el flujo listo para
+# programar y usar 'entregar' (que puede publicar con commit + push).
+# Funciona en Windows (MSYS2) y Linux.
+#
+# Uso: clonar <url | owner/repo> [destino]
+#   url         URL git (https, ssh o ruta local)
+#   owner/repo  atajo para https://github.com/<owner>/<repo>.git
+#   destino     carpeta base de clonación (por defecto: $HOME/proyectos)
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; CYAN='\033[36m'; RESET='\033[0m'
+
+if [ "${1:-}" = "" ]; then
+    echo -e "${RED}[ERROR] Falta la URL del trabajo práctico.${RESET}"
+    echo "Uso: clonar <url | owner/repo> [destino]"
+    exit 1
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+    echo -e "${RED}[ERROR] Git no está disponible en este entorno.${RESET}"
+    exit 1
+fi
+
+SRC="$1"
+DEST_BASE="${2:-$HOME/proyectos}"
+
+# Atajo owner/repo → URL de GitHub (salvo que sea una ruta local existente)
+case "$SRC" in
+    */*)
+        if [ ! -e "$SRC" ] && printf '%s' "$SRC" | grep -qE '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'; then
+            SRC="https://github.com/$SRC.git"
+        fi
+        ;;
+esac
+
+REPO_NAME="$(basename "$SRC")"
+REPO_NAME="${REPO_NAME%.git}"
+REPO_NAME="${REPO_NAME%/}"
+
+if [ -z "$REPO_NAME" ]; then
+    echo -e "${RED}[ERROR] No pude inferir el nombre del repositorio desde '$1'.${RESET}"
+    exit 1
+fi
+
+mkdir -p "$DEST_BASE"
+TARGET="$DEST_BASE/$REPO_NAME"
+
+if [ -e "$TARGET" ]; then
+    echo -e "${YELLOW}[AVISO] '$TARGET' ya existe.${RESET}"
+    echo "Si es tu TP, actualizalo con: cd \"$TARGET\" && git pull"
+    exit 1
+fi
+
+# Advertencia temprana si el repo es privado y gh no tiene sesión
+case "$SRC" in
+    github.com*)
+        if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
+            echo -e "${YELLOW}[AVISO] No hay sesión de GitHub CLI activa; si el repositorio es${RESET}"
+            echo -e "${YELLOW}privado, el clone va a fallar. Configuralo con configure-git.sh${RESET}"
+        fi
+        ;;
+esac
+
+echo -e "${CYAN}-> Clonando en $TARGET ...${RESET}"
+if ! git clone "$SRC" "$TARGET"; then
+    echo -e "${RED}[ERROR] Falló el clon. Verificá la URL y tus credenciales (configure-git.sh).${RESET}"
+    rm -rf "$TARGET"
+    exit 1
+fi
+
+BRANCH="$(git -C "$TARGET" symbolic-ref --short HEAD 2>/dev/null || true)"
+if [ -n "$BRANCH" ]; then
+    # Asegurar que el primer push publique sin argumentos extra
+    git -C "$TARGET" branch --set-upstream-to="origin/$BRANCH" "$BRANCH" >/dev/null 2>&1 || true
+fi
+
+echo -e "${GREEN}[ÉXITO] Trabajo práctico clonado en:${RESET}"
+echo "  $TARGET"
+echo ""
+echo -e "${CYAN}Siguiente paso sugerido:${RESET}"
+echo "  cd \"$TARGET\"   (programá y usá 'entregar' para compilar, empacar y publicar)"

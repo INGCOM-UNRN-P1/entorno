@@ -52,13 +52,15 @@ En la carpeta `bin/` tenés disponibles scripts de Bash agregados al `PATH` para
 Si notás problemas con algún compilador o querés verificar el estado de las herramientas, tenés dos comandos complementarios:
 ```bash
 doctor              # verificación rápida (compila un programa mínimo y valida el entorno)
+doctor --fix        # reparación ligera: regenera skel, marcadores y settings base cuando falten
 diagnose-env.sh     # informe técnico completo en diagnose.log
 ```
 
 ### Comandos de cátedra para trabajos prácticos
 ```bash
 nuevo-proyecto tp01 # estructura inicial lista para compilar
-entregar            # ZIP de entrega validado (compila antes de empacar)
+clonar <url-tp>     # clona el assignment de GitHub Classroom en ~/proyectos
+entregar            # ZIP de entrega validado (compila y verifica antes de empacar)
 ```
 
 ### Descarga de Baseline de Paquetes (Caché Local)

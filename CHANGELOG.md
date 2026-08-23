@@ -14,6 +14,8 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 * Depuración lista en `nuevo-proyecto`: `.vscode/` con F5+GDB por plataforma, `.clang-format` y `.editorconfig`; Makefile con símbolos `-g`.
 * `backup` / `restaurar`: respaldo y recuperación del HOME portable y manifiestos de librerías.
 * Recordatorio de higiene en la ayuda cuando existe sesión activa de GitHub (equipos compartidos) y tip al configurar Git.
+* `doctor --fix`: autorreparación ligera que regenera skel del HOME portable, marcadores de estado y `settings.json` base cuando falten, sin reinstalar componentes ni sobrescribir archivos del usuario.
+* Flujo GitHub Classroom: comando `clonar <url>` (copia el TP a `~/proyectos` con upstream listo) y publicación opcional commit+push al final de `entregar`.
 
 ### Cambiado
 * Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).
