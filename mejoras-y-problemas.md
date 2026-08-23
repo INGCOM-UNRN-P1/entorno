@@ -21,6 +21,8 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | Degradación TLS 1.0/1.1 innecesaria y barra de progreso de PS 5.1 (descargas hasta 10x más lentas) | setup.ps1, install.ps1 |
 | Paquete offline incluía `*.log` (con usuario/equipo) y restos personales en `home/` | package-env.ps1 |
 | La sincronización de scripts standalone no incluía la carpeta `linux/` | setup.ps1 |
+| Referencias rotas a `bootstrap.sh --install` tras eliminar el modo instalación automática | configure-git.sh, install-lib.sh |
+| El PATH portable crecía sin control en cada shell anidado y el skel `.bashrc` de setup difería del de launch (faltaban ucrt64/usr) | activate.sh, setup.ps1, launch.ps1 |
 
 ## 3. Problemas Abiertos
 
@@ -34,54 +36,72 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 ### Prioridad Media
 
-4. **Sin verificación de integridad para gh / WezTerm / VS Code:** solo heurísticas de tamaño (>5 MB, >10 MB, >50 MB). MSYS2 sí verifica SHA256 estrictamente. Al menos registrar hash descargado en el marcador `.version` para detectar corrupción entre reintentos.
+4. **Sin versionado reproducible de componentes:** `setup.ps1` instala siempre "latest" (VS Code, gh, WezTerm, paquetes pacman del día). Dos estudiantes que inicialicen en fechas distintas obtienen toolchains diferentes dentro del mismo cuatrimestre. Mejora de fondo: manifiesto `versions.json` pineado por semestre (con flag `-Latest` opcional), extensiones de VS Code con versión fija y tags de release por cuatrimestre.
 
-5. **URLs fallback antiguas y sin política de rotación:** MSYS2 `2025-02-21`, gh `2.49.0`, WezTerm `20240203`. Definir revisión semestral o pin por tag estable documentado.
+5. **Rutas bajo carpetas sincronizadas no detectadas:** la validación solo advierte espacios/no-ASCII, pero `Documentos` redirigido a OneDrive/Dropbox rompe MSYS2 y compilaciones de forma errática. Agregar detección de patrones de sync en el warning de setup y lanzadores.
 
-6. **Modo interactivo obligatorio en actualizaciones:** las preguntas s/n de setup (VS Code, gh, WezTerm) impiden despliegue desatendido en laboratorios. Agregar `-Yes` (aceptar todo) y `-NonInteractive`.
+6. **Sin verificación de integridad para gh / WezTerm / VS Code:** solo heurísticas de tamaño (>5 MB, >10 MB, >50 MB). MSYS2 sí verifica SHA256 estrictamente. Al menos registrar hash descargado en el marcador `.version` para detectar corrupción entre reintentos.
 
-7. **`update-env.sh` desactualizado respecto al alcance actual:** copia scripts raíz y `bin/*` pero ni `docs/` ni `linux/`; además su lista fija de archivos envejece mal (mismo problema que tenía setup antes del fix).
+7. **URLs fallback antiguas y sin política de rotación:** MSYS2 `2025-02-21`, gh `2.49.0`, WezTerm `20240203`. Definir revisión semestral o pin por tag estable documentado (se integra naturalmente con el manifiesto del punto 4).
 
-8. **Lista de paquetes duplicada** entre `setup.ps1` y `bin/download-baseline.sh`: riesgo de drift real (ya divergió históricamente). Fuente única (ej. `packages-baseline.txt`) leída por ambos.
+8. **Modo interactivo obligatorio en actualizaciones:** las preguntas s/n de setup (VS Code, gh, WezTerm) impiden despliegue desatendido en laboratorios. Agregar `-Yes` (aceptar todo) y `-NonInteractive`.
 
-9. **Plantilla `wezterm.lua` triplicada** (setup, launch.ps1 fallback, customize-terminal.ps1) con contenido divergente: consolidar en un único archivo canónico parametrizado (sustitución de variables, sin cirugía por regex).
+9. **`update-env.sh` desactualizado respecto al alcance actual:** copia scripts raíz y `bin/*` pero ni `docs/` ni `linux/`; además su lista fija de archivos envejece mal (mismo problema que tenía setup antes del fix).
 
-10. **Migración por regex de `wezterm.lua` en `launch.ps1:134-185`:** frágil ante cualquier cambio de formato; desaparece naturalmente si se adopta la plantilla única del punto 9.
+10. **Lista de paquetes duplicada** entre `setup.ps1` y `bin/download-baseline.sh`: riesgo de drift real (ya divergió históricamente). Fuente única (ej. `packages-baseline.txt`) leída por ambos.
 
-11. **`install-lib.sh` (Windows):** la copia manual de cabeceras usa `find -maxdepth 2` plano (colisiones de nombres) y no existe `uninstall-lib`. El port Linux ya copia conservando estructura; alinear ambos.
+11. **Plantilla `wezterm.lua` triplicada** (setup, launch.ps1 fallback, customize-terminal.ps1) con contenido divergente: consolidar en un único archivo canónico parametrizado (sustitución de variables, sin cirugía por regex).
+
+12. **Migración por regex de `wezterm.lua` en `launch.ps1:134-185`:** frágil ante cualquier cambio de formato; desaparece naturalmente si se adopta la plantilla única del punto 11.
+
+13. **`install-lib.sh`:** sin comando de desinstalación; en Windows la copia manual usa `find -maxdepth 2` plano (colisiones) mientras el port Linux copia conservando estructura — unificar comportamiento y agregar `uninstall-lib`.
+
+14. **Tamaño y velocidad del paquete offline:** sin poda de documentación/locales de MSYS2 (`usr/share/doc`, `usr/share/man`) ni herramientas alternativas; `Compress-Archive` es lento y tiene límite de 4 GB por archivo. Evaluar `-Compact` (poda opcional) y `tar.gz/zst`.
 
 ### Prioridad Baja
 
-12. **`test.ps1` basura commiteada** (debug con BOM): eliminar o convertir en test Pester real.
-13. **Links absolutos `file:///home/mrtin/...` en plan.md:** rompen para cualquier otro usuario; usar rutas relativas.
-14. **Sin LICENSE, sin tags/releases ni CHANGELOG:** dificulta distribución formal de la cátedra.
-15. **`LANG=es_AR.UTF-8` puede no existir en el host** (warning silencioso de setlocale en bash); considerar `C.UTF-8` como fallback.
-16. **Git dubious ownership en laboratorios multiusuario:** documentar (o configurar) `safe.directory` para repos en unidades compartidas.
-17. **Python/uv:** `uv pip install` exige virtualenv activo y en Linux moderno `pip` choca con PEP 668 (externally-managed). Prever wrapper o guía (con sesión activada, `--user` cae dentro del HOME portable, que es el comportamiento deseado).
+15. **`test.ps1` basura commiteada** (debug con BOM): eliminar o convertir en test Pester real.
+16. **Links absolutos `file:///home/mrtin/...` en plan.md:** rompen para cualquier otro usuario; usar rutas relativas.
+17. **Sin LICENSE, sin tags/releases ni CHANGELOG:** dificulta distribución formal de la cátedra.
+18. **`LANG=es_AR.UTF-8` puede no existir en el host** (warning silencioso de setlocale en bash); considerar `C.UTF-8` como fallback.
+19. **Git dubious ownership en laboratorios multiusuario:** documentar (o configurar) `safe.directory` para repos en unidades compartidas.
+20. **Python/uv:** `uv pip install` exige virtualenv activo y en Linux moderno `pip` choca con PEP 668 (externally-managed). Prever wrapper o guía (con sesión activada, `--user` cae dentro del HOME portable, que es el comportamiento deseado).
+21. **`launcher.c`:** los argumentos se pasan sin re-quoting (rutas con espacios vía `launch-vscode.exe "ruta"` fallan) y espera `INFINITE` sin timeout.
+22. **`diagnose-env.sh` escribe `diagnose.log` en el CWD actual:** debería escribirlo en `$PORTABLE_ROOT`.
+23. **`fix-antivirus.ps1` solo cubre Defender:** detectar antivirus de terceros y dar instrucciones específicas.
+24. **Editor por defecto para Git:** `configure-git.sh` podría fijar `core.editor "code --wait"` en ambas plataformas (menor fricción para alumnos en rebase/commit).
+25. **GEMINI.md → AGENTS.md:** adoptar el nombre estándar multi-agente manteniendo GEMINI.md como copia/enlace.
+26. **Docs sin variante Linux:** `docs/entorno.md`, `scripts.md` y los diagramas describen solo Windows; agregar sección o manual propio de Linux.
 
 ## 4. Mejoras Propuestas por Eje
 
+* **Reproducibilidad académica (nuevo eje prioritario)**
+  * Manifiesto de versiones por semestre: componentes nativos (MSYS2 snapshot, VS Code, gh, WezTerm), lista de paquetes pacman y versiones de extensiones de VS Code en un único `versions.json` consumido por setup (puntos 4, 6 y 7).
+  * Tags de release (`2026-c1`, etc.) como base del bootstrap remoto (`irm .../tag/.../setup.ps1`) para estabilidad durante el cuatrimestre.
 * **Robustez**
   * Instalaciones/actualizaciones atómicas con validación post-extracción (punto 1).
   * Reintentos con backoff para `Expand-Archive` ante archivos bloqueados por antivirus (patrón `Execute-WithRetry` ya existente en customize-terminal.ps1).
+  * Smoke tests ejecutables post-instalación que automaticen las Pruebas A-D de plan.md (`smoke.ps1` / port futuro a Linux).
 * **Seguridad y privacidad**
-  * Hash registrado por componente descargado (punto 4).
+  * Hash registrado por componente descargado (punto 6).
   * Ofrecer `credential.helper cache` con TTL como alternativa a `store` en texto plano.
   * Documentar implicancias de excluir toda la carpeta en Windows Defender.
 * **Rendimiento**
   * Extracción de ZIPs grandes con `tar.exe` (incluido desde Win10 1803) en lugar de `Expand-Archive`.
   * Caché local de respuestas de la API de GitHub (rate limit 60 req/h por IP en aulas con NAT compartido).
+  * Empaquetado offline compacto y alternativas a Compress-Archive (punto 14).
 * **Mantenibilidad**
-  * Fuente única de verdad para: paquetes pacman (punto 8), plantilla wezterm.lua (punto 9), listado de archivos a sincronizar (punto 7).
-  * Módulo PowerShell común (`env.common.psm1`) para la lógica duplicada entre `launch.ps1` y `launch-vscode.ps1` (~80% compartido: advertencia de ruta, carga `.env`, inyección de variables del toolchain).
-  * Portar `install-lib.sh` Linux↔Windows hacia una base común con shim de plataforma.
+  * Fuente única de verdad para: versiones/paquetes (manifiesto), plantilla wezterm.lua (punto 11), listado de archivos a sincronizar (punto 9).
+  * Módulo PowerShell común (`env.common.psm1`) para la lógica duplicada entre `launch.ps1` y `launch-vscode.ps1` (~80% compartido: advertencia de ruta —ampliada con detección OneDrive—, carga `.env`, inyección de variables del toolchain).
+  * Portar `install-lib.sh` Linux↔Windows hacia una base común con shim de plataforma + `uninstall-lib` (punto 13).
 * **Calidad y CI**
   * GitHub Actions: `PSScriptAnalyzer`, `shellcheck` y `bash -n` en cada push (el repo es 100% scripts: es el mayor multiplicador de calidad disponible).
-  * Automatizar al menos Pruebas A-D de plan.md como smoke tests ejecutables.
+  * Adoptar AGENTS.md estándar y limpieza de repo (test.ps1, LICENSE, links relativos).
 * **UX educativa**
-  * Flags `-Yes`/`-HomeDirName` combinables para instalación masiva (punto 6).
+  * Flags `-Yes`/`-HomeDirName` combinables para instalación masiva (punto 8).
   * Concretar `install-offline.ps1` (pendiente explícito de plan.md Fase 10).
   * Guía de language pack offline (vsix side-load) para aulas sin internet.
+  * Detección temprana de carpetas sincronizadas (OneDrive) en la advertencia de ruta.
 * **Variante Linux**
   * Incluir `linux/` en `update-env.sh` (completar paridad con el fix ya hecho en setup.ps1).
   * Suite mínima de tests bash (bats) para activate/deactivate, parsing de `.env` y bloques de `.bashrc`.
@@ -92,9 +112,10 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | Hito | Contenido | Esfuerzo estimado |
 |---|---|---|
 | 1 | Puntos 1-3 (atomicidad, customize-terminal, settings.json) | Medio-Alto |
-| 2 | CI de linters + limpieza test.ps1/LICENSE/links (11-14) | Bajo |
-| 3 | Fuentes únicas de verdad (7, 8, 9) + `-Yes` (6) | Medio |
-| 4 | Integridad de descargas, caché API, install-offline.ps1, tests automáticos | Medio |
+| 2 | Manifiesto de versiones + pin de extensiones + tags semestrales (4, 7 parcial) | Medio |
+| 3 | CI de linters + limpieza de repo (15-17) + smoke tests básicos | Bajo |
+| 4 | Fuentes únicas de verdad (9, 10, 11) + `-Yes` (8) + detección OneDrive | Medio |
+| 5 | Integridad de descargas, caché API, paquete compacto, install-offline.ps1 | Medio |
 
 ---
 *Mantener este documento actualizado en cada corrección: mover ítems resueltos a la sección 2 con referencia de commit.*
