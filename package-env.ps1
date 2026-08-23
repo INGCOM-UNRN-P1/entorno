@@ -1,9 +1,12 @@
 ﻿# package-env.ps1 - Empaqueta el entorno portable inicializado en un archivo ZIP para distribución offline.
 # Parámetros:
-#   -Compact: poda documentación y locales de MSYS2 en la copia a empaquetar para reducir tamaño.
+#   -Compact:         poda documentación y locales de MSYS2 para reducir tamaño.
+#   -ConExtensiones:  incluye los .vsix de las extensiones instaladas + instalador offline
+#                     (útil para aulas sin internet).
 
 param(
-    [switch]$Compact
+    [switch]$Compact,
+    [switch]$ConExtensiones
 )
 
 $ErrorActionPreference = "Stop"
@@ -88,6 +91,50 @@ if (Test-Path $packVscodeUser) {
     Remove-Item (Join-Path $packVscodeUser "History") -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $packVscodeUser "workspaceStorage") -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item (Join-Path $packVscodeUser "globalStorage") -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# 4.6 Extensiones VS Code offline (opcional, requiere internet en esta máquina)
+if ($ConExtensiones) {
+    $codeCmdLocal = Join-Path $portableRoot "vscode\bin\code.cmd"
+    if (Test-Path $codeCmdLocal) {
+        Write-Host "`nDescargando extensiones de VS Code para instalación offline..." -ForegroundColor Cyan
+        $offlineDir = Join-Path $tempPackDir "offline-extensions"
+        New-Item -ItemType Directory -Path $offlineDir -Force | Out-Null
+        $extList = & $codeCmdLocal --list-extensions --show-versions 2>$null
+        foreach ($entry in $extList) {
+            if ($entry -match '^(?<id>[^@]+)@(?<ver>.+)$') {
+                $extId = $Matches['id']
+                $version = $Matches['ver']
+                $idParts = $extId.Split('.')
+                $publisher = $idParts[0]
+                $extName = ($idParts | Select-Object -Skip 1) -join '.'
+                # Endpoint público del Marketplace para el paquete .vsix
+                $vsixUrl = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$publisher/vsextensions/$extName/$version/vspackage"
+                try {
+                    Write-Host "  -> $extId@$version..."
+                    Invoke-WebRequest -Uri $vsixUrl -OutFile (Join-Path $offlineDir "$extId@$version.vsix") -UseBasicParsing -ErrorAction Stop
+                } catch {
+                    Write-Warning "No se pudo descargar $extId@$version; quedará fuera del paquete."
+                }
+            }
+        }
+        # Instalador offline incluido dentro del paquete
+        $offlineInstaller = @'
+# instalar-extensiones-offline.ps1 - Instala las extensiones incluidas en offline-extensions/
+$ErrorActionPreference = "Continue"
+$pkgRoot = Split-Path $PSScriptRoot -Parent
+$codeCmdPkg = Join-Path $pkgRoot "vscode\bin\code.cmd"
+if (-not (Test-Path $codeCmdPkg)) { Write-Error "No se encontró VS Code portable junto a este script."; exit 1 }
+Get-ChildItem -Path (Join-Path $PSScriptRoot "offline-extensions") -Filter "*.vsix" | ForEach-Object {
+    Write-Host "Instalando $($_.Name)..." -ForegroundColor Cyan
+    & $codeCmdPkg --install-extension $_.FullName --force | Out-Null
+}
+Write-Host "`nExtensiones offline instaladas." -ForegroundColor Green
+'@
+        Set-Content -Path (Join-Path $tempPackDir "instalar-extensiones-offline.ps1") -Value $offlineInstaller
+    } else {
+        Write-Warning "-ConExtensiones: no se encontró VS Code local; se omite el modo offline de extensiones."
+    }
 }
 
 # 4.7 Poda opcional de contenido no esencial (modo -Compact)
