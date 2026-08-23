@@ -19,7 +19,12 @@ echo -e "\n\e[33m[1/2] Descargando y actualizando scripts del repositorio...\e[0
 
 REPO_OWNER="INGCOM-UNRN-P1"
 REPO_NAME="entorno"
+# Canal de actualización configurable vía .env (ej: CHANNEL=estable-2026c1)
 BRANCH="main"
+if [ -f "$PORTABLE_ROOT/.env" ]; then
+    parsed_branch="$(sed -n -E 's/^CHANNEL=([^[:space:]#]+).*$/\1/p' "$PORTABLE_ROOT/.env" | head -n 1)"
+    [ -n "$parsed_branch" ] && BRANCH="$parsed_branch"
+fi
 ZIP_URL="https://github.com/$REPO_OWNER/$REPO_NAME/archive/refs/heads/$BRANCH.zip"
 
 TEMP_DIR=$(mktemp -d -t portable-update-XXXXXX)

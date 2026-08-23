@@ -116,7 +116,17 @@ try {
         $didUpdate = $false
         $repoOwner = "INGCOM-UNRN-P1"
     $repoName = "entorno"
+    # Canal de actualización configurable vía .env (ej: CHANNEL=estable-2026c1).
+    # Solo aplica a instalaciones standalone; en repos Git rige la rama local.
     $branch = "main"
+    $envFileEarly = Join-Path $portableRoot ".env"
+    if (Test-Path $envFileEarly) {
+        $envRawEarly = Get-Content $envFileEarly -Raw
+        if ($envRawEarly -match '(?m)^CHANNEL=([^\s#]+)') {
+            $branch = $Matches[1].Trim()
+            Write-Host "Canal de scripts configurado: $branch" -ForegroundColor DarkGray
+        }
+    }
     $rawBaseUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/$branch"
     $isGitRepo = Test-Path (Join-Path $portableRoot ".git")
 
