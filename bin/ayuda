@@ -58,5 +58,12 @@ if [ ! -f "$HOME/.bash_customized" ]; then
     echo -e "  * Personalizá esta consola ejecutando ${GREEN}customize-bash.sh${RESET} (o ${GREEN}customize-terminal.bat${RESET} en Windows)."
     echo ""
 fi
+if command -v gh >/dev/null 2>&1 && timeout 3 gh auth status >/dev/null 2>&1; then
+    echo -e "${YELLOW}${BOLD}[ Higiene en computadoras compartidas ]${RESET}"
+    echo -e "  * Hay una sesión de GitHub activa en este entorno. Si estás en un equipo"
+    echo -e "    ajeno, ejecutá ${GREEN}clean-shared-host.ps1${RESET} antes de retirarte para"
+    echo -e "    borrar credenciales, historial y datos personales."
+    echo ""
+fi
 echo -e "Tip: Escribí cualquiera de estos comandos en esta consola para ejecutarlos."
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"

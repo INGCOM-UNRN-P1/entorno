@@ -50,6 +50,13 @@ done
 echo ""
 
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+if command -v gh >/dev/null 2>&1 && timeout 3 gh auth status >/dev/null 2>&1; then
+    echo -e "${YELLOW}${BOLD}[ Higiene en computadoras compartidas ]${RESET}"
+    echo -e "  * Hay una sesión de GitHub activa en este entorno. Si estás en un equipo"
+    echo -e "    ajeno, ejecutá el script de limpieza antes de retirarte para borrar"
+    echo -e "    credenciales, historial y datos personales."
+    echo ""
+fi
 if [ ! -f "${HOME}/.bash_customized" ]; then
     echo -e "${YELLOW}${BOLD}[ Pasos sugeridos para iniciar ]${RESET}"
     echo -e "  * Ejecutá ${GREEN}configure-git.sh${RESET} para configurar tu identidad de Git y GitHub."
