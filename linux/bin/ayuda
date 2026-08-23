@@ -33,6 +33,7 @@ echo -e "  ${GREEN}uninstall-lib.sh${RESET}       - Lista o desinstala librería
 echo -e "  ${GREEN}nuevo-proyecto <n>${RESET}     - Crea la estructura inicial de un proyecto de cátedra."
 echo -e "  ${GREEN}entregar [dir]${RESET}         - Compila y empaqueta el TP en un ZIP de entrega."
 echo -e "  ${GREEN}doctor${RESET}              - Verificación rápida de salud del entorno."
+echo -e "  ${GREEN}smoke.sh${RESET}            - Automatiza las pruebas de aceptación del plan (A/B/C/E/F)."
 echo -e "  ${GREEN}update-env.sh${RESET}       - Actualiza los scripts del entorno (canal configurable)."
 echo ""
 echo -e "${CYAN}${BOLD}[ Sesión ]${RESET}"
