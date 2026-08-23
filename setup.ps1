@@ -730,28 +730,40 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
             
             $backupDataDir = Join-Path $portableRoot "vscode_data_backup"
             $dataDir = Join-Path $vscodeDir "data"
-            
-            if ($isUpdateMode -and (Test-Path $dataDir)) {
-                Write-Host "Respaldando carpeta data de VS Code..." -ForegroundColor Cyan
-                if (Test-Path $backupDataDir) {
-                    Remove-Item -Path $backupDataDir -Recurse -Force -ErrorAction SilentlyContinue
+            $extractTemp = Join-Path $descargasDir "vscode_extract"
+
+            # Actualización atómica: se extrae y valida en un directorio temporal
+            # antes de tocar la instalación vigente; ante cualquier fallo se restaura el respaldo.
+            try {
+                if (Test-Path $extractTemp) {
+                    Remove-Item -Path $extractTemp -Recurse -Force -ErrorAction SilentlyContinue
                 }
-                Move-Item -Path $dataDir -Destination $backupDataDir -Force
-            }
-            
-            if (Test-Path $vscodeDir) {
-                Write-Host "Eliminando instalación anterior de VS Code..." -ForegroundColor Cyan
-                Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            New-Item -ItemType Directory -Path $vscodeDir | Out-Null
-            
-            Write-Host "Extrayendo VS Code..." -ForegroundColor Cyan
-            Expand-Archive -Path $vscodeZipPath -DestinationPath $vscodeDir -Force
-            
-            if ($isUpdateMode -and (Test-Path $backupDataDir)) {
-                Write-Host "Restaurando carpeta data..." -ForegroundColor Cyan
-                Move-Item -Path $backupDataDir -Destination $dataDir -Force
-            } else {
+                New-Item -ItemType Directory -Path $extractTemp | Out-Null
+
+                Write-Host "Extrayendo VS Code a directorio temporal..." -ForegroundColor Cyan
+                Expand-Archive -Path $vscodeZipPath -DestinationPath $extractTemp -Force
+                if (-not (Test-Path (Join-Path $extractTemp "Code.exe"))) {
+                    throw "El ZIP extraído no contiene Code.exe; se cancela el reemplazo de la instalación vigente."
+                }
+
+                if ((Test-Path $dataDir)) {
+                    Write-Host "Respaldando carpeta data de VS Code..." -ForegroundColor Cyan
+                    if (Test-Path $backupDataDir) {
+                        Remove-Item -Path $backupDataDir -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                    Move-Item -Path $dataDir -Destination $backupDataDir -Force
+                }
+
+                if (Test-Path $vscodeDir) {
+                    Write-Host "Reemplazando instalación anterior de VS Code..." -ForegroundColor Cyan
+                    Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                Move-Item -Path $extractTemp -Destination $vscodeDir
+
+                if (Test-Path $backupDataDir) {
+                    Write-Host "Restaurando carpeta data..." -ForegroundColor Cyan
+                    Move-Item -Path $backupDataDir -Destination $dataDir -Force
+                } else {
                 # Activar el Modo Portable creando la carpeta 'data'
                 $userSettingsDir = Join-Path $dataDir "user-data\User"
                 if (-not (Test-Path $userSettingsDir)) {
@@ -778,6 +790,22 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                 } | ConvertTo-Json -Depth 10
                 
                 Set-Content -Path $settingsJsonPath -Value $defaultSettings
+                }
+            } catch {
+                Write-Warning "Fallo durante la actualización de VS Code: $_"
+                # Rollback: si el respaldo existe y la data no fue restaurada, reconstruir
+                if ((Test-Path $backupDataDir) -and (-not (Test-Path $dataDir))) {
+                    Write-Host "Restaurando respaldo de datos de VS Code tras el fallo..." -ForegroundColor Yellow
+                    if (-not (Test-Path $vscodeDir)) {
+                        New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
+                    }
+                    Move-Item -Path $backupDataDir -Destination $dataDir -Force
+                }
+                throw
+            } finally {
+                if (Test-Path $extractTemp) {
+                    Remove-Item -Path $extractTemp -Recurse -Force -ErrorAction SilentlyContinue
+                }
             }
         }
         
@@ -1029,21 +1057,41 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
                 Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
             }
 
-            if (Test-Path $wezDir) {
-                Write-Host "Eliminando instalación anterior de WezTerm..." -ForegroundColor Cyan
-                Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            New-Item -ItemType Directory -Path $wezDir | Out-Null
+            # Actualización atómica: extraer y aplanar en un directorio temporal,
+            # validar wezterm.exe y recién entonces reemplazar la instalación vigente.
+            $wezExtractTemp = Join-Path $descargasDir "wezterm_extract"
+            try {
+                if (Test-Path $wezExtractTemp) {
+                    Remove-Item -Path $wezExtractTemp -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                New-Item -ItemType Directory -Path $wezExtractTemp | Out-Null
 
-            Write-Host "Extrayendo WezTerm..." -ForegroundColor Cyan
-            Expand-Archive -Path $wezZipPath -DestinationPath $wezDir -Force
-            
-            # Si la descompresión creó un subdirectorio (ej: WezTerm-windows-...), mover su contenido a la raíz de $wezDir
-            $subDir = Get-ChildItem -Path $wezDir -Directory | Where-Object { Test-Path (Join-Path $_.FullName "wezterm.exe") }
-            if ($subDir) {
-                Write-Host "Aplanando estructura de carpetas de WezTerm..." -ForegroundColor Cyan
-                Get-ChildItem -Path $subDir.FullName | Move-Item -Destination $wezDir -Force
-                Remove-Item -Path $subDir.FullName -Recurse -Force
+                Write-Host "Extrayendo WezTerm a directorio temporal..." -ForegroundColor Cyan
+                Expand-Archive -Path $wezZipPath -DestinationPath $wezExtractTemp -Force
+
+                # Si la descompresión creó un subdirectorio (ej: WezTerm-windows-...), aplanar dentro del temporal
+                $subExe = Get-ChildItem -Path $wezExtractTemp -Filter "wezterm.exe" -Recurse | Select-Object -First 1
+                if (-not $subExe) {
+                    throw "El ZIP extraído no contiene wezterm.exe; se cancela el reemplazo de la instalación vigente."
+                }
+                if ($subExe.DirectoryName -ne $wezExtractTemp) {
+                    Write-Host "Aplanando estructura de carpetas de WezTerm..." -ForegroundColor Cyan
+                    Get-ChildItem -Path $subExe.DirectoryName | Move-Item -Destination $wezExtractTemp -Force
+                    Remove-Item -Path $subExe.DirectoryName -Recurse -Force
+                }
+
+                if (Test-Path $wezDir) {
+                    Write-Host "Reemplazando instalación anterior de WezTerm..." -ForegroundColor Cyan
+                    Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                Move-Item -Path $wezExtractTemp -Destination $wezDir
+            } catch {
+                Write-Warning "Fallo durante la actualización de WezTerm: $_"
+                throw
+            } finally {
+                if (Test-Path $wezExtractTemp) {
+                    Remove-Item -Path $wezExtractTemp -Recurse -Force -ErrorAction SilentlyContinue
+                }
             }
         }
         
