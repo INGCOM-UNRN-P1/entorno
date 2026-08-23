@@ -2,7 +2,8 @@ param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
     [switch]$SkipUpdate,
-    [switch]$Yes
+    [switch]$Yes,
+    [switch]$Latest
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,6 +25,29 @@ $descargasDir = Join-Path $portableRoot "descargas"
 $homeDir = Join-Path $portableRoot $HomeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
 $isUpdateMode = Test-Path (Join-Path $portableRoot ".install_complete")
+
+# Manifiesto de versiones por cuatrimestre (versions.json): valores null = última disponible.
+# Por defecto se respetan los pines para reproducibilidad; -Latest los ignora.
+$pinnedVersions = $null
+$manifestFile = Join-Path $portableRoot "versions.json"
+if ((Test-Path $manifestFile) -and (-not $Latest)) {
+    try {
+        $pinnedVersions = Get-Content $manifestFile -Raw | ConvertFrom-Json
+        if ($pinnedVersions.canal) {
+            Write-Host "Canal de versiones configurado: $($pinnedVersions.canal)" -ForegroundColor DarkGray
+        }
+    } catch {
+        Write-Warning "versions.json inválido ($_). Se usarán las últimas versiones disponibles."
+        $pinnedVersions = $null
+    }
+}
+function Get-Pinned([string]$Key) {
+    if ($null -eq $script:pinnedVersions) { return $null }
+    $prop = $script:pinnedVersions.PSObject.Properties[$Key]
+    if ($null -eq $prop) { return $null }
+    if ($prop.Value -is [string] -and $prop.Value.Trim()) { return $prop.Value.Trim() }
+    return $null
+}
 
 # Configurar codificaciones UTF-8 globales (con y sin BOM)
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
@@ -253,7 +277,8 @@ try {
                     "linux/bin/install-lib.sh",
                     "linux/bin/uninstall-lib.sh",
                     "packages-baseline.txt",
-                    "VERSION"
+                    "VERSION",
+                    "versions.json"
                 )
                 
                 foreach ($file in $filesToCopy) {
@@ -427,12 +452,17 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
     if (-not $isMsysInstalled) {
         Write-Host "[Instalación] MSYS2 no detectado. Iniciando descarga..." -ForegroundColor Yellow
 
-        $releasesUrl = "https://api.github.com/repos/msys2/msys2-installer/releases"
-        $downloadUrl = $null
-        $fileName = $null
+        # MSYS2 puede estar fijado en versions.json (canal reproducible)
+        $downloadUrl = Get-Pinned 'msys2'
+        if ($downloadUrl) {
+            $fileName = Split-Path $downloadUrl -Leaf
+            Write-Host "MSYS2 fijado por el manifiesto de versiones: $fileName" -ForegroundColor DarkGray
+        }
 
+        if (-not $downloadUrl) {
         try {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            $releasesUrl = "https://api.github.com/repos/msys2/msys2-installer/releases"
             Write-Host "Consultando API de GitHub por la última versión de MSYS2..."
             $releases = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing -TimeoutSec 10
             # Buscar la primera versión que no sea un build 'nightly' y que contenga el archivo sfx.exe
@@ -450,10 +480,11 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
         } catch {
             Write-Warning "Fallo al consultar la API de GitHub. Usando fallback fijo."
         }
+        } # fin if (-not $downloadUrl)
 
         if (-not $downloadUrl) {
-            $downloadUrl = "https://github.com/msys2/msys2-installer/releases/download/2025-02-21/msys2-base-x86_64-20250221.sfx.exe"
-            $fileName = "msys2-base-x86_64-20250221.sfx.exe"
+            $downloadUrl = if ($pinF = Get-Pinned 'msys2_fallback') { $pinF } else { "https://github.com/msys2/msys2-installer/releases/download/2025-02-21/msys2-base-x86_64-20250221.sfx.exe" }
+            $fileName = Split-Path $downloadUrl -Leaf
             Write-Host "Fallback URL: $downloadUrl" -ForegroundColor Yellow
         }
 
@@ -678,7 +709,13 @@ $isCodeComplete = Test-Path (Join-Path $portableRoot ".vscode_complete")
 
 # Resolver la URL de redirección final de VS Code
 $resolvedVscodeUrl = $vscodeZipUrl
+$vscodePinned = Get-Pinned 'vscode'
+if ($vscodePinned) {
+    $resolvedVscodeUrl = $vscodePinned
+    Write-Host "VS Code fijado por el manifiesto de versiones." -ForegroundColor DarkGray
+}
 if ($isUpdateMode -or -not $isCodeComplete) {
+    if (-not $vscodePinned) {
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $request = [System.Net.WebRequest]::Create($vscodeZipUrl)
@@ -707,6 +744,7 @@ if ($isUpdateMode -or -not $isCodeComplete) {
             Write-Warning "No se pudo resolver la URL final de redirección de VS Code. Se usará la URL directa."
         }
     }
+    } # fin if (-not $vscodePinned)
 }
 
 if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
@@ -894,6 +932,7 @@ $codeCmd = Join-Path $vscodeDir "bin\code.cmd"
 if (Test-Path $codeCmd) {
     if ($isUpdateMode -or -not $isCodeComplete) {
         Write-Host "Verificando e instalando extensiones de VS Code..." -ForegroundColor Cyan
+        # Versiones pineadas en versions.json (campo "extensiones": id -> versión o null)
         $extensions = @(
             "ms-vscode.cpptools",
             "ms-vscode.cpptools-extension-pack",
@@ -903,6 +942,15 @@ if (Test-Path $codeCmd) {
             "GitHub.vscode-pull-request-github",
             "bierner.github-markdown-preview"
         )
+        if ($null -ne $pinnedVersions) {
+            $extProp = $pinnedVersions.PSObject.Properties['extensiones']
+            if ($extProp) {
+                $pinnedExts = @($extProp.Value.PSObject.Properties | ForEach-Object {
+                    if ($_.Value -is [string] -and $_.Value.Trim()) { "$($_.Name)@$($_.Value.Trim())" } else { $_.Name }
+                })
+                if ($pinnedExts.Count -gt 0) { $extensions = $pinnedExts }
+            }
+        }
         foreach ($ext in $extensions) {
             Write-Host "Instalando/verificando extensión: $ext..."
             $process = Start-Process -FilePath $codeCmd -ArgumentList "--install-extension", $ext, "--force" -Wait -NoNewWindow -PassThru
@@ -927,6 +975,12 @@ $shouldInstallOrUpdateGh = $false
 
 if ($isUpdateMode -or -not $isGhComplete -or -not $isGhInstalled) {
     Write-Host "Obteniendo URL de descarga de GitHub CLI..." -ForegroundColor Cyan
+    # Pin del manifiesto tiene prioridad; si no hay, se consulta la API
+    $ghDownloadUrl = Get-Pinned 'gh'
+    $ghFallbackUrl = if ($pinF = Get-Pinned 'gh_fallback') { $pinF } else { "https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.zip" }
+    if ($ghDownloadUrl) {
+        Write-Host "GitHub CLI fijado por el manifiesto de versiones." -ForegroundColor DarkGray
+    } else {
     try {
         $ghReleaseUrl = "https://api.github.com/repos/cli/cli/releases/latest"
         $ghRelease = Invoke-RestMethod -Uri $ghReleaseUrl -UseBasicParsing -TimeoutSec 10
@@ -940,8 +994,9 @@ if ($isUpdateMode -or -not $isGhComplete -or -not $isGhInstalled) {
     }
 
     if (-not $ghDownloadUrl) {
-        $ghDownloadUrl = "https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.zip"
+        $ghDownloadUrl = $ghFallbackUrl
         Write-Host "Fallback URL GitHub CLI: $ghDownloadUrl" -ForegroundColor Yellow
+    }
     }
 }
 
@@ -957,7 +1012,7 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
         if ($ghDownloadUrl -ne $installedGhUrl) {
             # Si se usó la URL de fallback porque falló la API y ya hay una versión instalada,
             # asumimos que la instalada es válida para no sugerir un downgrade o alertar innecesariamente.
-            $isFallback = ($ghDownloadUrl -eq "https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.zip")
+            $isFallback = ($ghDownloadUrl -eq $ghFallbackUrl)
             if ($isFallback -and $installedGhUrl) {
                 Write-Host "Omitiendo comprobación de actualización de GitHub CLI (la API de GitHub no está disponible)." -ForegroundColor Green
             } else {
@@ -1054,13 +1109,17 @@ $wezDir = Join-Path $portableRoot "wezterm"
 $isWezInstalled = Test-Path (Join-Path $wezDir "wezterm.exe")
 $isWezComplete = Test-Path (Join-Path $portableRoot ".wezterm_complete")
 
-# Obtener URL de descarga más reciente de WezTerm
-$wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
-$wezDownloadUrl = $null
+# Obtener URL de descarga de WezTerm (pin del manifiesto tiene prioridad)
+$wezDownloadUrl = Get-Pinned 'wezterm'
+$wezFallbackUrl = if ($pinF = Get-Pinned 'wezterm_fallback') { $pinF } else { "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip" }
 
 if ($isUpdateMode -or -not $isWezComplete) {
+    if ($wezDownloadUrl) {
+        Write-Host "WezTerm fijado por el manifiesto de versiones." -ForegroundColor DarkGray
+    } else {
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
         Write-Host "Consultando API de GitHub por la última versión de WezTerm..."
         $wezRelease = Invoke-RestMethod -Uri $wezReleaseUrl -UseBasicParsing -TimeoutSec 10
         $wezAsset = $wezRelease.assets | Where-Object { $_.name -like "WezTerm-windows-*.zip" -and $_.name -notlike "*setup*" }
@@ -1073,8 +1132,9 @@ if ($isUpdateMode -or -not $isWezComplete) {
     }
 
     if (-not $wezDownloadUrl) {
-        $wezDownloadUrl = "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip"
+        $wezDownloadUrl = $wezFallbackUrl
         Write-Host "Fallback URL WezTerm: $wezDownloadUrl" -ForegroundColor Yellow
+    }
     }
 }
 
@@ -1092,7 +1152,7 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         if ($wezDownloadUrl -ne $installedWezUrl) {
             # Si se usó la URL de fallback porque falló la API y ya hay una versión instalada,
             # asumimos que la instalada es válida para no sugerir un downgrade o alertar innecesariamente.
-            $isFallback = ($wezDownloadUrl -eq "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip")
+            $isFallback = ($wezDownloadUrl -eq $wezFallbackUrl)
             if ($isFallback -and $installedWezUrl) {
                 Write-Host "Omitiendo comprobación de actualización de WezTerm (la API de GitHub no está disponible)." -ForegroundColor Green
             } else {

@@ -40,7 +40,7 @@ EXTRACTED_DIR="$TEMP_DIR/$REPO_NAME-$BRANCH"
 
 # Copiar scripts de la raíz (evitando pisar carpetas de configuración personal)
 echo "Instalando nuevas versiones de los scripts locales..."
-cp -rf "$EXTRACTED_DIR"/{setup.ps1,launch.bat,launch.ps1,launch-vscode.bat,launch-vscode.ps1,clean-shared-host.ps1,customize-terminal.ps1,customize-terminal.bat,package-env.ps1,README.md,plan.md,GEMINI.md,packages-baseline.txt,VERSION} "$PORTABLE_ROOT/"
+cp -rf "$EXTRACTED_DIR"/{setup.ps1,launch.bat,launch.ps1,launch-vscode.bat,launch-vscode.ps1,clean-shared-host.ps1,customize-terminal.ps1,customize-terminal.bat,package-env.ps1,README.md,plan.md,GEMINI.md,packages-baseline.txt,VERSION,versions.json} "$PORTABLE_ROOT/"
 
 # Copiar documentación y la variante Linux completas
 cp -rf "$EXTRACTED_DIR"/docs "$PORTABLE_ROOT/"

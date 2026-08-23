@@ -1,0 +1,25 @@
+{
+  "_comentario": [
+    "Manifiesto de versiones por cuatrimestre. Los valores en null significan",
+    "'usar la última disponible'. La cátedra debe pinear URLs/versiones al inicio",
+    "de cada cuatrestre y revisar los fallbacks (política: rotación semestral).",
+    "El flag -Latest de setup.ps1 ignora este manifiesto por completo."
+  ],
+  "canal": "2026-c1",
+  "msys2": null,
+  "msys2_fallback": "https://github.com/msys2/msys2-installer/releases/download/2025-02-21/msys2-base-x86_64-20250221.sfx.exe",
+  "vscode": null,
+  "gh": null,
+  "gh_fallback": "https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.zip",
+  "wezterm": null,
+  "wezterm_fallback": "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip",
+  "extensiones": {
+    "ms-vscode.cpptools": null,
+    "ms-vscode.cpptools-extension-pack": null,
+    "ms-vscode.cmake-tools": null,
+    "ms-vscode.makefile-tools": null,
+    "ms-python.python": null,
+    "GitHub.vscode-pull-request-github": null,
+    "bierner.github-markdown-preview": null
+  }
+}
