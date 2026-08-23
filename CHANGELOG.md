@@ -3,7 +3,7 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/);
 versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 
-## [Sin publicar]
+## [1.1.0] - 2026-08-23
 
 ### Agregado
 * Plantilla física única `wezterm.lua.template` consumida por setup y lanzadores (fin de la triplicación y de la migración por regex masiva).
@@ -26,6 +26,8 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 ### Cambiado
 * Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).
 * Distribución formal habilitada: licencia MIT del proyecto y CHANGELOG.
+* Reintentos de descarga de componentes y selección de espejo pacman consolidados en funciones únicas, con suite de pruebas de lógica ejecutable en CI (`tests/test_windows_logic.ps1`).
+* `setup.ps1` informa su compatibilidad al ejecutarse bajo PowerShell 7 (pwsh) con la recomendación de usar Windows PowerShell 5.1.
 
 ## [1.0.0] - 2026-08-22
 
