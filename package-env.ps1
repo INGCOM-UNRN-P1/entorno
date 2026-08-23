@@ -44,11 +44,12 @@ $excludeList = @(
     "temp_package",
     "portable-env-offline.zip",
     "vscode_data_backup",
+    "gh_temp",
     ".gitignore",
     ".gitattributes"
 )
 
-Get-ChildItem -Path $portableRoot | Where-Object { $_.Name -notin $excludeList } | ForEach-Object {
+Get-ChildItem -Path $portableRoot | Where-Object { ($_.Name -notin $excludeList) -and ($_.Name -notlike "*.log") } | ForEach-Object {
     $dest = Join-Path $tempPackDir $_.Name
     Write-Host "  -> Copiando: $($_.Name)..."
     Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force
@@ -56,12 +57,24 @@ Get-ChildItem -Path $portableRoot | Where-Object { $_.Name -notin $excludeList }
 
 # 4.5 Limpiar datos personales de la copia a empaquetar
 Write-Host "`nLimpiando datos personales e historial del paquete..." -ForegroundColor Cyan
-$packHome = Join-Path $tempPackDir "home"
-if (Test-Path $packHome) {
-    Remove-Item (Join-Path $packHome ".bash_history") -Force -ErrorAction SilentlyContinue
-    Remove-Item (Join-Path $packHome ".gitconfig") -Force -ErrorAction SilentlyContinue
-    Remove-Item (Join-Path $packHome ".git-credentials") -Force -ErrorAction SilentlyContinue
-    Remove-Item (Join-Path $packHome ".ssh") -Recurse -Force -ErrorAction SilentlyContinue
+# El HOME se entrega vacío: cualquier resto de usuario (historial, caches, tokens,
+# banners personalizados, .ssh, etc.) queda fuera del paquete por completo.
+$homeDirName = "home"
+$envFile = Join-Path $portableRoot ".env"
+if (Test-Path $envFile) {
+    $envContent = Get-Content $envFile -Raw
+    if ($envContent -match 'HOME_DIR_NAME=(.*)') {
+        $candidate = $Matches[1].Replace('"', '').Trim()
+        if ($candidate -match '^[a-zA-Z0-9_][a-zA-Z0-9_-]*$') {
+            $homeDirName = $candidate
+        }
+    }
+}
+$packHome = Join-Path $tempPackDir $homeDirName
+if (-not (Test-Path $packHome)) {
+    New-Item -ItemType Directory -Path $packHome -Force | Out-Null
+} else {
+    Get-ChildItem -Path $packHome -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 $packVscodeUser = Join-Path $tempPackDir "vscode\data\user-data\User"
