@@ -164,15 +164,20 @@ indent_size = 4
 indent_style = tab
 EOF
 
+# --- Pruebas de cátedra: corrector local (verificar) ---
+mkdir -p "$NAME/tests"
+: > "$NAME/tests/caso_01.in"
+printf 'Hola desde %s!\n' "$NAME" > "$NAME/tests/caso_01.out"
+
 echo -e "${GREEN}[ÉXITO] Proyecto '$NAME' creado con depuración lista (F5).${RESET}"
 echo "Estructura:"
 echo "  $NAME/"
 echo "  ├── main.c              (hola mundo listo para compilar)"
 echo "  ├── Makefile            (make / mingw32-make, con símbolos -g)"
+echo "  ├── tests/              (caso_01 del corrector: ejecutá verificar)"
 echo "  ├── .gitignore"
 echo "  ├── .clang-format       (Shift+Alt+F formatea el código)"
 echo "  ├── .editorconfig"
 echo "  └── .vscode/            (F5 compila y depura con GDB)"
 echo ""
-echo -e "${CYAN}Siguiente paso sugerido:${RESET} cd $NAME && make && ./$NAME"
-echo "(Opcional) Inicializá Git con: git init"
+echo -e "${CYAN}Siguiente paso sugerido:${RESET} cd $NAME && verificar   # corre las pruebas de cátedra"

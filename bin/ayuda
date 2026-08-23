@@ -38,6 +38,7 @@ echo -e "  ${GREEN}uninstall-lib.sh${RESET}      - Lista o desinstala librerías
 echo -e "  ${GREEN}diagnose-env.sh${RESET}       - Diagnostica el estado del entorno y las versiones de herramientas."
 echo -e "  ${GREEN}nuevo-proyecto <n>${RESET} - Crea la estructura inicial de un proyecto de cátedra."
 echo -e "  ${GREEN}clonar <url>${RESET}       - Clona el TP (GitHub Classroom) en la carpeta de proyectos."
+echo -e "  ${GREEN}verificar [dir]${RESET}    - Corre las pruebas de cátedra antes de entregar."
 echo -e "  ${GREEN}entregar [dir]${RESET}     - Compila, valida y empaca el TP; publica con tu confirmación."
 echo -e "  ${GREEN}doctor${RESET}              - Verificación rápida de salud del entorno."
 echo -e "  ${GREEN}doctor --fix${RESET}       - Reparación ligera: regenera skel, marcadores y settings base."

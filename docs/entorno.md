@@ -60,6 +60,7 @@ diagnose-env.sh     # informe técnico completo en diagnose.log
 ```bash
 nuevo-proyecto tp01 # estructura inicial lista para compilar
 clonar <url-tp>     # clona el assignment de GitHub Classroom en ~/proyectos
+verificar           # corre las pruebas de cátedra del TP (tests/caso_NN)
 entregar            # ZIP de entrega validado (compila y verifica antes de empacar)
 ```
 

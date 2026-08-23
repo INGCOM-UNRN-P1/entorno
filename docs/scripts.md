@@ -136,6 +136,10 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 * **Propósito:** Recuperar un respaldo de `backup`.
 * **Funcionamiento:** Toma el ZIP indicado (o el más reciente disponible), pide confirmación, extrae `home/…` sobre el HOME portable actual, restaura `.env` si faltaba e informa qué librerías hay que reinstalar con `install-lib.sh` según los manifiestos recuperados.
 
+### `verificar [directorio]`
+* **Propósito:** Corrector local: autoevaluación con las pruebas de cátedra antes de la entrega.
+* **Funcionamiento:** Compila el proyecto y compara la salida del binario contra los casos `tests/caso_NN.in` / `.out` (tolerando diferencias de espacios finales); si el Makefile define un objetivo `test:` tiene prioridad. Reporta cada caso con su salida esperada vs. obtenida y devuelve código de salida distinto de cero si algo falla. `nuevo-proyecto` deja un caso funcionando como ejemplo de la convención.
+
 ### `clonar <url | owner/repo> [destino]`
 * **Propósito:** Flujo GitHub Classroom: clonar el trabajo práctico listo para programar.
 * **Funcionamiento:** Clona la URL indicada (acepta atajo `owner/repo` de GitHub) en `$HOME/proyectos/<repo>` dentro del HOME portable, fija el upstream para que `git push` funcione sin argumentos y advierte si falta sesión de GitHub CLI para repos privados. Rechaza clonar sobre una carpeta existente.

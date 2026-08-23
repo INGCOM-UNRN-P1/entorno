@@ -16,6 +16,7 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 * Recordatorio de higiene en la ayuda cuando existe sesión activa de GitHub (equipos compartidos) y tip al configurar Git.
 * `doctor --fix`: autorreparación ligera que regenera skel del HOME portable, marcadores de estado y `settings.json` base cuando falten, sin reinstalar componentes ni sobrescribir archivos del usuario.
 * Flujo GitHub Classroom: comando `clonar <url>` (copia el TP a `~/proyectos` con upstream listo) y publicación opcional commit+push al final de `entregar`.
+* Corrector local: comando `verificar` ejecuta los casos `tests/caso_NN.in/.out` (o `make test`) con tolerancia a espacios finales; `entregar` lo corre antes de empacar y bloquea la entrega fallida salvo confirmación explícita. `nuevo-proyecto` incluye un caso de ejemplo.
 
 ### Cambiado
 * Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).

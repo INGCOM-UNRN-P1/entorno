@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# verificar - Corrector local del trabajo práctico (autoevaluación previa a la entrega).
+# Ejecuta las pruebas de cátedra del proyecto contra el binario compilado.
+# Funciona en Windows (MSYS2) y Linux.
+#
+# Convención de la cátedra (dentro de la carpeta del TP):
+#   tests/caso_01.in    entrada estándar del caso (vacío si el programa no lee datos)
+#   tests/caso_01.out   salida esperada en stdout
+# Alternativa: un objetivo 'test:' en el Makefile tiene prioridad sobre los casos.
+#
+# Uso: verificar [directorio_del_proyecto]   (por defecto, el directorio actual)
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; CYAN='\033[36m'; RESET='\033[0m'
+
+PROJ_DIR="${1:-.}"
+if [ ! -d "$PROJ_DIR" ]; then
+    echo -e "${RED}[ERROR] No existe el directorio '$PROJ_DIR'.${RESET}"
+    exit 1
+fi
+
+cd "$PROJ_DIR"
+
+if ! ls ./*.c >/dev/null 2>&1 && [ ! -f "Makefile" ]; then
+    echo -e "${RED}[ERROR] El directorio no parece un proyecto C (no hay archivos .c ni Makefile).${RESET}"
+    exit 1
+fi
+
+# Prioridad 1: objetivo 'test' definido por la cátedra en el Makefile
+if [ -f "Makefile" ] && grep -qE '^[[:space:]]*(test|check)[[:space:]]*:' Makefile; then
+    echo -e "${CYAN}-> Ejecutando 'make test' ...${RESET}"
+    if make test; then
+        echo -e "${GREEN}[ÉXITO] Pruebas del Makefile superadas.${RESET}"
+        exit 0
+    fi
+    echo -e "${RED}[FALLA] Las pruebas del Makefile no pasaron.${RESET}"
+    exit 1
+fi
+
+# Prioridad 2: convención de casos tests/caso_NN.in / .out
+shopt -s nullglob
+CASOS=(tests/caso_*.in)
+shopt -u nullglob
+
+if [ "${#CASOS[@]}" -eq 0 ]; then
+    echo -e "${YELLOW}[AVISO] Este proyecto no tiene pruebas de cátedra todavía.${RESET}"
+    echo "Convención: creá pares tests/caso_01.in (entrada estándar) y"
+    echo "tests/caso_01.out (salida esperada), o un objetivo 'test:' en el Makefile."
+    exit 1
+fi
+
+# Compilar antes de verificar
+if [ -f "Makefile" ]; then
+    echo -e "${CYAN}-> Compilando ...${RESET}"
+    if ! make >/dev/null; then
+        echo -e "${RED}[ERROR] La compilación falló: corregí los errores y volvé a intentar.${RESET}"
+        exit 1
+    fi
+fi
+
+# Localizar el binario generado (TARGET del Makefile o nombre del directorio)
+BASENAME="$(basename "$(pwd)")"
+BIN=""
+for cand in \
+    "$(grep -E '^TARGET[[:space:]]*[:?+]?=' Makefile 2>/dev/null | head -n1 | sed -e 's/^[^=]*=//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -v '\$' || true)" \
+    "" ; do
+    for suf in "" ".exe"; do
+        c="${cand}${suf}"
+        [ -z "$c" ] && continue
+        if [ -f "$c" ] && [ -x "$c" ]; then BIN="$c"; break 2; fi
+    done
+done
+if [ -z "$BIN" ] && [ -f "$BASENAME.exe" ] && [ -x "$BASENAME.exe" ]; then BIN="$BASENAME.exe"; fi
+if [ -z "$BIN" ] && [ -f "$BASENAME" ] && [ -x "$BASENAME" ]; then BIN="$BASENAME"; fi
+if [ -z "$BIN" ]; then
+    echo -e "${RED}[ERROR] No encontré el binario compilado del proyecto.${RESET}"
+    exit 1
+fi
+# Ruta ejecutable explícita: evita que timeout/PATH busquen el nombre fuera del directorio
+case "$BIN" in
+    /*) : ;;
+    *)  BIN="./$BIN" ;;
+esac
+
+HAVE_TIMEOUT=0
+command -v timeout >/dev/null 2>&1 && HAVE_TIMEOUT=1
+
+PASS=0
+FAILN=0
+echo -e "${CYAN}-> Verificando ${#CASOS[@]} caso(s) contra '$BIN' ...${RESET}"
+
+normaliza() { # quita CR y espacios finales por línea; descarta newlines finales
+    tr -d '\r' < "$1" | sed -e 's/[[:space:]]*$//'
+}
+
+GOT="$(mktemp)"
+trap 'rm -f "$GOT"' EXIT
+
+for caso in "${CASOS[@]}"; do
+    NOMBRE="$(basename "$caso" .in)"
+    ESPERADO="${caso%.in}.out"
+    if [ ! -f "$ESPERADO" ]; then
+        echo -e "${YELLOW}[AVISO] Falta '$ESPERADO': caso $NOMBRE omitido.${RESET}"
+        continue
+    fi
+    RC=0
+    if [ "$HAVE_TIMEOUT" = 1 ]; then
+        timeout 15 "$BIN" < "$caso" > "$GOT" 2>/dev/null || RC=$?
+    else
+        "$BIN" < "$caso" > "$GOT" 2>/dev/null || RC=$?
+    fi
+    if [ "$RC" -eq 124 ] || [ "$RC" -eq 137 ]; then
+        echo -e "${RED}[FALLA] $NOMBRE: el programa no respondió a tiempo (¿bucle infinito?).${RESET}"
+        FAILN=$((FAILN+1))
+        continue
+    fi
+    if [ "$RC" -ne 0 ]; then
+        echo -e "${RED}[FALLA] $NOMBRE: el programa terminó con error (código $RC).${RESET}"
+        FAILN=$((FAILN+1))
+        continue
+    fi
+    if [ "$(normaliza "$ESPERADO")" = "$(normaliza "$GOT")" ]; then
+        echo -e "${GREEN}[OK] $NOMBRE${RESET}"
+        PASS=$((PASS+1))
+    else
+        echo -e "${RED}[FALLA] $NOMBRE: la salida no coincide.${RESET}"
+        echo "  Esperado (primeras líneas):"
+        normaliza "$ESPERADO" | head -n 5 | sed 's/^/    | /'
+        echo "  Obtenido (primeras líneas):"
+        normaliza "$GOT" | head -n 5 | sed 's/^/    | /'
+        FAILN=$((FAILN+1))
+    fi
+done
+
+echo -e "${CYAN}----------------------------------------------------------------------${RESET}"
+if [ "$FAILN" -eq 0 ]; then
+    echo -e "${GREEN}RESULTADO: $PASS/$((PASS+FAILN)) casos correctos. Listo para entregar.${RESET}"
+    exit 0
+fi
+echo -e "${RED}RESULTADO: $FAILN caso(s) fallaron de $((PASS+FAILN)). Revisá tu solución.${RESET}"
+exit 1

@@ -129,6 +129,28 @@ printf 's\nn\n' | run_in_sandbox "cd '$REPO' && printf '// avance 2\n' >> main.c
 N2=$(git --git-dir="$REMOTE" rev-list --count main)
 assert "entregar omite la publicación al responder n" test "$N2" -eq "$N1"
 
+# --- Corrector local: verificar como filtro de la entrega ---
+run_in_sandbox "cd '$SANDBOX/repo/home' && nuevo-proyecto tpv" >/dev/null
+TPV="$SANDBOX/repo/home/tpv"
+assert "nuevo-proyecto genera el caso inicial del corrector" test -f "$TPV/tests/caso_01.out"
+
+VC=$(run_in_sandbox "cd '$TPV' && verificar >/dev/null 2>&1; echo \$?")
+assert "verificar aprueba el proyecto recién creado" test "$VC" -eq 0
+
+sed -i 's/Hola desde tpv/Salida rota/' "$TPV/main.c"
+VC=$(run_in_sandbox "cd '$TPV' && verificar >/dev/null 2>&1; echo \$?")
+assert "verificar rechaza una salida incorrecta" test "$VC" -ne 0
+
+# Pruebas fallidas + respuesta n en "¿Empacar igualmente?" → cancela sin ZIP
+printf 's\nn\n' | run_in_sandbox "cd '$TPV' && entregar" >/dev/null
+assert "entregar no genera ZIP cuando las pruebas fallan y se cancela" \
+    bash -c "! ls '$SANDBOX/repo/home'/ENTREGA_tpv_* 2>/dev/null"
+
+sed -i 's/Salida rota/Hola desde tpv/' "$TPV/main.c"
+printf 's\n' | run_in_sandbox "cd '$TPV' && entregar" >/dev/null
+assert "entregar genera el ZIP cuando las pruebas pasan" \
+    bash -c "ls '$SANDBOX/repo/home'/ENTREGA_tpv_*.zip >/dev/null 2>&1"
+
 echo ""
 if [ "$FAIL" -eq 0 ]; then
     echo "OK: $PASS pruebas superadas."

@@ -41,6 +41,23 @@ if [ -f "Makefile" ]; then
     fi
 fi
 
+# Corrector local: las pruebas de cátedra deben pasar antes de empacar
+if [ -n "$(ls tests/caso_*.in 2>/dev/null)" ] \
+   || { [ -f "Makefile" ] && grep -qE '^[[:space:]]*(test|check)[[:space:]]*:' Makefile; }; then
+    echo ""
+    echo -e "${CYAN}-> Ejecutando el corrector local (verificar)...${RESET}"
+    VERIF="$(command -v verificar || echo "$(dirname "$0")/verificar")"
+    if ! bash "$VERIF" .; then
+        printf "%bLas pruebas no pasan. ¿Empacar la entrega igualmente? (s/N): ${RESET}" "${YELLOW}"
+        read -r answer || answer="n"
+        if ! printf '%s' "$answer" | grep -qi '^s'; then
+            echo -e "${RED}[ENTREGA CANCELADA] Corregí los casos que fallan y volvé a intentar.${RESET}"
+            exit 1
+        fi
+        echo -e "${YELLOW}[AVISO] Empacando con pruebas fallidas, bajo tu responsabilidad.${RESET}"
+    fi
+fi
+
 OUT="../ENTREGA_${BASENAME}_$(date +%Y%m%d-%H%M).zip"
 
 PYBIN="$(command -v python3 || command -v python || true)"
