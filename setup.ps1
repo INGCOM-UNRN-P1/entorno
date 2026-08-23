@@ -1067,10 +1067,10 @@ config.default_cwd = home_dir
 local path_env = os.getenv("PATH")
 if path_env then path_env = path_env:gsub("[\\]+", "/") else path_env = "" end
 
-local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/clang64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
+local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
 
 config.set_environment_variables = {
-  MSYSTEM = "CLANG64",
+  MSYSTEM = "UCRT64",
   MSYS2_PATH_TYPE = "inherit",
   PORTABLE_ROOT = portable_root,
   CHERE_INVOKING = "1",
