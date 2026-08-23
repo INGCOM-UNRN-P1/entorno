@@ -135,11 +135,12 @@ Al iniciar VS Code o WezTerm a través de cualquiera de los cargadores, heredar�
 
 ## Uso en Linux
 
-El repositorio incluye una variante nativa para Linux basada en activación de sesión (no requiere instalación de componentes, solo herramientas del sistema). Requisitos: `git`, `gcc`, `g++`, `make`, `cmake`, `ninja`, `python3`, `pip`, `curl`. Podés verificarlos con:
+El repositorio incluye una variante nativa para Linux basada en activación de sesión. **Por diseño, esta variante no modifica nada del sistema host ni requiere permisos de administrador**: la activación solo altera la sesión de terminal actual, y todo lo generado (archivos de usuario, librerías instaladas) queda dentro de la carpeta del repositorio.
+
+Requisitos: `git`, `gcc`, `g++`, `make`, `cmake`, `ninja`, `python3`, `pip`, `curl`. El entorno no los instala; podés verificar si están presentes con:
 
 ```bash
-linux/bootstrap.sh             # diagnóstico de dependencias
-linux/bootstrap.sh --install   # ofrece instalar lo que falte (usa sudo)
+linux/bootstrap.sh    # solo diagnóstico: sugiere comandos, nunca ejecuta instalaciones ni usa sudo
 ```
 
 Para activar el entorno en tu sesión actual de Bash:
