@@ -1,8 +1,7 @@
 # Instrucciones para el Agente (AGENTS.md)
 
-> Este archivo es el punto de entrada estándar para cualquier agente de desarrollo.
-> El contenido normativo vive en [GEMINI.md](GEMINI.md), que se mantiene como copia
-> idéntica por compatibilidad. Ante dudas, prevalece GEMINI.md.
+> Este archivo es la **fuente normativa única** para cualquier agente de desarrollo
+> (punto de entrada estándar). GEMINI.md se mantiene como stub de compatibilidad.
 
 ## Resumen de Reglas Obligatorias
 
