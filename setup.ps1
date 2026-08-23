@@ -257,6 +257,8 @@ try {
                     "bin/download-baseline.sh",
                     "bin/diagnose-env.sh",
                     "bin/uninstall-lib.sh",
+                    "bin/update-packages.sh",
+                    "bin/smoke.sh",
                     "bin/nuevo-proyecto",
                     "bin/entregar",
                     "bin/doctor",
