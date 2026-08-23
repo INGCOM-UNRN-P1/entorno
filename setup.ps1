@@ -664,6 +664,56 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     # Acelerar la instalación inicial habilitando descargas paralelas en pacman
     & $bashPath --login -c "sed -i -E 's/^#?[[:space:]]*ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf"
 
+    # Espejo regional de pacman: medir latencia contra candidatos (prioridad
+    # sudamericana para Red UNRN) y configurar el más rápido como primera opción.
+    try {
+        Write-Host "Midiendo latencia de espejos de pacman..." -ForegroundColor Cyan
+        $mirrorCandidates = @(
+            "https://mirror.ufro.cl/msys2",
+            "https://repo.msys2.org",
+            "https://mirrors.utexas.edu/msys2",
+            "https://mirrors.ocf.berkeley.edu/msys2"
+        )
+        $bestMirror = $null
+        $bestMs = [double]::MaxValue
+        foreach ($candidate in $mirrorCandidates) {
+            try {
+                $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+                Invoke-WebRequest -Uri "$candidate/distrib/" -Method Head -UseBasicParsing -TimeoutSec 4 | Out-Null
+                $stopwatch.Stop()
+                Write-Host ("  {0} -> {1} ms" -f $candidate, $stopwatch.ElapsedMilliseconds) -ForegroundColor DarkGray
+                if ($stopwatch.ElapsedMilliseconds -lt $bestMs) {
+                    $bestMs = $stopwatch.ElapsedMilliseconds
+                    $bestMirror = $candidate
+                }
+            } catch {
+                Write-Host "  $candidate -> sin respuesta" -ForegroundColor DarkGray
+            }
+        }
+        if ($bestMirror) {
+            Write-Host "Espejo pacman seleccionado: $bestMirror (${bestMs} ms)" -ForegroundColor Green
+            $markerLine = "# Espejo seleccionado automaticamente por setup.ps1 (latencia)"
+            $repoSubPaths = @{
+                "mirrorlist.msys"    = "/msys/x86_64/"
+                "mirrorlist.ucrt64"  = "/mingw/ucrt64/"
+                "mirrorlist.mingw64" = "/mingw/mingw64/"
+                "mirrorlist.clang64" = "/mingw/clang64/"
+            }
+            foreach ($mirrorListName in $repoSubPaths.Keys) {
+                $mirrorListFile = Join-Path (Join-Path $msysDir "etc\pacman.d") $mirrorListName
+                if (-not (Test-Path $mirrorListFile)) { continue }
+                $existingLines = @(Get-Content $mirrorListFile)
+                $serverLine = "Server = $($bestMirror)$($repoSubPaths[$mirrorListName])"
+                $kept = @($existingLines | Where-Object { $_ -ne $serverLine -and $_ -notmatch 'Espejo seleccionado automaticamente' })
+                Set-Content -Path $mirrorListFile -Value (@($markerLine, $serverLine) + $kept)
+            }
+        } else {
+            Write-Warning "Ningún espejo de pacman respondió; se conservan los servidores por defecto."
+        }
+    } catch {
+        Write-Warning "Fallo la selección de espejo de pacman; se conservan los servidores por defecto."
+    }
+
     # Resolver la ruta de caché local y pasarla a pacman utilizando el ejecutable cygpath nativo
     $cygpathExe = Join-Path $msysDir "usr\bin\cygpath.exe"
     $unixCacheDir = & $cygpathExe -u "$descargasDir/pacman_cache"
