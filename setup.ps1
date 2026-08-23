@@ -95,6 +95,10 @@ Write-Host "====================================================================
 Write-Host "LOG DE INSTALACIÓN DETALLADO"
 Write-Host "======================================================================"
 Write-Host "Fecha/Hora de Inicio : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+$versionFile = Join-Path $portableRoot "VERSION"
+$entornoVersion = "?"
+if (Test-Path $versionFile) { $entornoVersion = (Get-Content $versionFile -Raw).Trim() }
+Write-Host "Versión del Entorno  : $entornoVersion"
 Write-Host "Entorno de Ejecución : $($PSVersionTable.OS) / OS: $($env:OS)"
 Write-Host "Nombre del Equipo    : $($env:COMPUTERNAME)"
 Write-Host "Usuario Ejecutor     : $($env:USERNAME)"
@@ -245,7 +249,8 @@ try {
                     "linux/bin/customize-terminal.sh",
                     "linux/bin/install-lib.sh",
                     "linux/bin/uninstall-lib.sh",
-                    "packages-baseline.txt"
+                    "packages-baseline.txt",
+                    "VERSION"
                 )
                 
                 foreach ($file in $filesToCopy) {

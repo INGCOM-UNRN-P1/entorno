@@ -14,9 +14,11 @@ fi
 
 # Escribir el informe en la raíz del entorno (no contaminar el directorio actual)
 LOG_FILE="${PORTABLE_ROOT:-.}/diagnose.log"
+ENTORNO_VERSION="?"
+[ -f "${PORTABLE_ROOT:-.}/VERSION" ] && ENTORNO_VERSION="$(tr -d '[:space:]' < "${PORTABLE_ROOT:-.}/VERSION")"
 {
     echo "======================================================================"
-    echo "INFORME DE DIAGNÓSTICO DEL ENTORNO PORTABLE"
+    echo "INFORME DE DIAGNÓSTICO DEL ENTORNO PORTABLE v${ENTORNO_VERSION}"
     echo "======================================================================"
     echo "Fecha/Hora           : $(date '+%Y-%m-%d %H:%M:%S')"
     echo "Sistema Operativo    : $OS / MSYSTEM: $MSYSTEM"

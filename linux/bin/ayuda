@@ -9,8 +9,13 @@ GOLD="\e[38;5;220m"
 RESET="\e[0m"
 BOLD="\e[1m"
 
+# Versión del entorno desde la raíz del repositorio
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ENTORNO_VERSION="?"
+[ -f "$ROOT_DIR/VERSION" ] && ENTORNO_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
+
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"
-echo -e "${GOLD}${BOLD}             GUÍA RÁPIDA DE COMANDOS DEL ENTORNO (LINUX)              ${RESET}"
+echo -e "${GOLD}${BOLD}   GUÍA RÁPIDA DEL ENTORNO PORTABLE v${ENTORNO_VERSION} (LINUX)          ${RESET}"
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"
 echo -e "Este entorno integra compiladores de C, Python y utilidades en una sesión aislada."
 echo -e "Sesión activa : ${HOME:-?}"

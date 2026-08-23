@@ -12,8 +12,13 @@ BLUE="\e[34m"
 RESET="\e[0m"
 BOLD="\e[1m"
 
+# Versión del entorno desde la raíz del repositorio
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ENTORNO_VERSION="?"
+[ -f "$ROOT_DIR/VERSION" ] && ENTORNO_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
+
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"
-echo -e "${GOLD}${BOLD}             GUÍA RÁPIDA DE COMANDOS Y SCRIPTS DEL ENTORNO             ${RESET}"
+echo -e "${GOLD}${BOLD}      GUÍA RÁPIDA DEL ENTORNO PORTABLE v${ENTORNO_VERSION} (WINDOWS)     ${RESET}"
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"
 echo -e "Este entorno portable integra compiladores de C, Python, WezTerm y VS Code."
 echo -e "A continuación se listan las herramientas principales disponibles:"
