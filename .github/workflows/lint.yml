@@ -17,6 +17,13 @@ jobs:
       - name: Shellcheck (nivel error)
         run: shellcheck --severity=error $(find . -type f -name "*.sh") bin/ayuda linux/bin/ayuda
 
+  linux-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pruebas de la variante Linux
+        run: tests/test_linux_env.sh
+
   powershell:
     runs-on: ubuntu-latest
     steps:
