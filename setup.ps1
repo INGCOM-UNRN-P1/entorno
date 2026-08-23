@@ -278,7 +278,8 @@ try {
                     "linux/bin/uninstall-lib.sh",
                     "packages-baseline.txt",
                     "VERSION",
-                    "versions.json"
+                    "versions.json",
+                    "wezterm.lua.template"
                 )
                 
                 foreach ($file in $filesToCopy) {
@@ -1292,52 +1293,17 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
     }
 }
 
-# Escribir configuración wezterm.lua
+# Escribir configuración wezterm.lua a partir de la plantilla canónica única
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
+$wezTemplateFile = Join-Path $portableRoot "wezterm.lua.template"
 if (-not (Test-Path $wezConfigPath) -or $isUpdateMode -or $shouldInstallOrUpdateWez) {
-    $wezConfigContent = @"
-local wezterm = require 'wezterm'
-local config = wezterm.config_builder()
-
--- Configurar directorio raiz portable de forma determinista
-local portable_root = wezterm.config_dir:gsub("[\\]+", "/")
-if not portable_root:match("/$") then
-  portable_root = portable_root .. "/"
-end
-
-local bash_path = portable_root .. "msys64/usr/bin/bash.exe"
-config.default_prog = { bash_path, "--login", "-i" }
-
--- Configurar entorno heredado forzando el HOME portable (aislado del sistema host)
-local home_dir = portable_root .. "$HomeDirName"
-config.default_cwd = home_dir
-
-local path_env = os.getenv("PATH")
-if path_env then path_env = path_env:gsub("[\\]+", "/") else path_env = "" end
-
-local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
-
-config.set_environment_variables = {
-  MSYSTEM = "UCRT64",
-  MSYS2_PATH_TYPE = "inherit",
-  PORTABLE_ROOT = portable_root,
-  CHERE_INVOKING = "1",
-  HOME = home_dir,
-  PATH = custom_path,
-  LANG = "es_AR.UTF-8",
-}
-
--- Estetica Premium (Tokyo Night y JetBrains Mono)
-config.color_scheme = 'Tokyo Night'
-config.font = wezterm.font 'JetBrains Mono'
-config.font_size = 11.0
-config.window_background_opacity = 0.95
-config.enable_tab_bar = false
-
-return config
-"@
+    if (-not (Test-Path $wezTemplateFile)) {
+        throw "No se encontró wezterm.lua.template en la raíz del entorno."
+    }
+    $wezConfigContent = Get-Content $wezTemplateFile -Raw
+    $wezConfigContent = $wezConfigContent.Replace('@HOME_DIR_NAME@', $HomeDirName)
     [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
-    Write-Host "Configuración wezterm.lua creada/actualizada." -ForegroundColor Green
+    Write-Host "Configuración wezterm.lua creada/actualizada desde la plantilla." -ForegroundColor Green
 }
 
 # ==========================================

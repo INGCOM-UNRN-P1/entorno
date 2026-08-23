@@ -1,0 +1,39 @@
+local wezterm = require 'wezterm'
+local config = wezterm.config_builder()
+
+-- Configurar directorio raiz portable de forma determinista
+local portable_root = wezterm.config_dir:gsub("[\\]+", "/")
+if not portable_root:match("/$") then
+  portable_root = portable_root .. "/"
+end
+
+local bash_path = portable_root .. "msys64/usr/bin/bash.exe"
+config.default_prog = { bash_path, "--login", "-i" }
+
+-- Configurar entorno heredado forzando el HOME portable (aislado del sistema host)
+local home_dir = portable_root .. "@HOME_DIR_NAME@"
+config.default_cwd = home_dir
+
+local path_env = os.getenv("PATH")
+if path_env then path_env = path_env:gsub("[\\]+", "/") else path_env = "" end
+
+local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
+
+config.set_environment_variables = {
+  MSYSTEM = "UCRT64",
+  MSYS2_PATH_TYPE = "inherit",
+  PORTABLE_ROOT = portable_root,
+  CHERE_INVOKING = "1",
+  HOME = home_dir,
+  PATH = custom_path,
+  LANG = "es_AR.UTF-8",
+}
+
+-- Estetica Premium (Tokyo Night y JetBrains Mono)
+config.color_scheme = 'Tokyo Night'
+config.font = wezterm.font 'JetBrains Mono'
+config.font_size = 11.0
+config.window_background_opacity = 0.95
+config.enable_tab_bar = false
+
+return config

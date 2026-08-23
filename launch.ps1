@@ -94,101 +94,26 @@ $env:LANG = "es_AR.UTF-8"
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
 $env:WEZTERM_CONFIG_FILE = $wezConfigPath
 
-# Asegurar que wezterm.lua exista, si no, crearlo con configuración premium predeterminada (UCRT64)
+# Asegurar que wezterm.lua exista, generandolo desde la plantilla canonica unica
 if (-not (Test-Path $wezConfigPath)) {
-    $wezConfigContent = @"
-local wezterm = require 'wezterm'
-local config = wezterm.config_builder()
-
--- Configurar directorio raiz portable de forma determinista
-local portable_root = wezterm.config_dir:gsub("[\\]+", "/")
-if not portable_root:match("/$") then
-  portable_root = portable_root .. "/"
-end
-
-local bash_path = portable_root .. "msys64/usr/bin/bash.exe"
-config.default_prog = { bash_path, "--login", "-i" }
-
--- Configurar entorno heredado forzando el HOME portable (aislado del sistema host)
-local home_dir = portable_root .. "$homeDirName"
-config.default_cwd = home_dir
-
-local path_env = os.getenv("PATH")
-if path_env then path_env = path_env:gsub("[\\]+", "/") else path_env = "" end
-
-local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
-
-config.set_environment_variables = {
-  MSYSTEM = "UCRT64",
-  MSYS2_PATH_TYPE = "inherit",
-  PORTABLE_ROOT = portable_root,
-  CHERE_INVOKING = "1",
-  HOME = home_dir,
-  PATH = custom_path,
-  LANG = "es_AR.UTF-8",
-}
-
--- Estetica Premium (Tokyo Night y JetBrains Mono)
-config.color_scheme = 'Tokyo Night'
-config.font = wezterm.font 'JetBrains Mono'
-config.font_size = 11.0
-config.window_background_opacity = 0.95
-config.enable_tab_bar = false
-
-return config
-"@
-    [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
+    $wezTemplateFile = Join-Path $portableRoot "wezterm.lua.template"
+    if (Test-Path $wezTemplateFile) {
+        $wezConfigContent = Get-Content $wezTemplateFile -Raw
+        $wezConfigContent = $wezConfigContent.Replace('@HOME_DIR_NAME@', $homeDirName)
+        [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
+        Write-Host "[INFO] wezterm.lua generado desde la plantilla canonica." -ForegroundColor Cyan
+    } else {
+        Write-Warning "Falta wezterm.lua.template: no se pudo generar la configuracion de WezTerm."
+    }
 } else {
+    # Correccion minima para instalaciones historicas con MSYSTEM o rutas erroneas
     $content = [System.IO.File]::ReadAllText($wezConfigPath, [System.Text.Encoding]::UTF8)
-    
-    # Sanitizar secuencias de bytes corruptas (doble codificación)
-    $content = $content -replace "raÃ\xad z|raÃ\xad|ra\xc3\xad z|raíz", "raiz"
-    $content = $content -replace "EstÃ©tica|Est\xc3\xa9tica|Estética", "Estetica"
-    $content = $content -replace "PrÃ©mium|Pr\xc3\xa9mium|Premium", "Premium"
-    
-    # Corregir sufijo de ruta PORTABLE_ROOT
-    if ($content -notmatch 'portable_root:match') {
-        $replacement = @'
-local portable_root = wezterm.config_dir:gsub("[\\/]+", "/")
-if not portable_root:match('/$') then
-  portable_root = portable_root .. '/'
-end
-'@
-        $content = $content -replace 'local portable_root = wezterm\.config_dir:gsub\([^)]+\)', $replacement
+    $fixed = $content -replace 'MSYSTEM\s*=\s*"(CLANG|MINGW)64"', 'MSYSTEM = "UCRT64"'
+    $fixed = $fixed -replace 'msys64/(clang|mingw)64/', 'msys64/ucrt64/'
+    if ($fixed -ne $content) {
+        [System.IO.File]::WriteAllText($wezConfigPath, $fixed, $utf8NoBom)
+        Write-Host "[INFO] wezterm.lua normalizado a UCRT64." -ForegroundColor DarkGray
     }
-    
-    # Reemplazo de dependencias de entorno
-    $content = $content -replace 'os\.getenv\("PORTABLE_ROOT"\)', 'wezterm.config_dir'
-    $content = $content -replace 'os\.getenv\("HOME"\)', ("portable_root .. `"" + $homeDirName + "`"")
-    
-    # Inyectar default_cwd
-    if ($content -notmatch 'config\.default_cwd\s*=') {
-        $content = $content -replace '(local home_dir = [^\r\n]+)', "`$1`r`nconfig.default_cwd = home_dir"
-    }
-
-    # Inyectar PATH personalizado a WezTerm
-    if ($content -notmatch 'local custom_path\s*=') {
-        $pathRepl = @'
-if path_env then path_env = path_env:gsub("[\\/]+", "/") else path_env = "" end
-
-local custom_path = portable_root .. "bin;" .. portable_root .. "msys64/ucrt64/bin;" .. portable_root .. "msys64/usr/bin;" .. path_env
-'@
-        $content = $content -replace '(?s)if path_env then path_env = path_env:gsub\([^)]+\) end', $pathRepl
-        $content = $content -replace 'PATH = path_env', 'PATH = custom_path'
-    }
-    
-    # Actualizar MSYSTEM a UCRT64 si estaba en CLANG64 o MINGW64
-    $content = $content -replace 'MSYSTEM\s*=\s*"(CLANG|MINGW)64"', 'MSYSTEM = "UCRT64"'
-
-    # Actualizar rutas de clang64 o mingw64 a ucrt64
-    $content = $content -replace 'msys64/(clang|mingw)64/', 'msys64/ucrt64/'
-
-    # Inyectar herencia y raíz explícita a MSYS2
-    if ($content -notmatch 'MSYS2_PATH_TYPE\s*=') {
-        $content = $content -replace 'MSYSTEM\s*=\s*"UCRT64",', "`$0`r`n  MSYS2_PATH_TYPE = `"inherit`",`r`n  PORTABLE_ROOT = portable_root,"
-    }
-    
-    [System.IO.File]::WriteAllText($wezConfigPath, $content, $utf8NoBom)
 }
 
 # Agregar scripts internos, compilador y userland de MSYS2 al Path
