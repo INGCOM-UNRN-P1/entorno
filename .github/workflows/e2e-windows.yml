@@ -1,0 +1,49 @@
+name: e2e-windows
+
+# Validación completa de la cadena PowerShell en un runner real de Windows:
+# setup desatendido -> smoke -> empaquetado offline -> instalación del paquete
+# en otra carpeta. Se ejecuta manualmente (workflow_dispatch) y una vez por
+# semana; el resto del tiempo la cadena sigue validándose en host físico.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1"
+
+jobs:
+  cadena-completa:
+    runs-on: windows-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalación desatendida del entorno
+        shell: pwsh
+        run: ./setup.ps1 -Yes
+
+      - name: Pruebas de aceptación automatizadas (smoke)
+        shell: pwsh
+        run: ./smoke.ps1
+
+      - name: Empaquetado offline compacto
+        shell: pwsh
+        run: ./package-env.ps1 -Compact
+
+      - name: Roundtrip de instalación del paquete en otra carpeta
+        shell: pwsh
+        run: |
+          $destino = Join-Path $env:RUNNER_TEMP "instalacion-offline"
+          ./install-offline.ps1 -RutaZip (Join-Path (Get-Location) "portable-env-offline.zip") -Destino $destino
+          if (-not (Test-Path (Join-Path $destino "launch.bat"))) {
+            throw "El paquete instalado no contiene launch.bat"
+          }
+
+      - name: Logs de diagnóstico ante fallo
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-diagnostico
+          path: |
+            install.log
+            diagnose.log
+          if-no-files-found: ignore

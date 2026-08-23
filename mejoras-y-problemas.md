@@ -106,6 +106,8 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 ## 3.6 Ola Propuesta: Pedagogía y Confianza (revisión final)
 
+> **Estado de implementación:** con la última tanda quedaron resueltos también los ítems de infraestructura **48** (CI real semanal/manual en `windows-latest` con setup+smoke+roundtrip offline), **49** (espejo regional de pacman por latencia) y **52** (uv como creador de venvs por defecto con fallback). El único sobreviviente de esta ola es **53** (deuda menor de mantenedores: `env.common.psm1`).
+
 ### Educativa — flujo del alumno (mayor valor)
 
 43. **Depuración lista para usar:** que `nuevo-proyecto` genere además `.vscode/launch.json` + `tasks.json` preconfigurados (F5 compila y lanza con GDB), `.clang-format` y `.editorconfig`. Hoy el alumno enfrenta el depurador sin andamiaje; es el mayor cuello de aprendizaje post-"Hola Mundo".
@@ -172,7 +174,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador, smoke automatizado, install-offline (27-31 + Fase 9/10 del plan) | Completado |
 | ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
 | ~~8~~ ✅ | **Ola pedagógica completa:** depuración lista, `backup`/`restaurar`, higiene compartidas, `doctor --fix`, GitHub Classroom (`clonar`+push), corrector `verificar` y `soporte` (43-47, 50-51) | Completado |
-| 9 | Confianza de despliegue: CI real en windows-latest con setup+smoke+roundtrip offline; espejo regional pacman; uv por defecto (48-49, 52) | Medio-Alto |
+| ~~9~~ ✅ | Confianza de despliegue: CI real en windows-latest con setup+smoke+roundtrip offline ✅, espejo regional pacman ✅, uv por defecto ✅ (48-49, 52) | Completado |
 
 ---
 *Mantener este documento actualizado en cada corrección: mover ítems resueltos a la sección 2 con referencia de commit.*
