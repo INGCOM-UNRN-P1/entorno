@@ -218,6 +218,7 @@ try {
                     "bin/uninstall-lib.sh",
                     "bin/nuevo-proyecto",
                     "bin/entregar",
+                    "bin/doctor",
                     "README.md",
                     "plan.md",
                     "GEMINI.md",

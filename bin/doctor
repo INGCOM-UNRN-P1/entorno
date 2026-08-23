@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# doctor - Verificación de salud del entorno portable (smoke test post-instalación).
+# Funciona en Windows (MSYS2/UCRT64) y en la variante Linux.
+#
+# Uso: doctor    (0 = todo OK, 1 = hay fallos)
+
+PASS=0
+FAIL=0
+CYAN='\033[36m'; GREEN='\033[32m'; RED='\033[31m'; YELLOW='\033[33m'; RESET='\033[0m'
+
+ok()   { printf "${GREEN}[PASS]${RESET} %s\n" "$1"; PASS=$((PASS+1)); }
+bad()  { printf "${RED}[FALLA]${RESET} %s\n" "$1"; FAIL=$((FAIL+1)); }
+info() { printf "${CYAN}[INFO]${RESET} %s\n" "$1"; }
+warn() { printf "${YELLOW}[AVISO]${RESET} %s\n" "$1"; }
+
+echo -e "${CYAN}======================================================================${RESET}"
+echo -e "${CYAN}            Doctor del Entorno Portable — Diagnóstico Rápido${RESET}"
+echo -e "${CYAN}======================================================================${RESET}"
+
+TMP="$(mktemp)"
+trap 'rm -f "$TMP" "$TMP.out"' EXIT
+
+# 1. Sesión activa
+if [ -n "${PORTABLE_ROOT:-}" ]; then
+    ok "Sesión activa (PORTABLE_ROOT=${PORTABLE_ROOT})"
+else
+    warn "No detecto sesión activa: activá con 'source linux/activate.sh' o usá launch.bat."
+fi
+
+# 2. Compilador C: compilar, enlazar y ejecutar
+if printf 'int main(void){return 42;}\n' > "$TMP.c" 2>/dev/null && \
+   $(command -v gcc || echo gcc) -x c "$TMP.c" -o "$TMP.out" >/dev/null 2>&1 && \
+   [ -x "$TMP.out" ] && "$TMP.out"; [ $? -eq 42 ] 2>/dev/null; then
+    ok "Compilador C: gcc compila, enlaza y ejecuta correctamente"
+else
+    bad "Compilador C: falla la compilación/ejecución básica"
+fi
+
+# 3. Herramientas de build
+for tool in make cmake ninja; do
+    if command -v "$tool" >/dev/null 2>&1 || { [ "$tool" = "make" ] && command -v mingw32-make >/dev/null 2>&1; }; then
+        ok "Herramienta presente: $tool"
+    else
+        warn "No encontrada: $tool (opcional según el trabajo práctico)"
+    fi
+done
+
+# 4. Python
+if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+    PYBIN="$(command -v python3 || command -v python)"
+    if "$PYBIN" -c "print('ok')" >/dev/null 2>&1; then
+        ok "Python ejecutable ($($PYBIN --version 2>&1))"
+    else
+        bad "Python presente pero no responde"
+    fi
+else
+    bad "Python no encontrado"
+fi
+
+# 5. Git e identidad
+if command -v git >/dev/null 2>&1; then
+    ok "Git instalado"
+    if [ -n "$(git config --global user.name 2>/dev/null)" ] && [ -n "$(git config --global user.email 2>/dev/null)" ]; then
+        ok "Identidad de Git configurada ($(git config --global user.name))"
+    else
+        warn "Identidad de Git incompleta: ejecutá configure-git.sh"
+    fi
+else
+    bad "Git no encontrado"
+fi
+
+# 6. GitHub CLI (informativo)
+if command -v gh >/dev/null 2>&1; then
+    if gh auth status >/dev/null 2>&1; then
+        ok "GitHub CLI autenticado"
+    else
+        info "GitHub CLI sin sesión iniciada (opcional): gh auth login"
+    fi
+else
+    info "GitHub CLI no instalado (opcional)"
+fi
+
+# 7. Librerías registradas
+if [ -n "${PORTABLE_PREFIX:-}" ] || [ -n "${MSYSTEM_PREFIX:-}" ]; then
+    PREFIX_DIR="${PORTABLE_PREFIX:-${MSYSTEM_PREFIX:-}}"
+    NLIBS=0
+    [ -d "$PREFIX_DIR/portable-libs" ] && NLIBS=$(ls -1 "$PREFIX_DIR/portable-libs" 2>/dev/null | wc -l)
+    info "Librerías propias registradas: $NLIBS (install-lib.sh / uninstall-lib.sh)"
+fi
+
+# 8. PATH del entorno
+case ":$PATH:" in
+    *":$PORTABLE_ROOT/linux/bin:"*|*":$(cygpath -u "$PORTABLE_ROOT" 2>/dev/null)bin:"*)
+        ok "PATH contiene los directorios del entorno" ;;
+    *)
+        [ -n "${PORTABLE_ROOT:-}" ] && warn "PATH no muestra los directorios del entorno" ;;
+esac
+
+echo -e "${CYAN}----------------------------------------------------------------------${RESET}"
+if [ "$FAIL" -eq 0 ]; then
+    printf "${GREEN}RESULTADO: TODO OK (%d verificaciones positivas)${RESET}\n" "$PASS"
+else
+    printf "${RED}RESULTADO: %d fallo(s), %d OK. Revisá los ítems FALLA arriba.${RESET}\n" "$FAIL" "$PASS"
+fi
+exit $([ "$FAIL" -eq 0 ] && echo 0 || echo 1)
