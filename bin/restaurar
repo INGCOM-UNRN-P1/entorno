@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# restaurar - Restaura un respaldo creado con `backup` sobre el HOME portable actual.
+#
+# Uso:
+#   restaurar [archivo.zip]     (por defecto: el más reciente en backups/ o junto a la raíz)
+#
+# El contenido del ZIP se extrae sobre el HOME portable (los archivos existentes
+# con el mismo nombre se sobrescriben; los demás se conservan). Los manifiestos de
+# librerías incluidos en meta/ se restauran a local/portable-libs para poder
+# reinstalar las librerías con install-lib.sh.
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; CYAN='\033[36m'; YELLOW='\033[33m'; RESET='\033[0m'
+
+if [ -z "${PORTABLE_ROOT:-}" ]; then
+    echo -e "${RED}[ERROR] No estás dentro del entorno portátil. Activá primero la sesión.${RESET}"
+    exit 1
+fi
+
+HOME_DIR="${PORTABLE_HOME:-$PORTABLE_ROOT/home}"
+
+BACKUP_FILE="${1:-}"
+if [ -z "$BACKUP_FILE" ]; then
+    CANDIDATES=""
+    for d in "$PORTABLE_ROOT/backups" "$(dirname "$PORTABLE_ROOT")"; do
+        latest="$(ls -1t "$d"/entorno-backup-*.zip 2>/dev/null | head -n 1 || true)"
+        if [ -n "$latest" ]; then CANDIDATES="$latest"; break; fi
+    done
+    if [ -z "$CANDIDATES" ]; then
+        echo -e "${RED}[ERROR] No encontré ningún entorno-backup-*.zip.${RESET}"
+        echo "Indicá la ruta: restaurar /ruta/al/entorno-backup-FECHA.zip"
+        exit 1
+    fi
+    BACKUP_FILE="$CANDIDATES"
+fi
+
+if [ ! -f "$BACKUP_FILE" ]; then
+    echo -e "${RED}[ERROR] No existe el archivo '$BACKUP_FILE'.${RESET}"
+    exit 1
+fi
+
+PYBIN="$(command -v python3 || command -v python || true)"
+if [ -z "$PYBIN" ]; then
+    echo -e "${RED}[ERROR] Se necesita Python para extraer el ZIP y no está disponible.${RESET}"
+    exit 1
+fi
+
+echo -e "${CYAN}=== Restauración del Entorno Portable ===${RESET}"
+echo "Respaldo : $BACKUP_FILE"
+echo "Destino  : $HOME_DIR"
+echo ""
+printf "%b¿Continuar? Los archivos existentes con el mismo nombre serán sobrescritos. (s/n): ${RESET}" "${YELLOW}"
+read -r answer || answer="n"
+if ! printf '%s' "$answer" | grep -qi '^s'; then
+    echo "Operación cancelada."
+    exit 0
+fi
+
+export RESTORE_FILE="$BACKUP_FILE"
+export RESTORE_HOME="$HOME_DIR"
+export RESTORE_ROOT="$PORTABLE_ROOT"
+
+"$PYBIN" <<'EOF'
+import os
+import zipfile
+
+src = os.environ["RESTORE_FILE"]
+home = os.environ["RESTORE_HOME"]
+root = os.environ["RESTORE_ROOT"]
+
+os.makedirs(home, exist_ok=True)
+count = 0
+libs_restored = []
+with zipfile.ZipFile(src) as z:
+    for info in z.infolist():
+        name = info.filename.replace("\\", "/")
+        if name.startswith("home/"):
+            target = os.path.join(home, name[len("home/"):])
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with z.open(info) as fsrc, open(target, "wb") as fdst:
+                fdst.write(fsrc.read())
+            count += 1
+        elif name.startswith("meta/portable-libs/") and not name.endswith("/"):
+            libs_dir = os.path.join(root, "local", "portable-libs")
+            os.makedirs(libs_dir, exist_ok=True)
+            target = os.path.join(libs_dir, os.path.basename(name))
+            with z.open(info) as fsrc, open(target, "wb") as fdst:
+                fdst.write(fsrc.read())
+            libs_restored.append(os.path.basename(name))
+        elif name == "meta/.env":
+            dest = os.path.join(root, ".env")
+            if not os.path.exists(dest):
+                with z.open(info) as fsrc, open(dest, "wb") as fdst:
+                    fdst.write(fsrc.read())
+                print(f"[INFO] .env restaurado (no existía)")
+        elif name == "meta/VERSION":
+            pass  # informativo: la versión la gestiona el repositorio
+
+print(f"[OK] {count} archivos restaurados en {home}")
+if libs_restored:
+    print(f"[INFO] Manifiestos de librerías restaurados: {', '.join(sorted(libs_restored))}")
+    print("       Reinstalá cada una con: install-lib.sh <usuario/repositorio>")
+EOF
+
+echo ""
+echo -e "${GREEN}[ÉXITO] Restauración completada. Ejecutá 'doctor' para validar el entorno.${RESET}"

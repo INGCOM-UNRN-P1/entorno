@@ -262,6 +262,8 @@ try {
                     "smoke.ps1",
                     "install-offline.ps1",
                     "bin/nuevo-proyecto",
+                    "bin/backup",
+                    "bin/restaurar",
                     "bin/entregar",
                     "bin/doctor",
                     "README.md",

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# backup - Empaqueta el HOME portable y los manifiestos de librerías en un ZIP fechado.
+# El código, la identidad de Git y las configuraciones del alumno viven en home/:
+# este respaldo es lo que hay que guardar FUERA del pendrive (nube, email, otro disco).
+#
+# Uso:
+#   backup [destino.zip]     (por defecto: ../entorno-backup-<fecha>.zip junto a la carpeta del entorno)
+#
+# Excluye cachés regenerables (.cache, __pycache__, *.pyc). Incluye .env y VERSION
+# para poder restaurar en una instalación nueva.
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; CYAN='\033[36m'; YELLOW='\033[33m'; RESET='\033[0m'
+
+if [ -z "${PORTABLE_ROOT:-}" ]; then
+    echo -e "${RED}[ERROR] No estás dentro del entorno portátil. Activá primero la sesión.${RESET}"
+    exit 1
+fi
+
+DEST="${1:-$(dirname "$PORTABLE_ROOT")/entorno-backup-$(date +%Y%m%d-%H%M%S).zip}"
+HOME_DIR="${PORTABLE_HOME:-$PORTABLE_ROOT/home}"
+
+if [ ! -d "$HOME_DIR" ]; then
+    echo -e "${RED}[ERROR] No existe el HOME portable en $HOME_DIR.${RESET}"
+    exit 1
+fi
+
+PYBIN="$(command -v python3 || command -v python || true)"
+if [ -z "$PYBIN" ]; then
+    echo -e "${RED}[ERROR] Se necesita Python para crear el ZIP y no está disponible.${RESET}"
+    exit 1
+fi
+
+echo -e "${CYAN}=== Respaldo del Entorno Portable ===${RESET}"
+echo "Origen : $HOME_DIR"
+echo "Destino: $DEST"
+echo ""
+
+export BACKUP_DEST="$DEST"
+export BACKUP_HOME="$HOME_DIR"
+export BACKUP_ROOT="$PORTABLE_ROOT"
+
+"$PYBIN" <<'EOF'
+import os
+import sys
+import zipfile
+
+dest = os.environ["BACKUP_DEST"]
+home = os.environ["BACKUP_HOME"]
+root = os.environ["BACKUP_ROOT"]
+
+exclude_dirs = {".cache", "__pycache__", "node_modules"}
+exclude_ext = (".pyc",)
+
+count = 0
+with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+    for base, arc_prefix in ((home, "home"),):
+        for cur, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
+            for f in files:
+                if f.endswith(exclude_ext):
+                    continue
+                p = os.path.join(cur, f)
+                rel = os.path.relpath(p, base)
+                z.write(p, f"{arc_prefix}/{rel}")
+                count += 1
+
+    # Metadatos para restaurar en una instalación fresca
+    for extra, arc in (
+        (os.path.join(root, ".env"), "meta/.env"),
+        (os.path.join(root, "VERSION"), "meta/VERSION"),
+    ):
+        if os.path.isfile(extra):
+            z.write(extra, arc)
+            count += 1
+
+    libs_dir = os.path.join(root, "local", "portable-libs")
+    if os.path.isdir(libs_dir):
+        for f in os.listdir(libs_dir):
+            p = os.path.join(libs_dir, f)
+            if os.path.isfile(p):
+                z.write(p, f"meta/portable-libs/{f}")
+                count += 1
+
+size_mb = os.path.getsize(dest) / (1024 * 1024)
+print(f"[OK] {count} archivos empaquetados ({size_mb:.2f} MB)")
+EOF
+
+echo ""
+echo -e "${GREEN}[ÉXITO] Respaldo creado: ${DEST}${RESET}"
+echo -e "${YELLOW}IMPORTANTE: guardá este archivo FUERA del pendrive (nube, email u otro disco):${RESET}"
+echo -e "${YELLOW}si se pierde o corrompe el dispositivo, el respalo es lo único recuperable.${RESET}"
+echo "Para restaurar en otra instalación: restaurar $(basename "$DEST")"
