@@ -140,6 +140,18 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 * **Propósito:** Desinstalar librerías registradas por `install-lib.sh`.
 * **Funcionamiento:** Lee los manifiestos en `<prefijo>/portable-libs/*.files`, elimina los archivos registrados, poda directorios vacíos y reporta las librerías instaladas vía CMake/make install que solo tienen notas parciales.
 
+### `update-packages.sh`
+* **Propósito:** Actualización unificada de paquetes del entorno (MSYS2).
+* **Funcionamiento:** Sincroniza la base de pacman, actualiza el sistema y garantiza el baseline completo leyendo `packages-baseline.txt`, usando `descargas/pacman_cache` como caché portátil.
+
+### `smoke.sh`
+* **Propósito:** Automatizar las pruebas de aceptación sin GUI del plan.md (A, B, C, E-local, F-check).
+* **Funcionamiento:** Compila/ejecuta C y corre cppcheck; verifica python/pip/uv con instalación aislada en venv dentro del HOME portable; configura y compila un proyecto CMake+Ninja; instala/desinstala una librería fixture vía manifiesto; chequea identidad de Git. Código de salida 0 solo si no hay fallos. Existe wrapper `smoke.ps1` en la raíz para lanzarlo desde PowerShell.
+
+### `install-offline.ps1`
+* **Propósito:** Instalar el paquete `portable-env-offline.zip` en una máquina destino.
+* **Funcionamiento:** Extrae con `tar.exe` (fallback Expand-Archive) al destino indicado, valida que exista `launch.bat`, advierte rutas conflictivas y opcionalmente abre el terminal (`-Ejecutar`). No requiere internet ni permisos de administrador.
+
 ---
 
 ## 3. Variante Linux (`linux/`)

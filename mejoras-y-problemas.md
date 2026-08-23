@@ -26,7 +26,7 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 ## 3. Problemas Abiertos
 
-> **Estado tras la implementación sistemática:** quedaron resueltos los puntos **1** (actualizaciones atómicas), **2** (plantilla canónica en customize-terminal), **3** (settings.json quirúrgico), **5** (detección OneDrive), **8** (`-Yes` desatendido), **9** (update-env propaga docs/linux), **10** (packages-baseline.txt), **13** (uninstall-lib con manifiesto multiplataforma), **14 parcial** (poda `-Compact` + registro de hashes), **15** (test.ps1 eliminado), **16** (links relativos), **22** (log de diagnóstico en raíz), **23** (AV de terceros), **24** (core.editor), **25** (AGENTS.md) y **26** (docs Linux); además quedó documentado el punto **19-20** (safe.directory y PEP 668) y agregado CI de linters. Sigue abierta la verificación *activa* de hashes (solo se registran).
+> **Estado tras la implementación sistemática:** quedaron resueltos los puntos **1** (actualizaciones atómicas), **2** (plantilla canónica en customize-terminal), **3** (settings.json quirúrgico), **5** (detección OneDrive), **8** (`-Yes` desatendido), **9** (update-env propaga docs/linux), **10** (packages-baseline.txt), **11-12** (plantilla física única + fin de la migración masiva por regex), **13** (uninstall-lib con manifiesto multiplataforma), **14** (poda `-Compact` + registro y verificación activa de hashes), **15** (test.ps1 eliminado), **16** (links relativos), **22** (log de diagnóstico en raíz), **23** (AV de terceros), **24** (core.editor), **25** (AGENTS.md) y **26** (docs Linux); documentados **19-20** (safe.directory y PEP 668) con CI de linters. El punto **4/7** quedó cubierto por el canal de versiones (`versions.json` + `-Latest` + `CHANNEL` en `.env`); el **6** por verificación activa contra sidecars; y el plan.md cerró su deuda con `smoke.sh`, `update-packages.sh` e `install-offline.ps1`.
 
 ### Prioridad Alta
 
@@ -143,11 +143,11 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | Hito | Contenido | Esfuerzo estimado |
 |---|---|---|
 | ~~1~~ ✅ | Atomicidad, customize-terminal, settings.json, `-Yes`, OneDrive | Completado |
-| 2 | Manifiesto de versiones por semestre + pin de extensiones + tags semestrales (4, 7) | Medio |
+| ~~2~~ ✅ | Canal de versiones: `versions.json` + `-Latest` + `CHANNEL`; fallbacks migrados al manifiesto; extensiones pineables (4, 7) | Completado |
 | ~~3~~ ✅ | CI de linters + limpieza de repo + AGENTS.md | Completado |
-| 4 | Plantilla wezterm.lua en archivo único físico (11-12) | Bajo-Medio |
-| 5 | Verificación activa de hashes, caché API, launcher.c quoting (6 parcial, 21) | Medio |
-| ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador (27-31) | Completado |
+| ~~4~~ ✅ | Plantilla física única `wezterm.lua.template` + migración mínima residual (11-12) | Completado |
+| 5 | Restantes: caché de respuestas API GitHub, quoting de args en `launcher.c` (21), LICENSE/tag institucional (17 parcial: falta LICENSE) | Bajo-Medio |
+| ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador, smoke automatizado, install-offline (27-31 + Fase 9/10 del plan) | Completado |
 | ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
 
 ---

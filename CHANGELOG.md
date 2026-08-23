@@ -3,6 +3,18 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/);
 versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 
+## [Sin publicar]
+
+### Agregado
+* Plantilla física única `wezterm.lua.template` consumida por setup y lanzadores (fin de la triplicación y de la migración por regex masiva).
+* Verificación activa de SHA256 sobre descargas cacheadas (VS Code / gh / WezTerm).
+* `update-packages.sh`: actualización unificada de pacman + baseline desde fuente única.
+* `smoke.sh` (+ wrapper `smoke.ps1`): automatización de las pruebas de aceptación A/B/C/E-local/F-check.
+* `install-offline.ps1`: instalador asistido del paquete offline (tar.exe rápido, validación, `-Ejecutar`).
+
+### Cambiado
+* Fase 9 de plan.md reescrita: automatizada por smoke; residual manual explícito (D/G/H/E-GUI).
+
 ## [1.0.0] - 2026-08-22
 
 Primera versión etiquetada tras la consolidación de las dos variantes de la plataforma.
