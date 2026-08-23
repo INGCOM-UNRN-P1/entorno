@@ -2,23 +2,179 @@
 # doctor - Verificación de salud del entorno portable (smoke test post-instalación).
 # Funciona en Windows (MSYS2/UCRT64) y en la variante Linux.
 #
-# Uso: doctor    (0 = todo OK, 1 = hay fallos)
+# Uso: doctor [--fix]    (0 = todo OK, 1 = hay fallos)
+#
+#   --fix  Autorreparación ligera: regenera el skel del HOME portable
+#          (.bashrc/.bash_profile), los marcadores de estado y el settings.json
+#          base de VS Code SOLO cuando faltan. Nunca sobrescribe archivos del
+#          usuario ni reinstala componentes.
+
+FIX_MODE=0
+case "${1:-}" in
+    "") : ;;
+    --fix) FIX_MODE=1 ;;
+    *)
+        echo "Uso: doctor [--fix]" >&2
+        echo "  --fix  Regenera skel del HOME, marcadores de estado y settings.json base cuando falten." >&2
+        exit 2
+        ;;
+esac
 
 PASS=0
 FAIL=0
+FIXED=0
 CYAN='\033[36m'; GREEN='\033[32m'; RED='\033[31m'; YELLOW='\033[33m'; RESET='\033[0m'
 
 ok()   { printf "${GREEN}[PASS]${RESET} %s\n" "$1"; PASS=$((PASS+1)); }
 bad()  { printf "${RED}[FALLA]${RESET} %s\n" "$1"; FAIL=$((FAIL+1)); }
 info() { printf "${CYAN}[INFO]${RESET} %s\n" "$1"; }
 warn() { printf "${YELLOW}[AVISO]${RESET} %s\n" "$1"; }
+fixed(){ printf "${CYAN}[FIX]${RESET} %s\n" "$1"; FIXED=$((FIXED+1)); }
 
-echo -e "${CYAN}======================================================================${RESET}"
-echo -e "${CYAN}            Doctor del Entorno Portable — Diagnóstico Rápido${RESET}"
-echo -e "${CYAN}======================================================================${RESET}"
+banner() {
+    echo -e "${CYAN}======================================================================${RESET}"
+    echo -e "${CYAN}            $1${RESET}"
+    echo -e "${CYAN}======================================================================${RESET}"
+}
 
 TMP="$(mktemp)"
 trap 'rm -f "$TMP" "$TMP.out"' EXIT
+
+# Resolver la raíz del entorno incluso sin sesión activa (PORTABLE_ROOT tiene prioridad)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="${PORTABLE_ROOT:-}"
+if [ -z "$ROOT" ]; then
+    ROOT="$(dirname "$SCRIPT_DIR")"
+    [ -f "$ROOT/VERSION" ] || ROOT="$(dirname "$ROOT")"
+fi
+
+if [ "$FIX_MODE" = 1 ]; then
+    banner "Doctor del Entorno Portable — Reparación Ligera (--fix)"
+
+    IS_WINDOWS=0
+    command -v cygpath >/dev/null 2>&1 && IS_WINDOWS=1
+
+    # Resolver el nombre del HOME portable desde .env (misma convención que los lanzadores)
+    HOME_NAME="home"
+    if [ -f "$ROOT/.env" ]; then
+        LINE="$(sed -n -E 's/^set[[:space:]]+"HOME_DIR_NAME=([^"]+)"[[:space:]]*$/\1/p' "$ROOT/.env" | tail -n 1)"
+        [ -z "$LINE" ] && LINE="$(sed -n -E 's/^HOME_DIR_NAME=([^"[:space:]]+)[[:space:]]*$/\1/p' "$ROOT/.env" | tail -n 1)"
+        if [ -n "$LINE" ] && [[ "$LINE" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_-]*$ ]]; then
+            HOME_NAME="$LINE"
+        fi
+    fi
+    HDIR="$ROOT/$HOME_NAME"
+
+    # 1. Skel del HOME portable (solo crea lo que falta; jamás sobrescribe)
+    if [ ! -d "$HDIR" ]; then
+        mkdir -p "$HDIR" && fixed "Directorio HOME portable recreado: $HDIR"
+    fi
+    if [ -d "$HDIR" ] && [ ! -f "$HDIR/.bash_profile" ]; then
+        cat > "$HDIR/.bash_profile" <<'EOF'
+if [ -f "${HOME}/.bashrc" ]; then
+  source "${HOME}/.bashrc"
+fi
+EOF
+        fixed ".bash_profile regenerado."
+    fi
+    if [ -d "$HDIR" ] && [ ! -f "$HDIR/.bashrc" ]; then
+        if [ "$IS_WINDOWS" = 1 ]; then
+            cat > "$HDIR/.bashrc" <<'EOF'
+# .bashrc
+# Aquí podés agregar tus alias y funciones personalizadas.
+
+# Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)
+if [ -n "$PORTABLE_ROOT" ]; then
+    UNIX_ROOT=$(cygpath -u "$PORTABLE_ROOT")
+    case ":$PATH:" in
+        *":${UNIX_ROOT}bin:"*) : ;;
+        *) export PATH="${UNIX_ROOT}bin:${UNIX_ROOT}msys64/ucrt64/bin:${UNIX_ROOT}msys64/usr/bin:${PATH}" ;;
+    esac
+fi
+EOF
+            fixed ".bashrc regenerado (variante UCRT64 canónica)."
+        else
+            cat > "$HDIR/.bashrc" <<'EOF'
+# .bashrc - Entorno Portable de Desarrollo (UNRN Andina - Programación 1)
+# Podés agregar tus alias y funciones personalizadas debajo de este bloque.
+
+# Agregar los scripts del entorno al PATH (sin duplicar en shells anidados)
+if [ -n "$PORTABLE_ROOT" ]; then
+    case ":$PATH:" in
+        *":$PORTABLE_ROOT/linux/bin:"*) : ;;
+        *) export PATH="$PORTABLE_ROOT/linux/bin:$PORTABLE_ROOT/local/bin:$PATH" ;;
+    esac
+fi
+
+alias ll='ls -alF --color=auto'
+
+if [ -f "${HOME}/.bash_aliases" ]; then
+    source "${HOME}/.bash_aliases"
+fi
+
+# === START INSTITUTIONAL BANNER ===
+echo -e "\e[35m"
+echo "======================================================================"
+echo "  UNRN Andina - Programación 1"
+echo "======================================================================"
+echo -e "\e[0m"
+command -v ayuda >/dev/null 2>&1 && ayuda
+# === END INSTITUTIONAL BANNER ===
+EOF
+            fixed ".bashrc regenerado (variante Linux canónica)."
+        fi
+    fi
+
+    # 2. Marcadores de estado (solo si el componente correspondiente existe en disco)
+    ensure_marker() { # $1=archivo $2=etiqueta
+        local m="$ROOT/$1"
+        if [ ! -f "$m" ]; then
+            printf 'Complete\n' > "$m" && fixed "Marcador '$1' regenerado ($2 detectado)."
+        fi
+    }
+    if [ "$IS_WINDOWS" = 1 ]; then
+        if [ -f "$ROOT/msys64/usr/bin/bash.exe" ]; then
+            ensure_marker ".msys_complete" "MSYS2"
+            ensure_marker ".install_complete" "instalación general"
+        fi
+        [ -f "$ROOT/vscode/Code.exe" ] && ensure_marker ".vscode_complete" "VS Code"
+        [ -f "$ROOT/bin/gh.exe" ] && ensure_marker ".gh_complete" "GitHub CLI"
+        { [ -f "$ROOT/wezterm/wezterm-gui.exe" ] || [ -f "$ROOT/wezterm/wezterm.exe" ]; } \
+            && ensure_marker ".wezterm_complete" "WezTerm"
+
+        # 3. settings.json base de VS Code (solo si falta o está vacío)
+        SJSON="$ROOT/vscode/data/user-data/User/settings.json"
+        if [ -f "$ROOT/vscode/Code.exe" ] && { [ ! -f "$SJSON" ] || [ ! -s "$SJSON" ]; }; then
+            mkdir -p "$(dirname "$SJSON")"
+            cat > "$SJSON" <<'EOF'
+{
+    "telemetry.telemetryLevel": "off",
+    "update.mode": "none",
+    "extensions.autoUpdate": false,
+    "chat.disableAIFeatures": true,
+    "github.copilot.enable": {
+        "*": false
+    },
+    "terminal.integrated.profiles.windows": {
+        "UCRT64 Bash": {
+            "path": "bash.exe",
+            "args": ["--login", "-i"]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "UCRT64 Bash"
+}
+EOF
+            fixed "settings.json base regenerado para VS Code."
+        fi
+    fi
+
+    if [ "$FIXED" -eq 0 ]; then
+        info "Nada que reparar: skel, marcadores y configuración base están completos."
+    fi
+    echo -e "${CYAN}----------------------------------------------------------------------${RESET}"
+else
+    banner "Doctor del Entorno Portable — Diagnóstico Rápido"
+fi
 
 # 1. Sesión activa
 if [ -n "${PORTABLE_ROOT:-}" ]; then
@@ -101,5 +257,8 @@ if [ "$FAIL" -eq 0 ]; then
     printf "${GREEN}RESULTADO: TODO OK (%d verificaciones positivas)${RESET}\n" "$PASS"
 else
     printf "${RED}RESULTADO: %d fallo(s), %d OK. Revisá los ítems FALLA arriba.${RESET}\n" "$FAIL" "$PASS"
+fi
+if [ "$FIX_MODE" = 1 ] && [ "$FIXED" -gt 0 ]; then
+    printf "${CYAN}Reparación aplicada: %d elemento(s) regenerados. Volvé a lanzar el terminal para verificar.${RESET}\n" "$FIXED"
 fi
 exit $([ "$FAIL" -eq 0 ] && echo 0 || echo 1)
