@@ -1,180 +1,118 @@
 # Análisis del Proyecto: Mejoras y Problemas Detectados
 
-Documento de trabajo que releva el estado actual del repositorio, enumera los problemas detectados con referencias exactas a código y propone mejoras priorizadas. Se actualiza a medida que se corrigen ítems.
+Documento de trabajo que releva el estado actual del repositorio y registra el
+histórico de problemas detectados con su resolución. Los números de ítem se
+conservan por trazabilidad (aparecen en commits y conversaciones).
 
 ---
 
-## 1. Estado General
+## 1. Estado General (actualizado a v1.1.0)
 
-* **Versión Windows (madura):** Instalador desatendido (`setup.ps1`) con verificación SHA256 estricta de MSYS2, marcadores de estado por componente (`.msys_complete`, `.vscode_complete`, etc.), actualización automática de scripts, VS Code portable con datos aislados, WezTerm GPU, GitHub CLI y empaquetado offline (`package-env.ps1`).
-* **Variante Linux (nueva):** Entorno por activación de sesión (`source linux/activate.sh`) con HOME portable, prefijo local `local/` para librerías, bootstrap solo diagnóstico, gestión de librerías (`install-lib.sh`), configuración de Git paso a paso con `gh`, personalización de terminal y comando `ayuda`. Principio rector: **cero modificaciones al host y cero permisos de administrador** (asentado como pauta en GEMINI.md).
-* **Deuda documentada:** plan.md mantiene la Fase 9 (pruebas de aceptación manuales) sin ejecutar y un ítem pendiente en Fase 10 (`install-offline.ps1`).
+* **Versión:** `1.1.0` publicada con etiquetas anotadas `v1.0.0` y `v1.1.0`, licencia MIT y CHANGELOG (Keep-a-Changelog + SemVer sobre el archivo `VERSION`). El canal reproducible (`versions.json`, flag `-Latest`, `CHANNEL` en `.env`) usa los tags como base del cuatrimestre.
+* **Versión Windows (madura):** instalador desatendido (`setup.ps1`) con verificación SHA256 estricta, marcadores por componente, actualizaciones atómicas de VS Code/WezTerm, preflight de espacio/rutas, reintentos uniformes de descarga (`Invoke-DownloadWithRetry`), caché de la API de GitHub y selección de espejo pacman por latencia; VS Code portable con datos aislados y parcheo quirúrgico de `settings.json`, WezTerm GPU desde plantilla física única, GitHub CLI, empaquetado offline con `-Compact`/`-ConExtensiones`/`-IncluirLibs` e instalador asistido del paquete.
+* **Variante Linux (madura):** activación por sesión (`source linux/activate.sh`) con HOME portable, prefijo `local/`, paridad completa de comandos de cátedra y `update-env.sh`. Principio rector intacto: **cero modificaciones al host y cero permisos de administrador** (AGENTS.md).
+* **Flujo del alumno:** `nuevo-proyecto` (con depuración F5/GDB, `.clang-format`, `.editorconfig` y caso de prueba inicial), `clonar` (GitHub Classroom), `verificar` (corrector local), `entregar` (valida, empaca y publica con confirmación), `backup`/`restaurar`, `doctor [--fix]`, `soporte` (informe anónimo), `ayuda`.
+* **Calidad y CI:** linters (PSScriptAnalyzer, shellcheck, `bash -n`), suite bash de la variante Linux (25 pruebas), suite de lógica de `setup.ps1` ejecutable en CI (11 pruebas por AST) y cadena completa semanal/manual en `windows-latest` (setup → smoke → empaquetado → roundtrip offline).
+* **Deuda viva:** únicamente el ítem **53** (`env.common.psm1`) y la validación física periódica en host Windows de la cadena PowerShell.
 
 ## 2. Corregidos Recientemente
 
-| Problema | Ubicación original |
-|---|---|
-| Limpieza en hosts compartidos apuntaba a `downloads/` inexistente (hoy `descargas/`) | clean-shared-host.ps1 |
-| `bash -env` se interpreta como flags `-e -n -v`: no-op silencioso que impedía regenerar `.bashrc` con alias y banner institucional tras limpiar | clean-shared-host.ps1, setup.ps1 |
-| Eliminación de `.vscode_complete` forzaba re-descarga de ~130 MB de VS Code ya saneado | clean-shared-host.ps1 |
-| Plantilla `wezterm.lua` generada por setup usaba `MSYSTEM=CLANG64` y `clang64/bin`, contradictoria con el toolchain UCRT64 instalado | setup.ps1 |
-| Degradación TLS 1.0/1.1 innecesaria y barra de progreso de PS 5.1 (descargas hasta 10x más lentas) | setup.ps1, install.ps1 |
-| Paquete offline incluía `*.log` (con usuario/equipo) y restos personales en `home/` | package-env.ps1 |
-| La sincronización de scripts standalone no incluía la carpeta `linux/` | setup.ps1 |
-| Referencias rotas a `bootstrap.sh --install` tras eliminar el modo instalación automática | configure-git.sh, install-lib.sh |
-| El PATH portable crecía sin control en cada shell anidado y el skel `.bashrc` de setup difería del de launch (faltaban ucrt64/usr) | activate.sh, setup.ps1, launch.ps1 |
-
-## 3. Problemas Abiertos
-
-> **Estado tras la implementación sistemática:** quedaron resueltos los puntos **1** (actualizaciones atómicas), **2** (plantilla canónica en customize-terminal), **3** (settings.json quirúrgico), **5** (detección OneDrive), **8** (`-Yes` desatendido), **9** (update-env propaga docs/linux), **10** (packages-baseline.txt), **11-12** (plantilla física única + fin de la migración masiva por regex), **13** (uninstall-lib con manifiesto multiplataforma), **14** (poda `-Compact` + registro y verificación activa de hashes), **15** (test.ps1 eliminado), **16** (links relativos), **22** (log de diagnóstico en raíz), **23** (AV de terceros), **24** (core.editor), **25** (AGENTS.md) y **26** (docs Linux); documentados **19-20** (safe.directory y PEP 668) con CI de linters, y resuelto **17** con la licencia MIT, el CHANGELOG y las etiquetas de release (`v1.0.0`, `v1.1.0`, base del canal reproducible por cuatrimestre). El punto **4/7** quedó cubierto por el canal de versiones (`versions.json` + `-Latest` + `CHANNEL` en `.env`); el **6** por verificación activa contra sidecars; el **21** con re-quoting de argumentos según reglas MSVCRT y timeout acotado en los lanzadores; y el plan.md cerró su deuda con `smoke.sh`, `update-packages.sh` e `install-offline.ps1`.
-
-### Prioridad Alta
-
-1. **Actualizaciones no atómicas de componentes** (`setup.ps1`, bloque VS Code y WezTerm): se elimina la instalación previa *antes* de extraer el ZIP nuevo y el respaldo `vscode_data_backup` se mueve sin `try/finally`. Una extracción interrumpida deja el entorno roto o pierde datos del usuario. Propuesta: extraer a directorio temporal, validar presencia del binario clave (`Code.exe`, `wezterm-gui.exe`) y recién entonces hacer swap; restaurar backup en `finally`.
-
-2. **Regresión en `customize-terminal.ps1`** (generación de `wezterm.lua`, sección Parte 2): el config regenerado usa `MSYSTEM="CLANG64"`, pierde `MSYS2_PATH_TYPE`, `PORTABLE_ROOT` exportado, `LANG`, el prepend del PATH portable y `default_cwd`; además cae a `"./"` si `os.getenv("PORTABLE_ROOT")` no existe (ejecución fuera del lanzador). Debe generar exactamente la misma plantilla canónica que setup/launch.
-
-3. **Round-trip destructivo de `settings.json`** (`launch-vscode.ps1:92-112`): cada inicio re-serializa todo el JSON con `ConvertFrom-Json/ConvertTo-Json` de PS 5.1, que corrompe comentarios, reordena claves y aplana arrays de un elemento. Si el alumno edita settings a mano, los pierde. Propuesta: parcheo quirúrgico por regex de solo las dos claves `C_Cpp.default.*`, escribiendo únicamente si cambian.
-
-### Prioridad Media
-
-4. **Sin versionado reproducible de componentes:** `setup.ps1` instala siempre "latest" (VS Code, gh, WezTerm, paquetes pacman del día). Dos estudiantes que inicialicen en fechas distintas obtienen toolchains diferentes dentro del mismo cuatrimestre. Mejora de fondo: manifiesto `versions.json` pineado por semestre (con flag `-Latest` opcional), extensiones de VS Code con versión fija y tags de release por cuatrimestre.
-
-5. **Rutas bajo carpetas sincronizadas no detectadas:** la validación solo advierte espacios/no-ASCII, pero `Documentos` redirigido a OneDrive/Dropbox rompe MSYS2 y compilaciones de forma errática. Agregar detección de patrones de sync en el warning de setup y lanzadores.
-
-6. **Sin verificación de integridad para gh / WezTerm / VS Code:** solo heurísticas de tamaño (>5 MB, >10 MB, >50 MB). MSYS2 sí verifica SHA256 estrictamente. Al menos registrar hash descargado en el marcador `.version` para detectar corrupción entre reintentos.
-
-7. **URLs fallback antiguas y sin política de rotación:** MSYS2 `2025-02-21`, gh `2.49.0`, WezTerm `20240203`. Definir revisión semestral o pin por tag estable documentado (se integra naturalmente con el manifiesto del punto 4).
-
-8. **Modo interactivo obligatorio en actualizaciones:** las preguntas s/n de setup (VS Code, gh, WezTerm) impiden despliegue desatendido en laboratorios. Agregar `-Yes` (aceptar todo) y `-NonInteractive`.
-
-9. **`update-env.sh` desactualizado respecto al alcance actual:** copia scripts raíz y `bin/*` pero ni `docs/` ni `linux/`; además su lista fija de archivos envejece mal (mismo problema que tenía setup antes del fix).
-
-10. **Lista de paquetes duplicada** entre `setup.ps1` y `bin/download-baseline.sh`: riesgo de drift real (ya divergió históricamente). Fuente única (ej. `packages-baseline.txt`) leída por ambos.
-
-11. **Plantilla `wezterm.lua` triplicada** (setup, launch.ps1 fallback, customize-terminal.ps1) con contenido divergente: consolidar en un único archivo canónico parametrizado (sustitución de variables, sin cirugía por regex).
-
-12. **Migración por regex de `wezterm.lua` en `launch.ps1:134-185`:** frágil ante cualquier cambio de formato; desaparece naturalmente si se adopta la plantilla única del punto 11.
-
-13. **`install-lib.sh`:** sin comando de desinstalación; en Windows la copia manual usa `find -maxdepth 2` plano (colisiones) mientras el port Linux copia conservando estructura — unificar comportamiento y agregar `uninstall-lib`.
-
-14. **Tamaño y velocidad del paquete offline:** sin poda de documentación/locales de MSYS2 (`usr/share/doc`, `usr/share/man`) ni herramientas alternativas; `Compress-Archive` es lento y tiene límite de 4 GB por archivo. Evaluar `-Compact` (poda opcional) y `tar.gz/zst`.
-
-### Prioridad Baja
-
-15. **`test.ps1` basura commiteada** (debug con BOM): eliminar o convertir en test Pester real.
-16. **Links absolutos `file:///home/mrtin/...` en plan.md:** rompen para cualquier otro usuario; usar rutas relativas.
-17. **Sin LICENSE, sin tags/releases ni CHANGELOG:** dificulta distribución formal de la cátedra.
-18. **`LANG=es_AR.UTF-8` puede no existir en el host** (warning silencioso de setlocale en bash); considerar `C.UTF-8` como fallback.
-19. **Git dubious ownership en laboratorios multiusuario:** documentar (o configurar) `safe.directory` para repos en unidades compartidas.
-20. **Python/uv:** `uv pip install` exige virtualenv activo y en Linux moderno `pip` choca con PEP 668 (externally-managed). Prever wrapper o guía (con sesión activada, `--user` cae dentro del HOME portable, que es el comportamiento deseado).
-21. **`launcher.c`:** los argumentos se pasan sin re-quoting (rutas con espacios vía `launch-vscode.exe "ruta"` fallan) y espera `INFINITE` sin timeout.
-22. **`diagnose-env.sh` escribe `diagnose.log` en el CWD actual:** debería escribirlo en `$PORTABLE_ROOT`.
-23. **`fix-antivirus.ps1` solo cubre Defender:** detectar antivirus de terceros y dar instrucciones específicas.
-24. **Editor por defecto para Git:** `configure-git.sh` podría fijar `core.editor "code --wait"` en ambas plataformas (menor fricción para alumnos en rebase/commit).
-25. **GEMINI.md → AGENTS.md:** adoptar el nombre estándar multi-agente manteniendo GEMINI.md como copia/enlace.
-26. **Docs sin variante Linux:** ~~resuelto~~ (ver sección 2).
-
-## 3.5 Nueva Ola Detectada (revisión posterior a la implementación)
-
-> **Estado de implementación:** ítems **27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41 y 42 quedaron implementados** (35 quedó como aviso informativo de compatibilidad bajo pwsh; la validación completa 5.1/7 requiere host Windows). De esta ola ya están implementados **43** (depuración F5 + clang-format + editorconfig en `nuevo-proyecto`), **44** (flujo GitHub Classroom: comando `clonar` + publicación opcional commit+push en `entregar`), **45** (corrector local `verificar` con casos `tests/caso_NN` y filtro en `entregar`), **46** (`backup`/`restaurar` con exclusión de cachés y reinstalación guiada de librerías), **47** (recordatorio de higiene en ayuda con sesión gh activa + tip al configurar Git), **50** (comando `soporte` con informe anónimo listo para adjuntar) y **51** (`doctor --fix`: regenera skel del HOME, marcadores de estado y settings.json base solo cuando falten, sin reinstalar). Con esto, el hito 8 (ola pedagógica) queda completo.
-
-### Producto / Educativo (mayor valor)
-
-27. **Scaffolding académico:** comandos `nuevo-proyecto <nombre>` (genera estructura C con Makefile/CMakeLists/.gitignore de cátedra) y `entregar <tp>` (empaqueta y valida el TP en ZIP listo para entrega). Es la mejora de mayor impacto directo para Programación 1.
-28. **Extensiones VS Code offline:** el paquete distribuido a aulas sin internet no puede instalar extensiones ni el language pack. Que `package-env.ps1` descargue los `.vsix` pineados y los incluya con un instalador offline.
-29. **`doctor` unificado:** smoke test post-instalación por plataforma (compila hello.c, importa Python, verifica identidad git y sesión gh, valida PATH). Eleva las Pruebas A-D de plan.md a un comando ejecutable por el alumno.
-30. **Canal estable por cuatrimestre:** variable `CHANNEL=<tag>` en `.env` que fije qué versión de scripts/componentes usar (`update-env.sh` y bootstrap remoto apuntan al tag), base simple del manifiesto de versiones pendiente.
-31. **Desinstalación completa del entorno:** `desinstalar.ps1` con confirmación y resumen (hoy solo existe limpieza de datos personales).
-
-### Robustez de instalación
-
-32. **Preflight de recursos:** verificar espacio libre (~4 GB) y advertir sobre límite de rutas >260 chars (LongPaths) antes de descargar; hoy falla recién durante la extracción.
-33. **Reintentos uniformes de descargas grandes:** MSYS2/VS Code/WezTerm/gh se descargan en un solo intento (solo la verificación SHA tiene reintentos).
-34. **Pacman paralelo:** habilitar `ParallelDownloads` en `pacman.conf` durante la inicialización acelera sensiblemente la primera instalación.
-35. **Compatibilidad PowerShell 7:** scripts validados implícitamente contra 5.1; probar/garantizar ejecución bajo `pwsh` (encoding, ConvertTo-Json) o documentar restricción.
-
-### Seguridad y mantenimiento
-
-36. **Exclusiones Defender granulares:** excluir solo `msys64/` y `vscode/` en vez de la raíz completa (menor superficie expuesta, misma performance de compilación).
-37. **Fuente única de reglas de agente:** GEMINI.md duplica AGENTS.md; convertir GEMINI.md en stub que apunte a AGENTS.md para evitar drift.
-38. **Versión visible del entorno:** archivo `VERSION` + línea en banner/ayuda/diagnóstico para identificar builds al pedir soporte.
-39. **Política del prefijo `local/` en el paquete offline:** hoy se empaqueta siempre; decidir si va por defecto, detrás de `-ConLibs`, o excluido (consistencia de cátedra vs tamaño).
-40. **Tests bats para Linux en CI:** activación/desactivación, parsing de `.env`, bloques de `.bashrc`.
-41. **Exit codes estandarizados** y resumen final de setup (éxitos/fallos por componente).
-42. **Paridad de actualización en Linux:** equivalente de `update-env.sh` (git pull consciente) o guía documentada para instalaciones clonadas.
-
-## 3.6 Ola Propuesta: Pedagogía y Confianza (revisión final)
-
-> **Estado de implementación:** con la última tanda quedaron resueltos también los ítems de infraestructura **48** (CI real semanal/manual en `windows-latest` con setup+smoke+roundtrip offline), **49** (espejo regional de pacman por latencia) y **52** (uv como creador de venvs por defecto con fallback). El único sobreviviente de esta ola es **53** (deuda menor de mantenedores: `env.common.psm1`).
-
-### Educativa — flujo del alumno (mayor valor)
-
-43. **Depuración lista para usar:** que `nuevo-proyecto` genere además `.vscode/launch.json` + `tasks.json` preconfigurados (F5 compila y lanza con GDB), `.clang-format` y `.editorconfig`. Hoy el alumno enfrenta el depurador sin andamiaje; es el mayor cuello de aprendizaje post-"Hola Mundo".
-44. **Flujo GitHub Classroom:** comando `clonar <url-tp>` (clona el assignment en la carpeta de proyectos y fija upstream) e integración opcional de `entregar` con commit+push al repositorio del alumno, cerrando el ciclo clonar→programar→entregar.
-45. **Corrector local:** convención de tests de cátedra dentro del TP (carpeta `tests/` con casos estándar) y comando `verificar` que los ejecuta antes de permitir `entregar`. Autoevaluación previa a la entrega = menos reentregas.
-46. **Respaldo del entorno:** comandos `backup` / `restaurar` que empaqueten `home/` + manifiestos de `local/portable-libs` en un ZIP fechado. Los pendrives se pierden o corrompen constantemente; el código del alumno vive ahí.
-47. **Higiene en compartidas:** si existe sesión activa de `gh` al abrir terminal en un equipo ajeno, mostrar recordatorio visible de ejecutar `clean-shared-host.ps1` antes de retirarse.
-
-### Infraestructura — confianza de la cátedra
-
-48. **CI real sobre Windows runner:** job (manual `workflow_dispatch` + programado semanal) que ejecute `setup.ps1 -Yes` en `windows-latest`, luego `smoke.ps1`, y cierre el circuito con `package-env.ps1 -Compact` + `install-offline.ps1` en otra carpeta. Es el único camino de validar automáticamente toda la cadena PowerShell que hoy depende de pruebas manuales en host físico.
-49. **Espejo regional de pacman:** durante la inicialización, medir latencia contra espejos sudamericanos y configurar el más rápido en `/etc/pacman.conf`; reduce drásticamente el tiempo de primera instalación desde Red UNRN.
-50. **Comando `soporte`:** genera un único archivo anónimo (diagnóstico + cola de install.log + VERSION + sistema) listo para adjuntar en la consulta al docente, estandarizando el troubleshooting.
-51. **Autorreparación ligera:** `doctor --fix` que regenere skel de `home/`, marcadores de estado y `settings.json` base cuando falten, sin reinstalar componentes.
-
-### Técnica de soporte
-
-52. `uv` como creador de entornos por defecto cuando exista (más rápido y sin dependencias externas que `python -m venv`) con fallback automático.
-53. Mantenedores: `env.common.psm1` (lógica común de lanzadores) queda como deuda técnica menor ya relevada (hito 5). El quoting de args en `launcher.c` y la caché de respuestas API GitHub quedaron resueltos.
-
-## 4. Mejoras Propuestas por Eje
-
-* **Reproducibilidad académica (nuevo eje prioritario)**
-  * Manifiesto de versiones por semestre: componentes nativos (MSYS2 snapshot, VS Code, gh, WezTerm), lista de paquetes pacman y versiones de extensiones de VS Code en un único `versions.json` consumido por setup (puntos 4, 6 y 7).
-  * Tags de release (`2026-c1`, etc.) como base del bootstrap remoto (`irm .../tag/.../setup.ps1`) para estabilidad durante el cuatrimestre.
-* **Robustez**
-  * Instalaciones/actualizaciones atómicas con validación post-extracción (punto 1).
-  * Reintentos con backoff para `Expand-Archive` ante archivos bloqueados por antivirus (patrón `Execute-WithRetry` ya existente en customize-terminal.ps1).
-  * Smoke tests ejecutables post-instalación que automaticen las Pruebas A-D de plan.md (`smoke.ps1` / port futuro a Linux).
-* **Seguridad y privacidad**
-  * Hash registrado por componente descargado (punto 6).
-  * Ofrecer `credential.helper cache` con TTL como alternativa a `store` en texto plano.
-  * Documentar implicancias de excluir toda la carpeta en Windows Defender.
-* **Rendimiento**
-  * Extracción de ZIPs grandes con `tar.exe` (incluido desde Win10 1803) en lugar de `Expand-Archive`.
-  * Caché local de respuestas de la API de GitHub (rate limit 60 req/h por IP en aulas con NAT compartido).
-  * Empaquetado offline compacto y alternativas a Compress-Archive (punto 14).
-* **Mantenibilidad**
-  * Fuente única de verdad para: versiones/paquetes (manifiesto), plantilla wezterm.lua (punto 11), listado de archivos a sincronizar (punto 9).
-  * Módulo PowerShell común (`env.common.psm1`) para la lógica duplicada entre `launch.ps1` y `launch-vscode.ps1` (~80% compartido: advertencia de ruta —ampliada con detección OneDrive—, carga `.env`, inyección de variables del toolchain).
-  * Portar `install-lib.sh` Linux↔Windows hacia una base común con shim de plataforma + `uninstall-lib` (punto 13).
-* **Calidad y CI**
-  * GitHub Actions: `PSScriptAnalyzer`, `shellcheck` y `bash -n` en cada push (el repo es 100% scripts: es el mayor multiplicador de calidad disponible).
-  * Adoptar AGENTS.md estándar y limpieza de repo (test.ps1, LICENSE, links relativos).
-* **UX educativa**
-  * Flags `-Yes`/`-HomeDirName` combinables para instalación masiva (punto 8).
-  * Concretar `install-offline.ps1` (pendiente explícito de plan.md Fase 10).
-  * Guía de language pack offline (vsix side-load) para aulas sin internet.
-  * Detección temprana de carpetas sincronizadas (OneDrive) en la advertencia de ruta.
-* **Variante Linux**
-  * Incluir `linux/` en `update-env.sh` (completar paridad con el fix ya hecho en setup.ps1).
-  * Suite mínima de tests bash (bats) para activate/deactivate, parsing de `.env` y bloques de `.bashrc`.
-  * Evaluar soporte zsh en `activate.sh` (PS1 alternativo) según demanda real de estudiantes.
-
-## 5. Roadmap Sugerido
-
-| Hito | Contenido | Esfuerzo estimado |
+| Problema | Resolución | Referencia |
 |---|---|---|
-| ~~1~~ ✅ | Atomicidad, customize-terminal, settings.json, `-Yes`, OneDrive | Completado |
-| ~~2~~ ✅ | Canal de versiones: `versions.json` + `-Latest` + `CHANNEL`; fallbacks migrados al manifiesto; extensiones pineables (4, 7) | Completado |
-| ~~3~~ ✅ | CI de linters + limpieza de repo + AGENTS.md | Completado |
-| ~~4~~ ✅ | Plantilla física única `wezterm.lua.template` + migración mínima residual (11-12) | Completado |
-| ~~5~~ ✅ | Deuda técnica: quoting de args y timeout en `launcher.c` ✅, caché de respuestas API GitHub ✅, licencia MIT (17) ✅ | Completado |
-| ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador, smoke automatizado, install-offline (27-31 + Fase 9/10 del plan) | Completado |
-| ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
-| ~~8~~ ✅ | **Ola pedagógica completa:** depuración lista, `backup`/`restaurar`, higiene compartidas, `doctor --fix`, GitHub Classroom (`clonar`+push), corrector `verificar` y `soporte` (43-47, 50-51) | Completado |
-| ~~9~~ ✅ | Confianza de despliegue: CI real en windows-latest con setup+smoke+roundtrip offline ✅, espejo regional pacman ✅, uv por defecto ✅ (48-49, 52) | Completado |
+| Lanzadores con argumentos sin re-quoting y espera `INFINITE` | Re-quoting según reglas MSVCRT (validado con roundtrip) + timeout de guarda de 10 min | `348e765` |
+| Consultas repetidas a la API de GitHub (rate limit en aulas con NAT) | Caché local `descargas/api_cache` con vencimiento y fallback vencido | `854919e` |
+| Cuatro bucles de reintento de descarga duplicados y bloque de espejos inline | Consolidados en `Invoke-DownloadWithRetry` y `Select-PacmanMirrorByLatency` con pruebas | `3b06d0c` |
+| Sin aviso de compatibilidad bajo PowerShell 7 | Aviso informativo no bloqueante al detectar pwsh 6+ | `0789425` |
+| `doctor --fix` quedó sin commitear tras la sesión de origen | Restaurado, verificado en sandbox (Linux real + Windows simulado) y publicado | `dc01b1d` |
+| Distribución formal imposible (sin LICENSE/tags) | Licencia MIT + etiquetas `v1.0.0`/`v1.1.0` + CHANGELOG de release | `9523e9b`, `2a8da45` |
+
+Histórico anterior (pre-1.0.0): limpieza de hosts compartidos (`descargas/`, regeneración de skel sin `bash -env`, conservación de marcadores), plantilla UCRT64 canónica, TLS moderno y progreso desactivado, paquete offline sin datos personales, sincronización standalone con `linux/`, referencias rotas a `bootstrap --install`, PATH portable estable.
+
+## 3. Registro de Problemas Originales (ítems 1-26: todos cerrados)
+
+| # | Problema original | Resolución |
+|---|---|---|
+| 1 | Actualizaciones no atómicas de VS Code/WezTerm | Extracción en temporal, validación del binario clave, swap con rollback y `finally` |
+| 2 | Regresión de `customize-terminal.ps1` en `wezterm.lua` | Generación desde la plantilla física única |
+| 3 | Round-trip destructivo de `settings.json` | Parcheo quirúrgico de solo `C_Cpp.default.*` |
+| 4/7 | Sin versionado reproducible / fallbacks antiguos | Canal `versions.json` pineado + `-Latest` + fallbacks del manifiesto con política semestral |
+| 5 | Carpetas sincronizadas no detectadas | Detección OneDrive/Dropbox/etc. en setup y lanzadores |
+| 6 | Sin integridad para gh/WezTerm/VS Code | Hash registrado en sidecar `.sha256` y verificación activa contra caché |
+| 8 | Actualizaciones obligatoriamente interactivas | `-Yes` desatendido |
+| 9 | `update-env.sh` desactualizado | Lista derivada del alcance actual, incluye `docs/` y `linux/` |
+| 10 | Paquetes duplicados entre scripts | Fuente única `packages-baseline.txt` |
+| 11-12 | Plantilla triplicada + migración por regex | Plantilla física única `wezterm.lua.template`; queda normalización residual mínima UCRT64 |
+| 13 | `install-lib.sh` sin desinstalación | `uninstall-lib.sh` multiplataforma con manifiesto |
+| 14 | Paquete offline pesado/lento | Poda `-Compact`, política explícita de `local/` (excluido por defecto), extracción rápida con `tar.exe` |
+| 15 | `test.ps1` basura | Eliminado; hoy existen suites reales (bash + pwsh) |
+| 16 | Links absolutos en plan.md | Rutas relativas |
+| 17 | Sin LICENSE/tags/CHANGELOG | MIT + `v1.0.0`/`v1.1.0` + CHANGELOG (`9523e9b`, `2a8da45`) |
+| 18 | `LANG=es_AR.UTF-8` inexistente en el host | Variante Linux sin locale forzado; documentado |
+| 19-20 | Dubious ownership / PEP 668 | Documentados con guía (`docs/entorno.md`) |
+| 21 | `launcher.c` quoting/timeout | Re-quoting MSVCRT + timeout acotado (`348e765`) |
+| 22 | `diagnose.log` en CWD | Se escribe en `$PORTABLE_ROOT` |
+| 23 | Solo Defender cubierto | Detección de AV de terceros con instrucciones específicas |
+| 24 | Editor de Git por defecto | `core.editor "code --wait"` en ambas plataformas |
+| 25-26 | GEMINI.md duplicado / docs sin Linux | GEMINI.md es stub de AGENTS.md; documentación con variante Linux |
+
+## 3.5 Nueva Ola (ítems 27-42: todos implementados)
+
+| # | Ítem | Evidencia |
+|---|---|---|
+| 27 | Scaffolding académico (`nuevo-proyecto`, `entregar`) | `bin/` + `linux/bin/`, probados en suite |
+| 28 | Extensiones `.vsix` offline | `package-env.ps1 -ConExtensiones` con instalador offline |
+| 29 | `doctor` unificado | Compila, valida Python/Git/gh/PATH; código de salida estándar |
+| 30 | Canal por cuatrimestre | `CHANNEL=<tag>` en `.env` consumido por ambos `update-env.sh`; base: tags de release |
+| 31 | Desinstalador completo | `desinstalar.ps1` con resumen y confirmación irreversible |
+| 32 | Preflight de recursos | Espacio (~4 GB) y advertencia LongPaths antes de descargar |
+| 33 | Reintentos uniformes de descargas grandes | `Invoke-DownloadWithRetry` (4 componentes), probado en CI (`3b06d0c`) |
+| 34 | Pacman paralelo | `ParallelDownloads = 5` durante inicialización |
+| 35 | Compatibilidad PowerShell 7 | Aviso informativo bajo pwsh 6+ (`0789425`); validación completa 5.1/7 requiere host Windows |
+| 36 | Defender granular | Exclusiones solo `msys64/`, `vscode/`, `wezterm/` + detección AV de terceros |
+| 37 | Fuente única de reglas de agente | GEMINI.md stub → AGENTS.md |
+| 38 | Versión visible | `VERSION` en ayuda, banner, diagnóstico e informe de soporte |
+| 39 | Política de `local/` en el paquete | Decidida y documentada: excluido por defecto, `-IncluirLibs` opcional |
+| 40 | Tests de Linux en CI | `tests/test_linux_env.sh` (25 pruebas) en job dedicado |
+| 41 | Resumen final de setup | Estado por componente al cierre del instalador |
+| 42 | Paridad de actualización en Linux | `linux/bin/update-env.sh` con canal configurable |
+
+## 3.6 Ola Pedagógica y de Confianza (ítems 43-52: todos implementados)
+
+| # | Ítem | Evidencia |
+|---|---|---|
+| 43 | Depuración lista en `nuevo-proyecto` | `.vscode/launch.json`+`tasks.json` F5/GDB por plataforma, `.clang-format`, `.editorconfig` |
+| 44 | Flujo GitHub Classroom | `clonar <url>` + publicación opcional commit+push en `entregar` (`ff2d609`) |
+| 45 | Corrector local `verificar` | Convención `tests/caso_NN.in/.out` o `make test`; filtro en `entregar` (`9009f9a`) |
+| 46 | Respaldo del entorno | `backup`/`restaurar` con manifiestos de librerías |
+| 47 | Higiene en compartidas | Recordatorio visible en `ayuda` con sesión gh activa |
+| 48 | CI real en windows-latest | Workflow semanal/manual: setup → smoke → `-Compact` → roundtrip offline (`d05b7f1`) |
+| 49 | Espejo regional pacman | Por latencia con prioridad sudamericana, idempotente (`97f6308`) |
+| 50 | Comando `soporte` | Informe único anonimizado listo para adjuntar (`c3078ca`) |
+| 51 | `doctor --fix` | Regenera skel/marcadores/settings base sin reinstalar (`dc01b1d`) |
+| 52 | `uv` por defecto para venvs | Con fallback automático a `python -m venv`; smoke reporta el motor (`b044d26`) |
+
+## 4. Ideas a Futuro (no programadas)
+
+* `env.common.psm1`: módulo común para la lógica compartida entre `launch.ps1` y `launch-vscode.ps1` (~80%: advertencia de ruta, carga `.env`, inyección del toolchain). Único ítem numerado vivo (**53**).
+* Alternativa `tar.zst` al ZIP del paquete offline si el tamaño volviera a ser problema.
+* `git config credential.helper cache` con TTL como alternativa al helper `store` en texto plano.
+* Soporte zsh en `activate.sh` (PS1 alternativo) según demanda real de estudiantes.
+* Patrón `Execute-WithRetry` para `Expand-Archive` ante antivirus que bloquean archivos (hoy mitigado con reintentos de descarga y extracción atómica).
+
+## 5. Roadmap
+
+| Hito | Contenido | Estado |
+|---|---|---|
+| ~~1~~ | Atomicidad, customize-terminal, settings.json, `-Yes`, OneDrive | ✅ Completado |
+| ~~2~~ | Canal de versiones reproducible (`versions.json` + `-Latest` + `CHANNEL`) | ✅ Completado |
+| ~~3~~ | CI de linters + limpieza de repo + AGENTS.md | ✅ Completado |
+| ~~4~~ | Plantilla física única `wezterm.lua.template` | ✅ Completado |
+| ~~5~~ | Deuda técnica: launcher, caché API, licencia y tags | ✅ Completado |
+| ~~6~~ | Producto educativo base (scaffolding, doctor, offline) | ✅ Completado |
+| ~~7~~ | Mantenimiento fino (Defender, VERSION, tests CI) | ✅ Completado |
+| ~~8~~ | Ola pedagógica completa (43-47, 50-51) | ✅ Completado |
+| ~~9~~ | Confianza de despliegue (CI e2e, espejos, uv) | ✅ Completado |
+| 10 | Deuda menor: `env.common.psm1` (53) + validación física en host Windows | Pendiente (bajo) |
 
 ---
-*Mantener este documento actualizado en cada corrección: mover ítems resueltos a la sección 2 con referencia de commit.*
+*Mantener este documento actualizado en cada corrección: mover los ítems resueltos a las tablas de este registro con referencia de commit.*
