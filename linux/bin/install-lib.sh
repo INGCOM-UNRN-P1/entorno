@@ -134,7 +134,7 @@ elif [ -f "CMakeLists.txt" ]; then
         cmake --install build
         echo -e "${GREEN}-> Instalación vía CMake completada en $PREFIX_DIR.${RESET}"
     else
-        echo -e "${RED}[ERROR] El proyecto requiere CMake y no está instalado. Ejecutá 'linux/bootstrap.sh --install'.${RESET}"
+        echo -e "${RED}[ERROR] El proyecto requiere CMake y no está instalado. Instalalo con tu gestor de paquetes (linux/bootstrap.sh sugiere cómo).${RESET}"
         exit 1
     fi
 

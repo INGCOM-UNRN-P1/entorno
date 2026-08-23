@@ -37,7 +37,7 @@ if [ -z "${PORTABLE_ROOT:-}" ]; then
     die "No estás dentro del entorno portátil. Activá primero la sesión:
        source linux/activate.sh"
 fi
-command -v git >/dev/null 2>&1 || die "git no está instalado. Ejecutá 'linux/bootstrap.sh --install'."
+command -v git >/dev/null 2>&1 || die "git no está instalado. Instalalo con tu gestor de paquetes (linux/bootstrap.sh sugiere el comando)."
 
 echo -e "${CYAN}======================================================================${RESET}"
 echo -e "${CYAN}          Configuración de Git Portable — Paso a paso${RESET}"
@@ -116,7 +116,7 @@ if command -v gh >/dev/null 2>&1; then
     fi
 else
     warn "GitHub CLI (gh) no está instalado en este sistema."
-    echo "   Instalalo con: linux/bootstrap.sh --install"
+    echo "   linux/bootstrap.sh sugiere el comando de instalación para tu distribución."
     echo "   Más info: https://github.com/cli/cli#installation"
 fi
 
