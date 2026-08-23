@@ -488,7 +488,18 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
 
         if (-not $isDownloadedAndValid) {
             Write-Host "Descargando $fileName..." -ForegroundColor Cyan
-            Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing
+            # Descarga con reintentos (archivos grandes en conexiones inestables)
+            $attempts = 0
+            $dlSuccess = $false
+            while (-not $dlSuccess -and $attempts -lt 3) {
+                $attempts++
+                try {
+                    Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath -UseBasicParsing -ErrorAction Stop
+                    $dlSuccess = $true
+                } catch {
+                    if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
+                }
+            }
 
             Write-Host "Descargando verificación SHA256..." -ForegroundColor Cyan
             try {
@@ -764,7 +775,17 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
             
             if (-not $vscodeZipValid) {
                 Write-Host "Descargando VS Code desde $resolvedVscodeUrl..." -ForegroundColor Cyan
-                Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing
+                $attempts = 0
+                $dlSuccess = $false
+                while (-not $dlSuccess -and $attempts -lt 3) {
+                    $attempts++
+                    try {
+                        Invoke-WebRequest -Uri $resolvedVscodeUrl -OutFile $vscodeZipPath -UseBasicParsing -ErrorAction Stop
+                        $dlSuccess = $true
+                    } catch {
+                        if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
+                    }
+                }
                 (Get-FileHash -Path $vscodeZipPath -Algorithm SHA256).Hash | Set-Content -Path "$vscodeZipPath.sha256"
             }
             
@@ -970,7 +991,17 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
 
             if (-not $isGhZipValid) {
                 Write-Host "Descargando GitHub CLI desde $ghDownloadUrl..." -ForegroundColor Cyan
-                Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing
+                $attempts = 0
+                $dlSuccess = $false
+                while (-not $dlSuccess -and $attempts -lt 3) {
+                    $attempts++
+                    try {
+                        Invoke-WebRequest -Uri $ghDownloadUrl -OutFile $ghZipPath -UseBasicParsing -ErrorAction Stop
+                        $dlSuccess = $true
+                    } catch {
+                        if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
+                    }
+                }
                 (Get-FileHash -Path $ghZipPath -Algorithm SHA256).Hash | Set-Content -Path "$ghZipPath.sha256"
             }
 
@@ -1095,7 +1126,17 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
 
             if (-not $isWezZipValid) {
                 Write-Host "Descargando WezTerm desde $wezDownloadUrl..." -ForegroundColor Cyan
-                Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing
+                $attempts = 0
+                $dlSuccess = $false
+                while (-not $dlSuccess -and $attempts -lt 3) {
+                    $attempts++
+                    try {
+                        Invoke-WebRequest -Uri $wezDownloadUrl -OutFile $wezZipPath -UseBasicParsing -ErrorAction Stop
+                        $dlSuccess = $true
+                    } catch {
+                        if ($attempts -lt 3) { Start-Sleep -Seconds 2 } else { throw }
+                    }
+                }
                 (Get-FileHash -Path $wezZipPath -Algorithm SHA256).Hash | Set-Content -Path "$wezZipPath.sha256"
             }
 
