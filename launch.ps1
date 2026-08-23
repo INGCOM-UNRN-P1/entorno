@@ -4,11 +4,12 @@ $ErrorActionPreference = "Stop"
 
 $portableRoot = $PSScriptRoot
 
-# Validar espacios o caracteres no ASCII en la ruta de instalación
+# Validar espacios, caracteres no ASCII o carpetas sincronizadas en la ruta de instalación
 $hasSpaces = $portableRoot -match " "
 $hasNonAscii = $portableRoot -match "[^\u0000-\u007F]"
+$hasSyncFolder = $portableRoot -match "(?i)onedrive|dropbox|google\s+drive|icloud"
 
-if ($hasSpaces -or $hasNonAscii) {
+if ($hasSpaces -or $hasNonAscii -or $hasSyncFolder) {
     Write-Host "==========================================================================" -ForegroundColor Yellow
     Write-Host "[ADVERTENCIA] La ruta de instalación contiene caracteres conflictivos:" -ForegroundColor Yellow
     if ($hasSpaces) { 
@@ -16,6 +17,9 @@ if ($hasSpaces -or $hasNonAscii) {
     }
     if ($hasNonAscii) {
         Write-Host "* Caracteres no ASCII (acentos, eñes, etc.)." -ForegroundColor Yellow 
+    }
+    if ($hasSyncFolder) {
+        Write-Host "* Carpeta sincronizada (OneDrive/Dropbox/etc.), puede corromper compilaciones." -ForegroundColor Yellow 
     }
     Write-Host "Ruta: '$portableRoot'"
     Write-Host "Esto puede romper herramientas de compilación de C (Make, CMake, etc.)."

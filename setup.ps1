@@ -1,7 +1,8 @@
 param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
-    [switch]$SkipUpdate
+    [switch]$SkipUpdate,
+    [switch]$Yes
 )
 
 $ErrorActionPreference = "Stop"
@@ -145,8 +146,9 @@ try {
         
         if ($hasExistingScripts) {
             Write-Host "Se detectaron scripts de consola existentes en el directorio." -ForegroundColor Yellow
-            $choice = Read-Host "¿Deseás actualizar todos los scripts del entorno a la última versión desde GitHub? (s/n)"
-            if ($choice -notmatch "^[sS]$") {
+            if ($Yes) {
+                Write-Host "(--Yes) Actualizando scripts automáticamente..." -ForegroundColor DarkGray
+            } elseif ((Read-Host "¿Deseás actualizar todos los scripts del entorno a la última versión desde GitHub? (s/n)") -notmatch "^[sS]$") {
                 $shouldUpdate = $false
                 Write-Host "Se omite la actualización de los scripts. Se utilizarán las versiones locales.`n" -ForegroundColor Yellow
             }
@@ -311,11 +313,12 @@ if ($isUpdateMode) {
 }
 Write-Host "Directorio de instalación: $portableRoot`n"
 
-# Validar espacios o caracteres no ASCII en la ruta de instalación (causan errores graves con Make/compiladores)
+# Validar espacios, caracteres no ASCII o carpetas sincronizadas en la ruta (causan errores con Make/compiladores)
 $hasSpaces = $portableRoot -match ' '
 $hasNonAscii = $portableRoot -match '[^\u0000-\u007F]'
+$hasSyncFolder = $portableRoot -match '(?i)onedrive|dropbox|google\s+drive|icloud'
 
-if ($hasSpaces -or $hasNonAscii) {
+if ($hasSpaces -or $hasNonAscii -or $hasSyncFolder) {
     Write-Host "==========================================================================" -ForegroundColor Yellow
     Write-Host "ADVERTENCIA: RUTA CON POSIBLES CONFLICTOS DETECTADA" -ForegroundColor Yellow
     Write-Host "==========================================================================" -ForegroundColor Yellow
@@ -325,18 +328,26 @@ if ($hasSpaces -or $hasNonAscii) {
     if ($hasNonAscii) {
         Write-Host "* La ruta de instalación contiene caracteres no ASCII (acentos, eñes, etc.)." -ForegroundColor Yellow
     }
+    if ($hasSyncFolder) {
+        Write-Host "* La ruta está dentro de una carpeta sincronizada (OneDrive/Dropbox/etc.)," -ForegroundColor Yellow
+        Write-Host "  conocida por corromper instalaciones y compilaciones." -ForegroundColor Yellow
+    }
     Write-Host "--------------------------------------------------------------------------"
     Write-Host "Muchas herramientas de compilación de C (como Make, CMake y compiladores)"
     Write-Host "fallan o tienen comportamientos erráticos con este tipo de rutas."
     Write-Host "Se recomienda mover la carpeta a una ruta simple (Ej: C:\dev\entorno)."
     Write-Host "--------------------------------------------------------------------------"
-    
-    $choice = Read-Host "¿Deseás continuar con la instalación de todas formas? (s/n)"
-    if ($choice -notmatch "^[sS]$") {
-        Write-Host "Instalación cancelada." -ForegroundColor Red
-        return
+
+    if ($Yes) {
+        Write-Host "(--Yes) Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
+    } else {
+        $choice = Read-Host "¿Deseás continuar con la instalación de todas formas? (s/n)"
+        if ($choice -notmatch "^[sS]$") {
+            Write-Host "Instalación cancelada." -ForegroundColor Red
+            return
+        }
+        Write-Host "Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
     }
-    Write-Host "Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
 }
 
 # Asegurar que existan los directorios iniciales y sus archivos skel
@@ -661,9 +672,9 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
         
         if ($resolvedVscodeUrl -ne $installedVscodeUrl) {
             Write-Host "Hay una nueva versión de VS Code disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-            $choice = Read-Host "¿Deseás descargar e instalar la actualización de VS Code? (s/n)"
-            if ($choice -match "^[sS]$") {
+            if ($Yes -or ((Read-Host "¿Deseás descargar e instalar la actualización de VS Code? (s/n)") -match "^[sS]$")) {
                 $shouldInstallOrUpdateVscode = $true
+                if ($Yes) { Write-Host "(--Yes) Actualizando VS Code automáticamente..." -ForegroundColor DarkGray }
             } else {
                 Write-Host "Omitiendo actualización de VS Code." -ForegroundColor DarkGray
             }
@@ -890,9 +901,9 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
                 Write-Host "Omitiendo comprobación de actualización de GitHub CLI (la API de GitHub no está disponible)." -ForegroundColor Green
             } else {
                 Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-                $choice = Read-Host "¿Deseás descargar e instalar la actualización de GitHub CLI? (s/n)"
-                if ($choice -match "^[sS]$") {
+                if ($Yes -or ((Read-Host "¿Deseás descargar e instalar la actualización de GitHub CLI? (s/n)") -match "^[sS]$")) {
                     $shouldInstallOrUpdateGh = $true
+                    if ($Yes) { Write-Host "(--Yes) Actualizando GitHub CLI automáticamente..." -ForegroundColor DarkGray }
                 } else {
                     Write-Host "Omitiendo actualización de GitHub CLI." -ForegroundColor DarkGray
                 }
@@ -1014,9 +1025,9 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
                 Write-Host "Omitiendo comprobación de actualización de WezTerm (la API de GitHub no está disponible)." -ForegroundColor Green
             } else {
                 Write-Host "Hay una nueva versión de WezTerm disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-                $choice = Read-Host "¿Deseás descargar e instalar la actualización de WezTerm? (s/n)"
-                if ($choice -match "^[sS]$") {
+                if ($Yes -or ((Read-Host "¿Deseás descargar e instalar la actualización de WezTerm? (s/n)") -match "^[sS]$")) {
                     $shouldInstallOrUpdateWez = $true
+                    if ($Yes) { Write-Host "(--Yes) Actualizando WezTerm automáticamente..." -ForegroundColor DarkGray }
                 } else {
                     Write-Host "Omitiendo actualización de WezTerm." -ForegroundColor DarkGray
                 }
