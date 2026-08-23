@@ -77,6 +77,8 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 
 ## 3.5 Nueva Ola Detectada (revisión posterior a la implementación)
 
+> **Estado de implementación:** ítems **27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41 y 42 quedaron implementados** (35 quedó como aviso informativo de compatibilidad bajo pwsh; la validación completa 5.1/7 requiere host Windows).
+
 ### Producto / Educativo (mayor valor)
 
 27. **Scaffolding académico:** comandos `nuevo-proyecto <nombre>` (genera estructura C con Makefile/CMakeLists/.gitignore de cátedra) y `entregar <tp>` (empaqueta y valida el TP en ZIP listo para entrega). Es la mejora de mayor impacto directo para Programación 1.
@@ -141,12 +143,12 @@ Documento de trabajo que releva el estado actual del repositorio, enumera los pr
 | Hito | Contenido | Esfuerzo estimado |
 |---|---|---|
 | ~~1~~ ✅ | Atomicidad, customize-terminal, settings.json, `-Yes`, OneDrive | Completado |
-| 2 | Manifiesto/canal estable por cuatrimestre + pin de extensiones + tags (4, 7, 30) | Medio |
+| 2 | Manifiesto de versiones por semestre + pin de extensiones + tags semestrales (4, 7) | Medio |
 | ~~3~~ ✅ | CI de linters + limpieza de repo + AGENTS.md | Completado |
 | 4 | Plantilla wezterm.lua en archivo único físico (11-12) | Bajo-Medio |
-| 5 | Verificación activa de hashes, caché API, preflight recursos, pacman paralelo, pwsh (6, 32-35) | Medio |
-| 6 | **Producto educativo:** scaffolding `nuevo-proyecto`/`entregar`, extensiones offline, `doctor`, desinstalador (27-29, 31) | Medio-Alto |
-| 7 | Mantenimiento fino: GEMINI stub, VERSION visible, política local/, bats en CI, exit codes, update-env Linux (37-42) | Bajo |
+| 5 | Verificación activa de hashes, caché API, launcher.c quoting (6 parcial, 21) | Medio |
+| ~~6~~ ✅ | **Producto educativo:** scaffolding, extensiones offline, doctor, desinstalador (27-31) | Completado |
+| ~~7~~ ✅ | Mantenimiento fino: Defender granular, GEMINI stub, VERSION, política local/, tests CI, resumen setup, update-env Linux (32-42) | Completado |
 
 ---
 *Mantener este documento actualizado en cada corrección: mover ítems resueltos a la sección 2 con referencia de commit.*

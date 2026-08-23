@@ -111,6 +111,18 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 * **Propósito:** Precargar caché de pacman para instalaciones offline.
 * **Funcionamiento:** Ejecuta `pacman -Sw` para descargar localmente a `descargas/pacman_cache` todos los paquetes definidos en `packages-baseline.txt` (fuente única compartida con setup.ps1).
 
+### `nuevo-proyecto <nombre>`
+* **Propósito:** Crear la estructura inicial de un proyecto de cátedra.
+* **Funcionamiento:** Genera la carpeta con `main.c` (hola mundo parametrizado), `Makefile` de cátedra (`make` / `mingw32-make`) y `.gitignore`, validando el nombre y colisiones.
+
+### `entregar [directorio]`
+* **Propósito:** Empaquetar el trabajo práctico para entrega.
+* **Funcionamiento:** Compila el proyecto vía Makefile (validación previa a la entrega) y genera `ENTREGA_<proyecto>_<fecha>.zip` con solo fuentes, excluyendo binarios, `.o`, builds y `.git`, usando Python para máxima portabilidad.
+
+### `doctor`
+* **Propósito:** Verificación rápida de salud post-instalación.
+* **Funcionamiento:** Compila, enlaza y ejecuta un programa mínimo; valida make/cmake/ninja, Python, identidad de Git, sesión de gh y presencia de los directorios del entorno en el PATH. Código de salida 0 solo si no hay fallos.
+
 ### `uninstall-lib.sh`
 * **Propósito:** Desinstalar librerías registradas por `install-lib.sh`.
 * **Funcionamiento:** Lee los manifiestos en `<prefijo>/portable-libs/*.files`, elimina los archivos registrados, poda directorios vacíos y reporta las librerías instaladas vía CMake/make install que solo tienen notas parciales.

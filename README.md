@@ -36,10 +36,15 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [`setup.ps1`](file:///home/mrtin/dev/p1/entorno/setup.ps1): Script de PowerShell para instalar, regenerar y actualizar el entorno, VS Code y WezTerm. Al ejecutarse, actualiza automáticamente todos los scripts del entorno a la última versión (vía Git pull o descargándolos de GitHub) y luego actualiza los componentes instalados. Valida la ruta de instalación y genera el registro `install.log` para troubleshooting.
 *   [`package-env.ps1`](file:///home/mrtin/dev/p1/entorno/package-env.ps1): Script de PowerShell para empaquetar el entorno completo inicializado en un archivo ZIP para distribución offline.
 *   [`clean-shared-host.ps1`](file:///home/mrtin/dev/p1/entorno/clean-shared-host.ps1): Script de PowerShell para eliminar credenciales, historial de consola y configuraciones personales al trabajar en una máquina pública o compartida. Restablece VS Code a la configuración por defecto (incluyendo terminal en UCRT64 Bash).
+*   [`desinstalar.ps1`](file:///home/mrtin/dev/p1/entorno/desinstalar.ps1): Elimina por completo los componentes generados del entorno (MSYS2, VS Code, WezTerm, HOME portable), conservando los scripts del repositorio.
 *   [`customize-terminal.ps1`](file:///home/mrtin/dev/p1/entorno/customize-terminal.ps1): Script de PowerShell interactivo para personalizar la apariencia de la consola WezTerm (esquema de colores, tamaño de letra, opacidad del fondo y habilitar/desactivar pestañas).
 *   [`customize-terminal.bat`](file:///home/mrtin/dev/p1/entorno/customize-terminal.bat): Cargador rápido CMD para lanzar el asistente de personalización de consola.
 *   [`fix-antivirus.ps1`](file:///home/mrtin/dev/p1/entorno/fix-antivirus.ps1): Script de PowerShell para agregar el directorio del entorno portable a las exclusiones de Windows Defender, previniendo falsos positivos del antivirus y errores de memoria ("VirtualProtect failed with code 0x5af") durante la compilación (requiere privilegios de Administrador).
 *   [`bin/install-lib.sh`](file:///home/mrtin/dev/p1/entorno/bin/install-lib.sh): Script de Bash para compilar e instalar automáticamente librerías de C desde repositorios de GitHub en tu prefijo portable `/ucrt64` (agregado al PATH).
+*   [`bin/uninstall-lib.sh`](file:///home/mrtin/dev/p1/entorno/bin/uninstall-lib.sh): Desinstala librerías registradas por install-lib usando manifiestos (agregado al PATH).
+*   [`bin/nuevo-proyecto`](file:///home/mrtin/dev/p1/entorno/bin/nuevo-proyecto): Crea la estructura inicial de un proyecto de cátedra (`main.c` + `Makefile` + `.gitignore`) lista para compilar (agregado al PATH).
+*   [`bin/entregar`](file:///home/mrtin/dev/p1/entorno/bin/entregar): Compila el TP y lo empaqueta en un ZIP de entrega excluyendo binarios y builds (agregado al PATH).
+*   [`bin/doctor`](file:///home/mrtin/dev/p1/entorno/bin/doctor): Verificación rápida de salud del entorno: compila un programa mínimo y valida herramientas e identidad de Git (agregado al PATH).
 *   [`bin/ayuda`](file:///home/mrtin/dev/p1/entorno/bin/ayuda): Script de Bash (ejecutable como comando `ayuda`) que muestra una guía de referencia rápida sobre los comandos y herramientas del entorno portable (agregado al PATH).
 *   [`bin/build-launcher.sh`](file:///home/mrtin/dev/p1/entorno/bin/build-launcher.sh): Script de Bash para descargar y compilar los lanzadores ejecutables del repositorio (`.exe`) desde las fuentes de GitHub (agregado al PATH).
 *   [`bin/customize-bash.sh`](file:///home/mrtin/dev/p1/entorno/bin/customize-bash.sh): Script de Bash interactivo para personalizar el entorno de Bash y su mensaje de bienvenida, ofreciendo varias plantillas y sugerencias (agregado al PATH).
@@ -110,6 +115,16 @@ Para abrir la consola interactiva o el editor con el PATH y las herramientas con
 *   **Lanzar Terminal (WezTerm):** Ejecutá `launch.bat` (CMD) o `.\launch.ps1` (PowerShell).
     *   *Si por alguna razón no se encuentra WezTerm localmente, los lanzadores caerán de vuelta de forma segura iniciando la terminal Bash integrada en la consola clásica.*
 *   **Lanzar VS Code:** Ejecutá `launch-vscode.bat` (CMD) o `.\launch-vscode.ps1` (PowerShell).
+
+### Comandos de cátedra
+
+Dentro del terminal portable también tenés utilidades pensadas para el flujo de trabajos prácticos:
+```bash
+nuevo-proyecto tp01     # crea tp01/ con main.c, Makefile y .gitignore
+cd tp01 && make         # compilá
+doctor                  # verificá que todo esté sano
+entregar                # generá el ZIP de entrega validado
+```
 
 ### Compilación de Lanzadores Ejecutables (`.exe`)
 Para evitar depender de archivos de comandos por lotes (`.bat`) y eliminar las molestas ventanas negras parpadeantes del prompt de comandos de Windows, el entorno permite generar lanzadores ejecutables nativos de Windows (`launch.exe` y `launch-vscode.exe`). Estos ejecutables abren la terminal y el editor de manera directa y totalmente invisible en segundo plano.
@@ -212,6 +227,7 @@ Para empaquetar el entorno completo ya inicializado y distribuirlo a computadora
    Set-ExecutionPolicy Bypass -Scope Process -Force; .\package-env.ps1
    ```
    *Este script optimizará el espacio (vaciando la caché de pacman), copiará la estructura libre de metadatos de Git y creará el archivo comprimido `portable-env-offline.zip` en la raíz.*
+   *Parámetros opcionales: `-Compact` poda documentación/locales de MSYS2; `-ConExtensiones` incluye los `.vsix` instalados con un instalador offline para aulas sin internet; `-IncluirLibs` conserva las librerías de `local/` (por defecto no viajan).*
 3. Copiá el archivo `portable-env-offline.zip` a un pendrive o medio de almacenamiento.
 4. En la computadora de destino **sin internet**, simplemente extraé el archivo ZIP en cualquier ruta (sin espacios ni acentos) y ejecutá directamente los lanzadores (`launch.bat` o `launch-vscode.bat`). El entorno funcionará de forma inmediata 100% offline.
 
