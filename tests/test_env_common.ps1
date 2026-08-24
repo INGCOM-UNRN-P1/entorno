@@ -102,6 +102,68 @@ try {
 }
 
 # ============================================================
+# 4. Show-PathWarning (contenido del aviso por tipo de conflicto)
+# ============================================================
+$out = (& { Show-PathWarning -Path "C:\dev\OneDrive\p1" } 6>&1) | Out-String
+Assert-True "aviso menciona carpeta sincronizada" ($out -match "sincronizada")
+Assert-True "aviso recomienda ruta simple" ($out -match "C:\\dev\\entorno")
+
+$out = (& { Show-PathWarning -Path "C:\dev\mi entorno" } 6>&1) | Out-String
+Assert-True "aviso menciona espacios en blanco" ($out -match "Espacios")
+
+# ============================================================
+# 5. Set-VsCodeCompilerSettings (parcheo quirúrgico de settings.json)
+# ============================================================
+$vsc = Join-Path ([System.IO.Path]::GetTempPath()) ("vscodecfg-" + [guid]::NewGuid().ToString("N"))
+$gccEsperado = (($vsc + "\msys64\ucrt64\bin\gcc.exe") -replace "\\", "/")
+
+try {
+    # Caso A: JSON con comentario, claves existentes y array de un elemento
+    $userDir = Join-Path $vsc "data\user-data\User"
+    New-Item -ItemType Directory -Force -Path $userDir | Out-Null
+    $jsonPath = Join-Path $userDir "settings.json"
+    Set-Content $jsonPath -Value @'
+{
+    // comentario personalizado del alumno
+    "editor.fontSize": 14,
+    "C_Cpp.default.compilerPath": "/vieja/ruta/gcc.exe",
+    "array.uno": [1]
+}
+'@
+    $escribio = Set-VsCodeCompilerSettings -PortableRoot $vsc -VscodeDir $vsc
+    $final = Get-Content $jsonPath -Raw
+    Assert-True "reporta escritura cuando hay cambios" ($escribio -eq $true)
+    Assert-True "actualiza compilerPath a la ruta portable" ($final -match [regex]::Escape($gccEsperado))
+    Assert-True "agrega intelliSenseMode sin tocar el resto" ($final -match "windows-gcc-x64")
+    Assert-True "preserva el comentario del alumno" ($final -match "comentario personalizado")
+    Assert-True "no aplana arrays de un elemento" ($final -match "\[1\]")
+    Assert-True "preserva otras claves" ($final -match "editor\.fontSize")
+
+    # Caso B: segunda corrida idéntica no reescribe
+    $antes = Get-Content $jsonPath -Raw
+    $escribio2 = Set-VsCodeCompilerSettings -PortableRoot $vsc -VscodeDir $vsc
+    $despues = Get-Content $jsonPath -Raw
+    Assert-True "segunda corrida no escribe (idempotente)" ($escribio2 -eq $false -and $antes -eq $despues)
+
+    # Caso C: settings inexistente -> crea uno mínimo válido
+    Remove-Item $jsonPath -Force
+    $null = Set-VsCodeCompilerSettings -PortableRoot $vsc -VscodeDir $vsc
+    $minimo = Get-Content $jsonPath -Raw
+    Assert-True "crea settings.json con ambas claves si falta" (
+        $minimo -match [regex]::Escape($gccEsperado) -and $minimo -match "windows-gcc-x64")
+
+    # Caso D: JSON de objeto vacío recibe inserción limpia
+    Remove-Item $jsonPath -Force
+    Set-Content $jsonPath -Value '{}'
+    $null = Set-VsCodeCompilerSettings -PortableRoot $vsc -VscodeDir $vsc
+    $objeto = Get-Content $jsonPath -Raw
+    Assert-True "objeto vacío queda con las dos claves y sin basura" (
+        $objeto -match "compilerPath" -and $objeto -notmatch "^," )
+} finally {
+    Remove-Item -Recurse -Force $vsc -ErrorAction SilentlyContinue
+}
+
+# ============================================================
 # Resumen
 # ============================================================
 if ($Fail -eq 0) {

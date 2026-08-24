@@ -162,6 +162,39 @@ try {
 }
 
 # ============================================================
+# 4. Get-Pinned: resolución del manifiesto versions.json
+# ============================================================
+. ([scriptblock]::Create((Get-FunctionFromScript -Path $SetupPath -Name "Get-Pinned")))
+
+$script:pinnedVersions = [pscustomobject]@{
+    canal   = "2026-c1"
+    vscode  = "  https://ejemplo/vscode.zip  "
+    gh      = $null
+}
+Assert-True "pin de cadena se devuelve recortado" ((Get-Pinned 'vscode') -eq "https://ejemplo/vscode.zip")
+Assert-True "pin en null devuelve null" ($null -eq (Get-Pinned 'gh'))
+Assert-True "clave inexistente devuelve null" ($null -eq (Get-Pinned 'wezterm'))
+
+$script:pinnedVersions = $null
+Assert-True "sin manifiesto todo devuelve null" ($null -eq (Get-Pinned 'msys2'))
+
+$script:pinnedVersions = $null
+
+# ============================================================
+# 5. Get-FileNameFromUrl: nombre de archivo desde URL
+# ============================================================
+. ([scriptblock]::Create((Get-FunctionFromScript -Path $SetupPath -Name "Get-FileNameFromUrl")))
+
+Assert-True "toma el último segmento con extensión válida" `
+    ((Get-FileNameFromUrl -Url "https://ejemplo/descargas/msys2-base.sfx.exe" -DefaultName "x") -eq "msys2-base.sfx.exe")
+Assert-True "descarta query string" `
+    ((Get-FileNameFromUrl -Url "https://ejemplo/code.zip?ts=123" -DefaultName "x") -eq "code.zip")
+Assert-True "extensión desconocida usa el default" `
+    ((Get-FileNameFromUrl -Url "https://ejemplo/download" -DefaultName "fallback.zip") -eq "fallback.zip")
+Assert-True "URL vacía usa el default" `
+    ((Get-FileNameFromUrl -Url "" -DefaultName "vacío.tar.gz") -eq "vacío.tar.gz")
+
+# ============================================================
 # Resumen
 # ============================================================
 if ($Fail -eq 0) {
