@@ -74,6 +74,7 @@ static void append_quoted_arg(char *dst, size_t dst_size, const char *arg) {
     dst[len] = '\0';
 }
 
+#ifndef LAUNCHER_TEST_OMIT_WINMAIN
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     (void)hInstance;
     (void)hPrevInstance;
@@ -163,3 +164,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     return 1;
 }
+#endif
