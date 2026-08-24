@@ -126,9 +126,24 @@ else
     echo "   Más info: https://github.com/cli/cli#installation"
 fi
 
-# Fallback genérico para otros servidores (GitLab, Bitbucket, etc.)
-git config --global credential.helper 'store --file ~/.git-credentials'
-ok "Fallback 'store' configurado en ~/.git-credentials (dentro del HOME portable)."
+# Fallback genérico para otros servidores (GitLab, Bitbucket, etc.):
+# caché temporal en memoria (recomendado, especialmente en compartidas)
+# o store persistente en texto plano dentro del HOME portable.
+say "\n${CYAN}=== Paso $((step_n++)): Credenciales de otros servidores ===${RESET}\n"
+say "Almacenamiento de credenciales de respaldo (GitLab, Bitbucket, etc.):\n"
+say "  ${GREEN}1) cache${RESET}  (recomendado): memoria temporal, expira a la hora\n"
+say "  ${GREEN}2) store${RESET} : archivo ~/.git-credentials en texto plano, persistente\n"
+cred_opcion="$(ask "Elegí 1 o 2 [1]: ")"
+case "$cred_opcion" in
+    2)
+        git config --global credential.helper 'store --file ~/.git-credentials'
+        ok "Fallback 'store' configurado en ~/.git-credentials (dentro del HOME portable)."
+        ;;
+    *)
+        git config --global credential.helper 'cache --timeout=3600'
+        ok "Fallback 'cache' configurado con expiración de 1 hora (no escribe nada en disco)."
+        ;;
+esac
 
 # ---------------------------------------------------------------
 # Paso 4: Resumen y verificación final

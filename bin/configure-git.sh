@@ -33,8 +33,24 @@ echo "Configurando almacenamiento de credenciales portable..."
 # Usar gh (GitHub CLI) de forma portable para github.com y gist.github.com (compartido con VS Code)
 git config --global credential.https://github.com.helper "!gh auth git-credential"
 git config --global credential.https://gist.github.com.helper "!gh auth git-credential"
-# Usar store como fallback para otros servidores (GitLab, etc.) en el HOME portable
-git config --global credential.helper 'store --file ~/.git-credentials'
+
+# Fallback para otros servidores (GitLab, etc.): caché temporal en memoria
+# (recomendado, especialmente en compartidas) o store persistente en texto
+# plano dentro del HOME portable.
+echo "Almacenamiento de credenciales de respaldo (otros servidores):"
+echo "  1) cache  (recomendado): memoria temporal, expira a la hora"
+echo "  2) store : archivo ~/.git-credentials en texto plano, persistente"
+read -r -p "Elegí 1 o 2 [1]: " CRED_OPCION || CRED_OPCION="1"
+case "$CRED_OPCION" in
+    2)
+        git config --global credential.helper 'store --file ~/.git-credentials'
+        echo "OK: 'store' configurado en ~/.git-credentials (dentro del HOME portable)."
+        ;;
+    *)
+        git config --global credential.helper 'cache --timeout=3600'
+        echo "OK: 'cache' configurado con expiración de 1 hora (no escribe nada en disco)."
+        ;;
+esac
 
 # Configuración básica recomendada
 git config --global core.autocrlf input

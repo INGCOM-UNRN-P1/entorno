@@ -160,6 +160,17 @@ assert "el informe no filtra el nombre de usuario" bash -c "! grep -qF '$(whoami
 assert "el informe incluye versión y diagnóstico" \
     bash -c "grep -q '^Versión' '$SUP' && grep -q 'DIAGNÓSTICO' '$SUP'"
 
+# --- configure-git: elección de credential helper (caché temporal vs store) ---
+run_in_sandbox "printf 'Alumno\nalumno@p1.test\nn\n1\n' | configure-git.sh >/dev/null 2>&1"
+CH=$(HOME="$SANDBOX/repo/home" git config --global credential.helper)
+assert "configure-git ofrece caché temporal de credenciales por defecto" \
+    test "$CH" = "cache --timeout=3600"
+
+run_in_sandbox "printf 'Alumno\nalumno@p1.test\nn\n2\n' | configure-git.sh >/dev/null 2>&1"
+CH=$(HOME="$SANDBOX/repo/home" git config --global credential.helper)
+assert "configure-git permite store persistente al elegirlo explícitamente" \
+    test "$CH" = "store --file ~/.git-credentials"
+
 echo ""
 if [ "$FAIL" -eq 0 ]; then
     echo "OK: $PASS pruebas superadas."
