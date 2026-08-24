@@ -1,4 +1,4 @@
-# test_windows_logic.ps1 - Pruebas de la lógica interna de setup.ps1 ejecutables
+﻿# test_windows_logic.ps1 - Pruebas de la lógica interna de setup.ps1 ejecutables
 # en cualquier plataforma con PowerShell 7 (CI incluido). Extrae las funciones por
 # AST para probar el texto real que se distribuye, sin ejecutar la instalación.
 #

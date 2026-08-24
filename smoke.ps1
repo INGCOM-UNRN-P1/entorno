@@ -1,4 +1,4 @@
-# smoke.ps1 - Ejecuta la suite de aceptación automatizada (bin/smoke.sh) en el bash portable.
+﻿# smoke.ps1 - Ejecuta la suite de aceptación automatizada (bin/smoke.sh) en el bash portable.
 $ErrorActionPreference = "Stop"
 $portableRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($portableRoot)) { $portableRoot = (Get-Location).Path }

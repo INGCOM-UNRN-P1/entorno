@@ -1,4 +1,4 @@
-# install.ps1 - Bootstrap para el Entorno Portable
+﻿# install.ps1 - Bootstrap para el Entorno Portable
 # Este archivo está guardado en UTF-8 sin BOM para poder ejecutarse directamente desde internet:
 # irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/install.ps1 | iex
 

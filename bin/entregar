@@ -27,13 +27,19 @@ fi
 
 BASENAME="$(basename "$(pwd)")"
 
+# Determinar el comando make a utilizar (make o mingw32-make)
+MAKE_CMD="make"
+if ! command -v make >/dev/null 2>&1 && command -v mingw32-make >/dev/null 2>&1; then
+    MAKE_CMD="mingw32-make"
+fi
+
 # Validación de compilación antes de empacar
 if [ -f "Makefile" ]; then
     printf "%b¿Compilar el proyecto antes de empacar? (recomendado) (S/n): ${RESET}" "${CYAN}"
     read -r answer || answer="s"
     if ! printf '%s' "$answer" | grep -qi '^n'; then
         echo -e "${CYAN}-> Compilando...${RESET}"
-        if ! make >/dev/null; then
+        if ! $MAKE_CMD >/dev/null; then
             echo -e "${RED}[ERROR] La compilación falló. Corregí los errores antes de entregar.${RESET}"
             exit 1
         fi

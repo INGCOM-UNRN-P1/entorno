@@ -840,6 +840,13 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     Write-Host "[Actualización] MSYS2 y herramientas de desarrollo ya configuradas. Se omite pacman para agilizar la ejecución." -ForegroundColor Green
 }
 
+# Garantizar que make.exe exista como ejecutable nativo en ucrt64/bin (además del alias interactivo)
+$mingwMakeExe = Join-Path $msysDir "ucrt64\bin\mingw32-make.exe"
+$makeExe = Join-Path $msysDir "ucrt64\bin\make.exe"
+if ((Test-Path $mingwMakeExe) -and -not (Test-Path $makeExe)) {
+    Copy-Item -Path $mingwMakeExe -Destination $makeExe -Force
+}
+
 # ==========================================
 # 4. Gestión e Instalación de VS Code Portable
 # ==========================================

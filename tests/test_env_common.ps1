@@ -1,4 +1,4 @@
-# test_env_common.ps1 - Pruebas del módulo compartido de los lanzadores
+﻿# test_env_common.ps1 - Pruebas del módulo compartido de los lanzadores
 # (env.common.psm1). Se ejecutan en cualquier plataforma con PowerShell 7.
 #
 # Uso:  pwsh -NoProfile -File tests/test_env_common.ps1

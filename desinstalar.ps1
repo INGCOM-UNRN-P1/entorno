@@ -1,4 +1,4 @@
-# desinstalar.ps1 - Elimina por completo los componentes generados del entorno portable,
+﻿# desinstalar.ps1 - Elimina por completo los componentes generados del entorno portable,
 # dejando únicamente los archivos del repositorio. Útil al finalizar la cursada o para
 # liberar espacio en computadoras compartidas.
 #

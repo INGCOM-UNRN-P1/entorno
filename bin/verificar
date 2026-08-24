@@ -27,10 +27,16 @@ if ! ls ./*.c >/dev/null 2>&1 && [ ! -f "Makefile" ]; then
     exit 1
 fi
 
+# Determinar el comando make a utilizar (make o mingw32-make)
+MAKE_CMD="make"
+if ! command -v make >/dev/null 2>&1 && command -v mingw32-make >/dev/null 2>&1; then
+    MAKE_CMD="mingw32-make"
+fi
+
 # Prioridad 1: objetivo 'test' definido por la cátedra en el Makefile
 if [ -f "Makefile" ] && grep -qE '^[[:space:]]*(test|check)[[:space:]]*:' Makefile; then
-    echo -e "${CYAN}-> Ejecutando 'make test' ...${RESET}"
-    if make test; then
+    echo -e "${CYAN}-> Ejecutando '$MAKE_CMD test' ...${RESET}"
+    if $MAKE_CMD test; then
         echo -e "${GREEN}[ÉXITO] Pruebas del Makefile superadas.${RESET}"
         exit 0
     fi
@@ -53,7 +59,7 @@ fi
 # Compilar antes de verificar
 if [ -f "Makefile" ]; then
     echo -e "${CYAN}-> Compilando ...${RESET}"
-    if ! make >/dev/null; then
+    if ! $MAKE_CMD >/dev/null; then
         echo -e "${RED}[ERROR] La compilación falló: corregí los errores y volvé a intentar.${RESET}"
         exit 1
     fi
