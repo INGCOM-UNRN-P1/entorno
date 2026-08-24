@@ -4,77 +4,21 @@ $ErrorActionPreference = "Stop"
 
 $portableRoot = $PSScriptRoot
 
-# Validar espacios, caracteres no ASCII o carpetas sincronizadas en la ruta de instalación
-$hasSpaces = $portableRoot -match " "
-$hasNonAscii = $portableRoot -match "[^\u0000-\u007F]"
-$hasSyncFolder = $portableRoot -match "(?i)onedrive|dropbox|google\s+drive|icloud"
+# Lógica compartida con launch.ps1 (advertencia de ruta, .env, sesión)
+Import-Module (Join-Path $portableRoot "env.common.psm1") -Force
 
-if ($hasSpaces -or $hasNonAscii -or $hasSyncFolder) {
-    Write-Host "==========================================================================" -ForegroundColor Yellow
-    Write-Host "[ADVERTENCIA] La ruta de instalación contiene caracteres conflictivos:" -ForegroundColor Yellow
-    if ($hasSpaces) {
-        Write-Host "* Espacios en blanco." -ForegroundColor Yellow
-    }
-    if ($hasNonAscii) {
-        Write-Host "* Caracteres no ASCII (acentos, eñes, etc.)." -ForegroundColor Yellow
-    }
-    if ($hasSyncFolder) {
-        Write-Host "* Carpeta sincronizada (OneDrive/Dropbox/etc.), puede corromper compilaciones." -ForegroundColor Yellow
-    }
-    Write-Host "Ruta: '$portableRoot'"
-    Write-Host "Esto puede romper herramientas de compilación de C (Make, CMake, etc.)."
-    Write-Host "Se recomienda mover el entorno a una ruta simple (Ej: C:\dev\entorno)."
-    Write-Host "==========================================================================" -ForegroundColor Yellow
-    Write-Host ""
+# Advertencia temprana ante espacios, caracteres no ASCII o carpetas sincronizadas
+$infoRuta = Test-ConflictivePath -Path $portableRoot
+if ($infoRuta.IsConflictive) {
+    Show-PathWarning -Path $portableRoot
 }
 
-# Cargar configuración de directorio HOME
-$homeDirName = "home"
-$envFile = Join-Path $portableRoot ".env"
-if (Test-Path $envFile) {
-    $envContent = Get-Content $envFile -Raw
-    if ($envContent -match 'HOME_DIR_NAME=(.*)') {
-        $homeDirName = $Matches[1].Replace('"', '').Trim()
-    }
-}
+# Cargar configuración de directorio HOME e inyectar la sesión portable común
+$homeDirName = Get-PortableHomeName -PortableRoot $portableRoot
+$null = Set-PortableSession -PortableRoot $portableRoot -HomeDirName $homeDirName
 
-$homeDir = Join-Path $portableRoot $homeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
 $codeExe = Join-Path $vscodeDir "Code.exe"
-
-# Asegurar existencia de HOME portable
-if (-not (Test-Path $homeDir)) {
-    New-Item -ItemType Directory -Path $homeDir | Out-Null
-}
-
-# Inyectar variables de entorno de sesión
-$env:PORTABLE_ROOT = $portableRoot
-$env:HOME = $homeDir
-$env:MSYSTEM = "UCRT64"
-$env:CHERE_INVOKING = "1"
-$env:LANG = "es_AR.UTF-8"
-
-# Prepend de paths de MSYS2, GCC y bin local a la sesión de VS Code
-$binPath = Join-Path $portableRoot "bin"
-$gccPath = Join-Path $portableRoot "msys64\ucrt64\bin"
-$usrPath = Join-Path $portableRoot "msys64\usr\bin"
-$env:PATH = "$binPath;$gccPath;$usrPath;$env:PATH"
-
-# Variables específicas del Toolchain de C/C++
-$env:CC  = "gcc"
-$env:CXX = "g++"
-$env:AR  = "ar"
-$env:AS  = "as"
-$env:LD  = "ld"
-$env:CPP = "cpp"
-$env:CFLAGS  = "-O2 -Wall"
-$env:LDFLAGS = ""
-$env:PKG_CONFIG_PATH   = "$(Join-Path $portableRoot 'msys64\ucrt64\lib\pkgconfig');$(Join-Path $portableRoot 'msys64\usr\lib\pkgconfig');$env:PKG_CONFIG_PATH"
-$env:CMAKE_PREFIX_PATH = "$(Join-Path $portableRoot 'msys64\ucrt64');$(Join-Path $portableRoot 'msys64\usr');$env:CMAKE_PREFIX_PATH"
-
-# Variables de entorno para integración
-$env:VSCODE_ROOT  = Join-Path $portableRoot "vscode"
-$env:WEZTERM_ROOT = Join-Path $portableRoot "wezterm"
 
 # Validar existencia de VS Code
 if (-not (Test-Path $codeExe)) {

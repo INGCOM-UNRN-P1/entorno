@@ -381,6 +381,7 @@ try {
                     "setup.ps1",
                     "launch.bat",
                     "launch.ps1",
+                    "env.common.psm1",
                     "launch-vscode.bat",
                     "launch-vscode.ps1",
                     "clean-shared-host.ps1",

@@ -41,3 +41,6 @@ jobs:
       - name: Pruebas de lógica de setup.ps1 (reintentos, caché API, espejos)
         shell: pwsh
         run: ./tests/test_windows_logic.ps1
+      - name: Pruebas del módulo común de lanzadores (env.common.psm1)
+        shell: pwsh
+        run: ./tests/test_env_common.ps1
