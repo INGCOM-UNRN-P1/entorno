@@ -3,6 +3,12 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/);
 versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 
+## [Sin publicar]
+
+### Agregado
+* Módulo común `env.common.psm1` para los lanzadores (`launch.ps1`, `launch-vscode.ps1`): advertencia de ruta conflictiva, resolución del HOME portable desde `.env` e inyección de la sesión/toolchain en una sola fuente, con suite propia en CI.
+* `configure-git.sh`: las credenciales de respaldo para otros servidores ahora se eligen entre caché temporal en memoria (expira a la hora; recomendado en compartidas) o `store` persistente en texto plano.
+
 ## [1.1.0] - 2026-08-23
 
 ### Agregado

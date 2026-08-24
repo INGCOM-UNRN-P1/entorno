@@ -12,8 +12,8 @@ conservan por trazabilidad (aparecen en commits y conversaciones).
 * **Versión Windows (madura):** instalador desatendido (`setup.ps1`) con verificación SHA256 estricta, marcadores por componente, actualizaciones atómicas de VS Code/WezTerm, preflight de espacio/rutas, reintentos uniformes de descarga (`Invoke-DownloadWithRetry`), caché de la API de GitHub y selección de espejo pacman por latencia; VS Code portable con datos aislados y parcheo quirúrgico de `settings.json`, WezTerm GPU desde plantilla física única, GitHub CLI, empaquetado offline con `-Compact`/`-ConExtensiones`/`-IncluirLibs` e instalador asistido del paquete.
 * **Variante Linux (madura):** activación por sesión (`source linux/activate.sh`) con HOME portable, prefijo `local/`, paridad completa de comandos de cátedra y `update-env.sh`. Principio rector intacto: **cero modificaciones al host y cero permisos de administrador** (AGENTS.md).
 * **Flujo del alumno:** `nuevo-proyecto` (con depuración F5/GDB, `.clang-format`, `.editorconfig` y caso de prueba inicial), `clonar` (GitHub Classroom), `verificar` (corrector local), `entregar` (valida, empaca y publica con confirmación), `backup`/`restaurar`, `doctor [--fix]`, `soporte` (informe anónimo), `ayuda`.
-* **Calidad y CI:** linters (PSScriptAnalyzer, shellcheck, `bash -n`), suite bash de la variante Linux (25 pruebas), suite de lógica de `setup.ps1` ejecutable en CI (11 pruebas por AST) y cadena completa semanal/manual en `windows-latest` (setup → smoke → empaquetado → roundtrip offline).
-* **Deuda viva:** únicamente el ítem **53** (`env.common.psm1`) y la validación física periódica en host Windows de la cadena PowerShell.
+* **Calidad y CI:** linters (PSScriptAnalyzer, shellcheck, `bash -n`), suite bash de la variante Linux (27 pruebas), suites de lógica de `setup.ps1` y del módulo de lanzadores ejecutables en CI (11 + 17 pruebas) y cadena completa semanal/manual en `windows-latest` (setup → smoke → empaquetado → roundtrip offline).
+* **Deuda viva:** únicamente la validación física periódica en host Windows de la cadena PowerShell.
 
 ## 2. Corregidos Recientemente
 
@@ -25,6 +25,8 @@ conservan por trazabilidad (aparecen en commits y conversaciones).
 | Sin aviso de compatibilidad bajo PowerShell 7 | Aviso informativo no bloqueante al detectar pwsh 6+ | `0789425` |
 | `doctor --fix` quedó sin commitear tras la sesión de origen | Restaurado, verificado en sandbox (Linux real + Windows simulado) y publicado | `dc01b1d` |
 | Distribución formal imposible (sin LICENSE/tags) | Licencia MIT + etiquetas `v1.0.0`/`v1.1.0` + CHANGELOG de release | `9523e9b`, `2a8da45` |
+| Lógica de lanzadores duplicada (~80% entre `launch.ps1` y `launch-vscode.ps1`) | Módulo común `env.common.psm1` con 17 pruebas propias en CI | `309d271` |
+| Credenciales de respaldo solo en texto plano (`store`) | Elección entre caché temporal en memoria (TTL 1 h, defecto) o `store`; probado en suite bash | `74cf63b` |
 
 Histórico anterior (pre-1.0.0): limpieza de hosts compartidos (`descargas/`, regeneración de skel sin `bash -env`, conservación de marcadores), plantilla UCRT64 canónica, TLS moderno y progreso desactivado, paquete offline sin datos personales, sincronización standalone con `linux/`, referencias rotas a `bootstrap --install`, PATH portable estable.
 
@@ -76,7 +78,7 @@ Histórico anterior (pre-1.0.0): limpieza de hosts compartidos (`descargas/`, re
 | 41 | Resumen final de setup | Estado por componente al cierre del instalador |
 | 42 | Paridad de actualización en Linux | `linux/bin/update-env.sh` con canal configurable |
 
-## 3.6 Ola Pedagógica y de Confianza (ítems 43-52: todos implementados)
+## 3.6 Ola Pedagógica y de Confianza (ítems 43-53: todos implementados)
 
 | # | Ítem | Evidencia |
 |---|---|---|
@@ -90,12 +92,11 @@ Histórico anterior (pre-1.0.0): limpieza de hosts compartidos (`descargas/`, re
 | 50 | Comando `soporte` | Informe único anonimizado listo para adjuntar (`c3078ca`) |
 | 51 | `doctor --fix` | Regenera skel/marcadores/settings base sin reinstalar (`dc01b1d`) |
 | 52 | `uv` por defecto para venvs | Con fallback automático a `python -m venv`; smoke reporta el motor (`b044d26`) |
+| 53 | Módulo común de lanzadores `env.common.psm1` | Fuente única para advertencia de ruta, `.env` y sesión/toolchain; 17 pruebas en CI (`309d271`) |
 
 ## 4. Ideas a Futuro (no programadas)
 
-* `env.common.psm1`: módulo común para la lógica compartida entre `launch.ps1` y `launch-vscode.ps1` (~80%: advertencia de ruta, carga `.env`, inyección del toolchain). Único ítem numerado vivo (**53**).
 * Alternativa `tar.zst` al ZIP del paquete offline si el tamaño volviera a ser problema.
-* `git config credential.helper cache` con TTL como alternativa al helper `store` en texto plano.
 * Soporte zsh en `activate.sh` (PS1 alternativo) según demanda real de estudiantes.
 * Patrón `Execute-WithRetry` para `Expand-Archive` ante antivirus que bloquean archivos (hoy mitigado con reintentos de descarga y extracción atómica).
 
@@ -112,7 +113,8 @@ Histórico anterior (pre-1.0.0): limpieza de hosts compartidos (`descargas/`, re
 | ~~7~~ | Mantenimiento fino (Defender, VERSION, tests CI) | ✅ Completado |
 | ~~8~~ | Ola pedagógica completa (43-47, 50-51) | ✅ Completado |
 | ~~9~~ | Confianza de despliegue (CI e2e, espejos, uv) | ✅ Completado |
-| 10 | Deuda menor: `env.common.psm1` (53) + validación física en host Windows | Pendiente (bajo) |
+| ~~10~~ | `env.common.psm1` (53) + credenciales cache TTL | ✅ Completado (`309d271`, `74cf63b`) |
+| 11 | Validación física en host Windows de la cadena PowerShell | Pendiente (bajo) |
 
 ---
 *Mantener este documento actualizado en cada corrección: mover los ítems resueltos a las tablas de este registro con referencia de commit.*

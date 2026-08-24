@@ -46,9 +46,13 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 * **Propósito:** Lanzador de VS Code con el toolchain e integraciones de terminal configuradas.
 * **Funcionamiento Interno:**
   1. El archivo `.bat` delega al cargador `.ps1` para evitar problemas sintácticos en el host.
-  2. El script `.ps1` carga el directorio HOME y las variables de sesión del compilador de C y Python de forma idéntica a `launch.ps1`.
+  2. El script `.ps1` carga el directorio HOME y las variables de sesión del compilador de C y Python a través del módulo común `env.common.psm1` (idéntico a `launch.ps1`).
   3. Comprueba si `vscode/Code.exe` existe. En caso de no existir, muestra una ventana de error de Windows nativa.
   4. Ejecuta el proceso de VS Code pasándole los argumentos de la línea de comandos (ej: abrir una carpeta específica o archivo) sin la bandera `-NoNewWindow` para asegurar que el editor se abra de forma visible.
+
+### `env.common.psm1`
+* **Propósito:** Módulo PowerShell compartido por ambos lanzadores (fuente única de la lógica común).
+* **Funcionamiento:** Exporta `Test-ConflictivePath` (espacios, no-ASCII y carpetas sincronizadas), `Show-PathWarning`, `Get-PortableHomeName` (lectura validada de `HOME_DIR_NAME` en `.env`) y `Set-PortableSession` (creación del HOME portable, PATH con `bin/` + UCRT64 + `usr/bin`, variables del toolchain de C/C++, `VSCODE_ROOT`/`WEZTERM_ROOT`). Compatible con Windows PowerShell 5.1 y pwsh; cubierto por `tests/test_env_common.ps1`.
 
 ---
 
@@ -188,7 +192,7 @@ Entorno por activación de sesión, sin modificaciones al host ni permisos de ad
 * **Funcionamiento:** Solo lectura: detecta gestor de paquetes (apt/dnf/yum/pacman/zypper/apk), informa herramientas presentes/faltantes y sugiere comandos; nunca instala ni usa sudo. Rechaza explícitamente el modo de instalación automática eliminado.
 
 ### Scripts en `linux/bin/`
-*   `configure-git.sh`: configuración guiada de Git (identidad validada, preferencias, credential helpers de gh y fallback store) aislada en el HOME portable.
+*   `configure-git.sh`: configuración guiada de Git (identidad validada, preferencias, credential helpers de gh y fallback elegible: caché temporal en memoria con expiración de 1 hora por defecto, o `store` persistente en texto plano) aislada en el HOME portable.
 *   `customize-terminal.sh`: asistente de banner de bienvenida y prompt de PS1 entre marcas en `.bashrc`.
 *   `install-lib.sh`: port Linux del instalador de librerías (library.spec, recetas, CMake+Ninja o Makefiles, header-only) hacia `$PORTABLE_PREFIX` (`local/`), con manifiesto para desinstalación.
 *   `uninstall-lib.sh`: desinstalador basado en manifiestos (idéntico al de Windows).
