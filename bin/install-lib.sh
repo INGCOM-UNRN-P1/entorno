@@ -15,7 +15,7 @@ fi
 
 REPO=$1
 REF=${2:-""}
-PREFIX_DIR="${MSYSTEM_PREFIX}"
+PREFIX_DIR="${PORTABLE_PREFIX:-${MSYSTEM_PREFIX:-${PORTABLE_ROOT:+$PORTABLE_ROOT/msys64/ucrt64}}}"
 
 if [ -z "$PREFIX_DIR" ]; then
     echo -e "\e[31m[ERROR] No estás dentro de la consola del entorno portable.\e[0m"
@@ -23,21 +23,26 @@ if [ -z "$PREFIX_DIR" ]; then
     exit 1
 fi
 
-# Resolver URL de GitHub
-if [[ ! "$REPO" =~ ^http ]]; then
-    URL="https://github.com/${REPO}.git"
-else
-    URL="$REPO"
-fi
-
-# Directorio temporal para la clonación
+# Directorio temporal para la compilación/instalación
 TEMP_DIR=$(mktemp -d -t portable-lib-XXXXXX)
-echo -e "\e[36m-> Clonando $URL en directorio temporal...\e[0m"
 
-if [ -n "$REF" ]; then
-    git clone --depth 1 --branch "$REF" "$URL" "$TEMP_DIR"
+if [ -d "$REPO" ]; then
+    URL="$(cd "$REPO" && pwd)"
+    echo -e "\e[36m-> Usando directorio local $URL...\e[0m"
+    cp -r "$REPO"/* "$TEMP_DIR/"
 else
-    git clone --depth 1 "$URL" "$TEMP_DIR"
+    # Resolver URL de GitHub
+    if [[ ! "$REPO" =~ ^http ]]; then
+        URL="https://github.com/${REPO}.git"
+    else
+        URL="$REPO"
+    fi
+    echo -e "\e[36m-> Clonando $URL en directorio temporal...\e[0m"
+    if [ -n "$REF" ]; then
+        git clone --depth 1 --branch "$REF" "$URL" "$TEMP_DIR"
+    else
+        git clone --depth 1 "$URL" "$TEMP_DIR"
+    fi
 fi
 
 cd "$TEMP_DIR"

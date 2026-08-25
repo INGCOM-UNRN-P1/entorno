@@ -1,4 +1,4 @@
-﻿# launch.ps1 - Lanzador del entorno portable en PowerShell
+# launch.ps1 - Lanzador del entorno portable en PowerShell
 
 $ErrorActionPreference = "Stop"
 
@@ -52,8 +52,8 @@ if (-not (Test-Path $bashrcPath)) {
 if [ -n "$PORTABLE_ROOT" ]; then
     UNIX_ROOT=$(cygpath -u "$PORTABLE_ROOT")
     case ":$PATH:" in
-        *":${UNIX_ROOT}bin:"*) : ;;
-        *) export PATH="${UNIX_ROOT}bin:${UNIX_ROOT}msys64/ucrt64/bin:${UNIX_ROOT}msys64/usr/bin:${PATH}" ;;
+        *":${UNIX_ROOT}/bin:"*) : ;;
+        *) export PATH="${UNIX_ROOT}/bin:${UNIX_ROOT}/msys64/ucrt64/bin:${UNIX_ROOT}/msys64/usr/bin:${PATH}" ;;
     esac
 fi
 '@

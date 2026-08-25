@@ -14,7 +14,7 @@ set -u
 RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; CYAN='\033[36m'; RESET='\033[0m'
 
 # Prefijo portable: Linux usa PORTABLE_PREFIX; Windows (MSYS2) usa MSYSTEM_PREFIX (/ucrt64)
-PREFIX_DIR="${PORTABLE_PREFIX:-${MSYSTEM_PREFIX:-}}"
+PREFIX_DIR="${PORTABLE_PREFIX:-${MSYSTEM_PREFIX:-${PORTABLE_ROOT:+$PORTABLE_ROOT/msys64/ucrt64}}}"
 if [ -z "$PREFIX_DIR" ]; then
     echo -e "${RED}[ERROR] No estás dentro del entorno portátil.${RESET}"
     echo "Activá primero la sesión (source linux/activate.sh) o usá el terminal de launch.bat."

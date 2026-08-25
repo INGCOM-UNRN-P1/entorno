@@ -56,7 +56,7 @@ done
 # Política del entorno: uv es el creador de entornos por defecto cuando existe
 # (más rápido y sin dependencias externas), con fallback automático a python -m venv.
 VENV_CREADO=0
-if command -v uv >/dev/null 2>&1 && uv venv "$WORK/.venv" >/dev/null 2>&1; then
+if command -v uv >/dev/null 2>&1 && uv venv --seed "$WORK/.venv" >/dev/null 2>&1; then
     VENV_CREADO=1
     VENV_MOTOR="uv"
 elif python -m venv "$WORK/.venv" >/dev/null 2>&1; then
@@ -64,8 +64,12 @@ elif python -m venv "$WORK/.venv" >/dev/null 2>&1; then
     VENV_MOTOR="python -m venv"
 fi
 if [ "$VENV_CREADO" = 1 ]; then
-    if "$WORK/.venv/bin/python" -m pip install --quiet requests >/dev/null 2>&1 && \
-       "$WORK/.venv/bin/python" -c "import requests" >/dev/null 2>&1; then
+    PYVENV="$WORK/.venv/bin/python"
+    if [ ! -f "$PYVENV" ] && [ -f "$WORK/.venv/Scripts/python" ]; then
+        PYVENV="$WORK/.venv/Scripts/python"
+    fi
+    if "$PYVENV" -m pip install --quiet requests >/dev/null 2>&1 && \
+       "$PYVENV" -c "import requests" >/dev/null 2>&1; then
         ok "venv en HOME portable instala e importa 'requests' (motor: $VENV_MOTOR)"
     else
         bad "instalación de paquete en entorno virtual"
@@ -96,7 +100,8 @@ fi
 hdr "Subset Prueba E: gestión de librerías con manifiesto"
 mkdir -p "$WORK/libfix/inc"
 printf '#ifndef SMOKE_H\n#define SMOKE_H\n#endif\n' > "$WORK/libfix/inc/smoke.h"
-if install-lib.sh "$WORK/libfix" >/dev/null 2>&1 && [ -f "${PORTABLE_PREFIX:-$PORTABLE_ROOT/local}/include/inc/smoke.h" ]; then
+PREFIX_CHECK="${PORTABLE_PREFIX:-${MSYSTEM_PREFIX:-$PORTABLE_ROOT/local}}"
+if install-lib.sh "$WORK/libfix" >/dev/null 2>&1 && [ -f "$PREFIX_CHECK/include/inc/smoke.h" ]; then
     ok "install-lib instala cabecera conservando estructura"
 else
     bad "instalación de librería de prueba"
