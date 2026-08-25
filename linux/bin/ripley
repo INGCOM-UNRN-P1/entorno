@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# ripley - Lanzador del motor de análisis de código C de la cátedra.
+# Ejecuta el zipapp portátil (<raíz>/bin/ripley.pyz) distribuido vía GitHub
+# Releases, o delega en una instalación nativa (uv tool / pip) si existe.
+# Funciona en Windows (MSYS2) y Linux.
+#
+# Uso: ripley <comando> [argumentos]     (ej: ripley check .)
+
+set -eu
+
+RED='\033[31m'; RESET='\033[0m'
+
+normalizar() { # ruta absoluta canónica sin resolver symlink final
+    local p="$1"
+    if [ -d "$p" ]; then
+        (cd "$p" && pwd -P)
+    else
+        local d b
+        d=$(dirname "$p"); b=$(basename "$p")
+        (cd "$d" && printf '%s/%s' "$(pwd -P)" "$b")
+    fi
+}
+
+SELF="$(normalizar "$0")"
+
+# 1. Zipapp del entorno portable ($PORTABLE_ROOT o inferido desde el script)
+ROOT="${PORTABLE_ROOT:-}"
+if [ -z "$ROOT" ] || [ ! -d "$ROOT" ]; then
+    ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+fi
+PYZ="$ROOT/bin/ripley.pyz"
+
+if [ -f "$PYZ" ]; then
+    PY="$(command -v python3 || command -v python || true)"
+    if [ -z "$PY" ]; then
+        echo -e "${RED}[ERROR] Ripley necesita Python 3 y no está en el PATH.${RESET}" >&2
+        exit 1
+    fi
+    if ! "$PY" -c 'import typer, rich' >/dev/null 2>&1; then
+        echo -e "${RED}[ERROR] A Ripley le faltan dependencias de Python.${RESET}" >&2
+        echo "Instalalas con: pip install typer rich" >&2
+        exit 1
+    fi
+    exec "$PY" "$PYZ" "$@"
+fi
+
+# 2. Instalación nativa (ripley instalado con uv tool / pip), evitando llamarte a vos mismo
+NATIVE="$(command -v ripley || true)"
+if [ -n "$NATIVE" ] && [ "$(normalizar "$NATIVE")" != "$SELF" ]; then
+    exec "$NATIVE" "$@"
+fi
+
+echo -e "${RED}[ERROR] No encontré el motor Ripley en este entorno.${RESET}" >&2
+echo "Ejecutá setup.ps1 / update-env.sh para descargar ripley.pyz," >&2
+echo "o instalalo manualmente con: uv tool install git+https://github.com/martinvilu/ripley" >&2
+exit 1

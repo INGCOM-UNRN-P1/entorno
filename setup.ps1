@@ -402,6 +402,7 @@ try {
                     "smoke.ps1",
                     "install-offline.ps1",
                     "bin/nuevo-proyecto",
+                    "bin/ripley",
                     "bin/backup",
                     "bin/restaurar",
                     "bin/entregar",
@@ -421,6 +422,7 @@ try {
                     "linux/bin/configure-git.sh",
                     "linux/bin/customize-terminal.sh",
                     "linux/bin/install-lib.sh",
+                    "linux/bin/ripley",
                     "linux/bin/uninstall-lib.sh",
                     "packages-baseline.txt",
                     "VERSION",
@@ -1420,6 +1422,58 @@ if (-not (Test-Path $wezConfigPath) -or $isUpdateMode -or $shouldInstallOrUpdate
     $wezConfigContent = $wezConfigContent.Replace('@HOME_DIR_NAME@', $HomeDirName)
     [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
     Write-Host "Configuración wezterm.lua creada/actualizada desde la plantilla." -ForegroundColor Green
+}
+
+# ==========================================
+# 6.5 Aprovisionamiento del motor Ripley (zipapp ripley.pyz)
+# ==========================================
+# Ripley es el verificador pedagógico de C que usan bin/verificar, bin/entregar,
+# nuevo-proyecto y tp.sh. Se distribuye como zipapp autocontenido (ripley.pyz)
+# adjunto a los Releases de GitHub: no requiere venv ni instalación.
+$ripleyPyzPath = Join-Path $portableRoot "bin\ripley.pyz"
+$ripleyUrl = Get-Pinned 'ripley'
+if (-not $ripleyUrl) {
+    $ripleyUrl = "https://github.com/martinvilu/ripley/releases/latest/download/ripley.pyz"
+}
+
+function Test-ZipappValid([string]$Path) {
+    # Un zipapp ejecutable arranca con shebang y le sigue el archivo ZIP (cabecera PK)
+    try {
+        if ((Get-Item $Path).Length -lt 10KB) { return $false }
+        $head = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes($Path)[0..63])
+        return ($head.StartsWith("#!/usr/bin/env python3") -and $head.Contains("PK"))
+    } catch { return $false }
+}
+
+$needsRipleyDownload = $false
+if (-not (Test-Path $ripleyPyzPath)) {
+    $needsRipleyDownload = $true
+    Write-Host "El motor Ripley no está descargado todavía." -ForegroundColor Yellow
+} elseif ($isUpdateMode -or $Latest) {
+    # En modo actualización se refresca silenciosamente (el zipapp pesa ~200 KB)
+    $needsRipleyDownload = $true
+} else {
+    Write-Host "Motor Ripley ya aprovisionado en bin\ripley.pyz." -ForegroundColor Green
+}
+
+if ($needsRipleyDownload) {
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Write-Host "Descargando Ripley desde $ripleyUrl..." -ForegroundColor Cyan
+        $ripleyTmpPath = "$ripleyPyzPath.tmp"
+        Invoke-DownloadWithRetry -Url $ripleyUrl -OutFile $ripleyTmpPath
+        if (-not (Test-ZipappValid $ripleyTmpPath)) {
+            throw "El archivo descargado no parece un zipapp válido."
+        }
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ripleyPyzPath) | Out-Null
+        Move-Item -Path $ripleyTmpPath -Destination $ripleyPyzPath -Force
+        Write-Host "Motor Ripley aprovisionado con éxito ($( '{0:N0}' -f ((Get-Item $ripleyPyzPath).Length / 1KB) ) KB)." -ForegroundColor Green
+        Write-Host "Probalo con: ripley doctor" -ForegroundColor DarkGray
+    } catch {
+        # No bloquea la instalación: verificar/entregar caen al corrector diff clásico sin Ripley.
+        Write-Warning "No se pudo descargar ripley.pyz ($_). El corrector local funcionará en modo clásico."
+        if (Test-Path "$ripleyPyzPath.tmp") { Remove-Item "$ripleyPyzPath.tmp" -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 # ==========================================

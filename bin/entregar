@@ -64,6 +64,25 @@ if [ -n "$(ls tests/caso_*.in 2>/dev/null)" ] \
     fi
 fi
 
+# Pre-validación estricta con el motor Ripley (proyectos con manifiesto ripley.toml/.ripkg)
+RIPLEY_BIN="$(command -v ripley 2>/dev/null || true)"
+if [ -z "$RIPLEY_BIN" ] && [ -n "${PORTABLE_ROOT:-}" ] && [ -x "$PORTABLE_ROOT/bin/ripley" ]; then
+    RIPLEY_BIN="$PORTABLE_ROOT/bin/ripley"
+fi
+if { ls ./*.ripkg >/dev/null 2>&1 || [ -f "ripley.toml" ]; } && [ -n "$RIPLEY_BIN" ]; then
+    echo ""
+    echo -e "${CYAN}-> Pre-validación con el motor Ripley (modo estricto)...${RESET}"
+    if ! "$RIPLEY_BIN" check . --strict; then
+        printf "%bRipley detectó observaciones. ¿Empacar la entrega igualmente? (s/N): ${RESET}" "${YELLOW}"
+        read -r answer || answer="n"
+        if ! printf '%s' "$answer" | grep -qi '^s'; then
+            echo -e "${RED}[ENTREGA CANCELADA] Atendé las observaciones del análisis y volvé a intentar.${RESET}"
+            exit 1
+        fi
+        echo -e "${YELLOW}[AVISO] Empacando con observaciones de Ripley, bajo tu responsabilidad.${RESET}"
+    fi
+fi
+
 OUT="../ENTREGA_${BASENAME}_$(date +%Y%m%d-%H%M).zip"
 
 PYBIN="$(command -v python3 || command -v python || true)"

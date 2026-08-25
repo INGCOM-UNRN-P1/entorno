@@ -7,6 +7,8 @@ mingw-w64-ucrt-x86_64-cmake              # Generador de sistemas de build
 mingw-w64-ucrt-x86_64-ninja              # Sistema de build concurrente de bajo nivel
 mingw-w64-ucrt-x86_64-python             # Intérprete Python 3 nativo UCRT64
 mingw-w64-ucrt-x86_64-python-pip         # Gestor estándar de paquetes Python (PyPI)
+mingw-w64-ucrt-x86_64-python-typer       # Framework CLI requerido por el zipapp de Ripley
+mingw-w64-ucrt-x86_64-python-rich        # Salida de consola enriquecida requerida por Ripley
 mingw-w64-ucrt-x86_64-uv                 # Resolvedor/instalador de dependencias Python ultrarrápido
 mingw-w64-ucrt-x86_64-cppcheck           # Análisis estático de código C/C++
 mingw-w64-ucrt-x86_64-zlib               # Biblioteca base de compresión DEFLATE

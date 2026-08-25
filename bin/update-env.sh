@@ -58,8 +58,26 @@ rm -rf "$TEMP_DIR"
 
 echo -e "\e[32m[ÉXITO] Scripts del entorno actualizados a la última versión.\e[0m"
 
-# 2. Actualizar componentes nativos
-echo -e "\n\e[33m[2/2] ¿Deseás ejecutar la actualización completa de herramientas nativas?\e[0m"
+# 2. Actualizar el motor Ripley (zipapp autocontenido desde GitHub Releases)
+echo -e "\n\e[33m[2/3] Actualizando el motor de análisis Ripley (ripley.pyz)...\e[0m"
+
+RIPLEY_URL="https://github.com/martinvilu/ripley/releases/latest/download/ripley.pyz"
+RIPLEY_DEST="$PORTABLE_ROOT/bin/ripley.pyz"
+RIPLEY_TMP="$(mktemp -t ripley-XXXXXX)"
+
+if curl -fsSL --max-time 120 -o "$RIPLEY_TMP" "$RIPLEY_URL" \
+   && head -c 24 "$RIPLEY_TMP" | grep -q '#!/usr/bin/env python3'; then
+    mkdir -p "$PORTABLE_ROOT/bin"
+    mv -f "$RIPLEY_TMP" "$RIPLEY_DEST"
+    chmod +x "$RIPLEY_DEST"
+    echo -e "\e[32m[ÉXITO] Ripley actualizado en bin/ripley.pyz ($(du -k "$RIPLEY_DEST" | cut -f1) KB).\e[0m"
+else
+    rm -f "$RIPLEY_TMP"
+    echo -e "\e[33m[AVISO] No se pudo actualizar ripley.pyz (¿sin internet?). Se conserva la versión local.\e[0m"
+fi
+
+# 3. Actualizar componentes nativos
+echo -e "\n\e[33m[3/3] ¿Deseás ejecutar la actualización completa de herramientas nativas?\e[0m"
 echo "(Esto verificará e instalará actualizaciones de MSYS2, VS Code y GitHub CLI)."
 echo -n "¿Continuar? (s/n): "
 read -r choice

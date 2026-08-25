@@ -4,19 +4,77 @@
 # Incluye depuración lista para usar (F5 con GDB en VS Code), formato automático
 # (.clang-format) y convenciones de editor (.editorconfig).
 #
-# Uso: nuevo-proyecto <nombre>
+# Uso: nuevo-proyecto [--tipo plano|tp|lib] <nombre>
+#
+# Tipos de proyecto:
+#   plano (predeterminado)  Programa monoprograma: main.c + Makefile con los
+#                           objetivos debug, asan, test y ripley.
+#   tp                      Trabajo Práctico modular (plantilla-TP): libs/ +
+#                           ejercicios/ + gestor ./tp.sh.
+#   lib                     Biblioteca estática (plantilla-libreria):
+#                           include/ + src/ + tests/ + manage.sh.
 
 set -eu
 
-RED='\033[31m'; GREEN='\033[32m'; CYAN='\033[36m'; RESET='\033[0m'
+RED='\033[31m'; GREEN='\033[32m'; CYAN='\033[36m'; YELLOW='\033[33m'; RESET='\033[0m'
 
-if [ "${1:-}" = "" ]; then
-    echo -e "${RED}[ERROR] Falta el nombre del proyecto.${RESET}"
-    echo "Uso: nuevo-proyecto <nombre>"
+URL_PLANTILLA_TP="${PLANTILLA_TP_URL:-https://github.com/INGCOM-UNRN-P1/plantilla-TP.git}"
+URL_PLANTILLA_LIB="${PLANTILLA_LIB_URL:-https://github.com/INGCOM-UNRN-P1/plantilla-libreria.git}"
+
+mostrar_uso() {
+    echo "Uso: nuevo-proyecto [--tipo plano|tp|lib] <nombre>"
+    echo ""
+    echo "Tipos de proyecto:"
+    echo "  plano   Programa simple: main.c + Makefile (debug, asan, test, ripley)."
+    echo "  tp      Trabajo Práctico modular: libs/ + ejercicios/ + ./tp.sh."
+    echo "  lib     Librería estática: include/ + src/ + tests/ + manage.sh."
+}
+
+# --- Parseo de argumentos (--tipo puede ir antes o después del nombre) ---
+TIPO="plano"
+NAME=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --tipo)
+            if [ $# -lt 2 ]; then
+                echo -e "${RED}[ERROR] La opción --tipo necesita un valor (plano, tp o lib).${RESET}"
+                exit 1
+            fi
+            TIPO="$2"; shift 2 ;;
+        --tipo=*)
+            TIPO="${1#*=}"; shift ;;
+        -h|--help)
+            mostrar_uso; exit 0 ;;
+        -*)
+            echo -e "${RED}[ERROR] Opción desconocida: '$1'.${RESET}"
+            mostrar_uso; exit 1 ;;
+        *)
+            if [ -n "$NAME" ]; then
+                echo -e "${RED}[ERROR] Se esperaba un solo nombre de proyecto (recibí también '$1').${RESET}"
+                exit 1
+            fi
+            NAME="$1"; shift ;;
+    esac
+done
+
+case "$TIPO" in
+    plano|tp|lib) ;;
+    *)
+        echo -e "${RED}[ERROR] Tipo inválido: '$TIPO'. Valores permitidos: plano, tp, lib.${RESET}"
+        exit 1 ;;
+esac
+
+if [ "$TIPO" != "plano" ] && ! command -v git >/dev/null 2>&1; then
+    echo -e "${RED}[ERROR] El tipo '$TIPO' necesita git para descargar la plantilla.${RESET}"
     exit 1
 fi
 
-NAME="$1"
+if [ "${NAME}" = "" ]; then
+    echo -e "${RED}[ERROR] Falta el nombre del proyecto.${RESET}"
+    mostrar_uso
+    exit 1
+fi
+
 if ! printf '%s' "$NAME" | grep -qE '^[a-zA-Z0-9_][a-zA-Z0-9_-]*$'; then
     echo -e "${RED}[ERROR] Nombre inválido: usá letras, números, guiones y guión bajo.${RESET}"
     exit 1
@@ -27,10 +85,34 @@ if [ -e "$NAME" ]; then
     exit 1
 fi
 
-mkdir -p "$NAME/.vscode"
+# --- Tarea de compilación por defecto para VS Code (Ctrl+Shift+B) ---
+escribir_tasks_json() {
+    local destino="$1" comando="$2" detalle="$3"
+    mkdir -p "$destino/.vscode"
+    cat > "$destino/.vscode/tasks.json" <<EOF
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "compilar",
+            "type": "shell",
+            "command": "$comando",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": ["\$gcc"],
+            "detail": "$detalle"
+        }
+    ]
+}
+EOF
+}
 
-# main.c de punto de partida (placeholder __NOMBRE__ reemplazado abajo)
-cat > "$NAME/main.c" <<'EOF'
+# --- Tipo plano: proyecto monoprograma clásico ---
+crear_plano() {
+    local NAME="$1"
+    mkdir -p "$NAME/.vscode"
+
+    # main.c de punto de partida (placeholder __NOMBRE__ reemplazado abajo)
+    cat > "$NAME/main.c" <<'EOF'
 #include <stdio.h>
 
 /* Proyecto: __NOMBRE__
@@ -41,58 +123,83 @@ int main(void) {
     return 0;
 }
 EOF
-sed -i "s/__NOMBRE__/$NAME/g" "$NAME/main.c"
+    sed -i "s/__NOMBRE__/$NAME/g" "$NAME/main.c"
 
-cat > "$NAME/Makefile" <<'EOF'
+    cat > "$NAME/Makefile" <<'EOF'
 # Makefile de cátedra - Programación 1
 CC      ?= gcc
-CFLAGS  ?= -O2 -g -Wall -std=c11
+CFLAGS  ?= -Wall -Wextra -Werror -Wpedantic -std=c11
 TARGET  := __NOMBRE__
+
+DEBUG_FLAGS = -g3 -O0 -DDEBUG
+ASAN_FLAGS = -fsanitize=address,undefined -fno-omit-frame-pointer
 
 all: $(TARGET)
 
 $(TARGET): main.c
 	$(CC) $(CFLAGS) -o $@ $<
 
+debug: CFLAGS += $(DEBUG_FLAGS)
+debug: all
+
+asan: CFLAGS += $(DEBUG_FLAGS) $(ASAN_FLAGS)
+asan: all
+
+# >>> bloque-test-catedra (lo usan verificar/entregar; no renombrar) <<<
+test: $(TARGET)
+	@echo "Ejecutando pruebas del proyecto..."
+	@status=0; \
+	for caso in tests/caso_*.in; do \
+		if [ ! -f "$$caso" ]; then \
+			echo "[AVISO] Sin casos de prueba: creá tests/caso_01.in y tests/caso_01.out"; \
+			break; \
+		fi; \
+		nombre=$$(basename $$caso .in); \
+		if ! ./$(TARGET) < "$$caso" > .salida_test.tmp; then \
+			echo "[FALLA] $$nombre: el programa terminó con error"; status=1; continue; \
+		fi; \
+		esperado=$${caso%.in}.out; \
+		if [ ! -f "$$esperado" ]; then \
+			echo "[AVISO] Falta $$esperado: caso $$nombre omitido"; continue; \
+		fi; \
+		if [ "$$(tr -d '\r' < $$esperado | sed -e 's/[[:space:]]*$$//')" = "$$(tr -d '\r' < .salida_test.tmp | sed -e 's/[[:space:]]*$$//')" ]; then \
+			echo "[OK] $$nombre"; \
+		else \
+			echo "[FALLA] $$nombre: la salida no coincide"; status=1; \
+		fi; \
+	done; \
+	rm -f .salida_test.tmp; \
+	exit $$status
+# <<< bloque-test-catedra <<<
+
+ripley: all
+	@echo "Auditando con el motor Ripley..."
+	@ripley check .
+
 clean:
-	rm -f $(TARGET) $(TARGET).exe *.o
+	rm -f $(TARGET) $(TARGET).exe *.o .salida_test.tmp
 
-.PHONY: all clean
+.PHONY: all clean debug asan test ripley
 EOF
-sed -i "s/__NOMBRE__/$NAME/g" "$NAME/Makefile"
+    sed -i "s/__NOMBRE__/$NAME/g" "$NAME/Makefile"
 
-cat > "$NAME/.gitignore" <<'EOF'
+    cat > "$NAME/.gitignore" <<'EOF'
 # Binarios generados
 __NOMBRE__
 __NOMBRE__.exe
 *.o
 build/
 .vs/
+.salida_test.tmp
 EOF
-sed -i "s/__NOMBRE__/$NAME/g" "$NAME/.gitignore"
+    sed -i "s/__NOMBRE__/$NAME/g" "$NAME/.gitignore"
 
-# --- Tarea de compilación por defecto (Ctrl+Shift+B) ---
-cat > "$NAME/.vscode/tasks.json" <<'EOF'
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "compilar",
-            "type": "shell",
-            "command": "make",
-            "args": [],
-            "group": { "kind": "build", "isDefault": true },
-            "problemMatcher": ["$gcc"],
-            "detail": "Compila el proyecto usando el Makefile de cátedra"
-        }
-    ]
-}
-EOF
+    escribir_tasks_json "$NAME" "make" "Compila el proyecto usando el Makefile de cátedra"
 
-# --- Configuración de depuración F5 (variante según plataforma del entorno) ---
-if [ -n "${MSYSTEM:-}" ]; then
-    # Entorno portable Windows: GDB vive dentro del árbol UCRT64 del entorno
-    cat > "$NAME/.vscode/launch.json" <<EOF
+    # --- Configuración de depuración F5 (variante según plataforma del entorno) ---
+    if [ -n "${MSYSTEM:-}" ]; then
+        # Entorno portable Windows: GDB vive dentro del árbol UCRT64 del entorno
+        cat > "$NAME/.vscode/launch.json" <<EOF
 {
     "version": "0.2.0",
     "configurations": [
@@ -113,9 +220,9 @@ if [ -n "${MSYSTEM:-}" ]; then
     ]
 }
 EOF
-else
-    # Linux: GDB del sistema se resuelve desde el PATH
-    cat > "$NAME/.vscode/launch.json" <<EOF
+    else
+        # Linux: GDB del sistema se resuelve desde el PATH
+        cat > "$NAME/.vscode/launch.json" <<EOF
 {
     "version": "0.2.0",
     "configurations": [
@@ -135,10 +242,10 @@ else
     ]
 }
 EOF
-fi
+    fi
 
-# --- Formato automático de código ---
-cat > "$NAME/.clang-format" <<'EOF'
+    # --- Formato automático de código ---
+    cat > "$NAME/.clang-format" <<'EOF'
 ---
 BasedOnStyle: LLVM
 IndentWidth: 4
@@ -148,8 +255,8 @@ AllowShortFunctionsOnASingleLine: None
 SortIncludes: CaseSensitive
 EOF
 
-# --- Convenciones de editor ---
-cat > "$NAME/.editorconfig" <<'EOF'
+    # --- Convenciones de editor ---
+    cat > "$NAME/.editorconfig" <<'EOF'
 root = true
 
 [*]
@@ -164,20 +271,67 @@ indent_size = 4
 indent_style = tab
 EOF
 
-# --- Pruebas de cátedra: corrector local (verificar) ---
-mkdir -p "$NAME/tests"
-: > "$NAME/tests/caso_01.in"
-printf 'Hola desde %s!\n' "$NAME" > "$NAME/tests/caso_01.out"
+    # --- Pruebas de cátedra: corrector local (verificar) ---
+    mkdir -p "$NAME/tests"
+    : > "$NAME/tests/caso_01.in"
+    printf 'Hola desde %s!\n' "$NAME" > "$NAME/tests/caso_01.out"
 
-echo -e "${GREEN}[ÉXITO] Proyecto '$NAME' creado con depuración lista (F5).${RESET}"
-echo "Estructura:"
-echo "  $NAME/"
-echo "  ├── main.c              (hola mundo listo para compilar)"
-echo "  ├── Makefile            (make / mingw32-make, con símbolos -g)"
-echo "  ├── tests/              (caso_01 del corrector: ejecutá verificar)"
-echo "  ├── .gitignore"
-echo "  ├── .clang-format       (Shift+Alt+F formatea el código)"
-echo "  ├── .editorconfig"
-echo "  └── .vscode/            (F5 compila y depura con GDB)"
-echo ""
-echo -e "${CYAN}Siguiente paso sugerido:${RESET} cd $NAME && verificar   # corre las pruebas de cátedra"
+    echo -e "${GREEN}[ÉXITO] Proyecto '$NAME' creado con depuración lista (F5).${RESET}"
+    echo "Estructura:"
+    echo "  $NAME/"
+    echo "  ├── main.c              (hola mundo listo para compilar)"
+    echo "  ├── Makefile            (make / mingw32-make, con símbolos -g)"
+    echo "  ├── tests/              (caso_01 del corrector: ejecutá verificar)"
+    echo "  ├── .gitignore"
+    echo "  ├── .clang-format       (Shift+Alt+F formatea el código)"
+    echo "  ├── .editorconfig"
+    echo "  └── .vscode/            (F5 compila y depura con GDB)"
+    echo ""
+    echo -e "${CYAN}Siguiente paso sugerido:${RESET} cd $NAME && verificar   # corre las pruebas de cátedra"
+}
+
+# --- Tipos tp / lib: despliegan las plantillas oficiales de la cátedra ---
+crear_desde_plantilla() {
+    local destino="$1" url="$2" descripcion="$3"
+
+    echo -e "${CYAN}-> Descargando la plantilla ($descripcion) desde:${RESET} $url"
+    if ! git clone --quiet --depth 1 "$url" "$destino"; then
+        rm -rf "$destino"
+        echo -e "${RED}[ERROR] No pude clonar la plantilla. Revisá tu conexión a internet.${RESET}"
+        echo "Si la cátedra provee otra URL, exportá PLANTILLA_TP_URL / PLANTILLA_LIB_URL."
+        exit 1
+    fi
+
+    # El proyecto nace limpio de historial: es código del alumno
+    rm -rf "$destino/.git"
+
+    case "$descripcion" in
+        *"Trabajo Práctico"*)
+            escribir_tasks_json "$destino" "./tp.sh sync && ./tp.sh build" "Sincroniza los Makefiles y compila libs + ejercicios"
+            PROXIMO="cd $destino && ./tp.sh help          # comandos del gestor del TP
+  ./tp.sh add-ex ejercicio1       # crea tu primer ejercicio
+  verificar                        # corrige con las pruebas de cátedra
+  ripley check ejercicios/ejercicio1   # auditoría con el motor Ripley"
+            ESTRUCTURA="libs/  ejercicios/  tp.sh  Makefile"
+            ;;
+        *)
+            escribir_tasks_json "$destino" "./manage.sh test" "Compila la librería y corre sus pruebas unitarias"
+            PROXIMO="cd $destino && ./manage.sh info         # metadatos de la librería
+  ./manage.sh add-module modulo1   # crea tu primer módulo (src/ + include/)
+  ./manage.sh test                 # compila y corre las pruebas"
+            ESTRUCTURA="include/  src/  tests/  examples/  manage.sh"
+            ;;
+    esac
+
+    echo -e "${GREEN}[ÉXITO] Proyecto '$destino' ($descripcion) creado.${RESET}"
+    echo "Estructura: $ESTRUCTURA"
+    echo ""
+    echo -e "${CYAN}Próximos pasos sugeridos:${RESET}"
+    printf '%b\n' "$PROXIMO"
+}
+
+case "$TIPO" in
+    plano) crear_plano "$NAME" ;;
+    tp)    crear_desde_plantilla "$NAME" "$URL_PLANTILLA_TP" "Trabajo Práctico modular (plantilla-TP)" ;;
+    lib)   crear_desde_plantilla "$NAME" "$URL_PLANTILLA_LIB" "librería estática (plantilla-libreria)" ;;
+esac

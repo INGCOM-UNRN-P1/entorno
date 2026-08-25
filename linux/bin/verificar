@@ -8,6 +8,10 @@
 #   tests/caso_01.out   salida esperada en stdout
 # Alternativa: un objetivo 'test:' en el Makefile tiene prioridad sobre los casos.
 #
+# Integración con Ripley (Fase 3): si el proyecto declara un manifiesto
+# 'ripley.toml' o un paquete '.ripkg', el corrector delega en el motor de
+# análisis (compilación con AddressSanitizer, reglas P1 y diagnóstico claro).
+#
 # Uso: verificar [directorio_del_proyecto]   (por defecto, el directorio actual)
 
 set -eu
@@ -25,6 +29,20 @@ cd "$PROJ_DIR"
 if ! ls ./*.c >/dev/null 2>&1 && [ ! -f "Makefile" ]; then
     echo -e "${RED}[ERROR] El directorio no parece un proyecto C (no hay archivos .c ni Makefile).${RESET}"
     exit 1
+fi
+
+# Prioridad 0: proyectos con manifiesto de Ripley (.ripkg o ripley.toml)
+RIPLEY_BIN="$(command -v ripley 2>/dev/null || true)"
+if [ -z "$RIPLEY_BIN" ] && [ -n "${PORTABLE_ROOT:-}" ] && [ -x "$PORTABLE_ROOT/bin/ripley" ]; then
+    RIPLEY_BIN="$PORTABLE_ROOT/bin/ripley"
+fi
+if ls ./*.ripkg >/dev/null 2>&1 || [ -f "ripley.toml" ]; then
+    if [ -n "$RIPLEY_BIN" ]; then
+        echo -e "${CYAN}-> Análisis con el motor Ripley ...${RESET}"
+        exec "$RIPLEY_BIN" check .
+    fi
+    echo -e "${YELLOW}[AVISO] Este proyecto usa Ripley pero no está disponible en este entorno.${RESET}"
+    echo "Actualizá el entorno (update-env.sh) o continuá con el corrector clásico."
 fi
 
 # Prioridad 1: objetivo 'test' definido por la cátedra en el Makefile
