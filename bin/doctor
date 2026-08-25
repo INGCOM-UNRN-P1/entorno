@@ -125,6 +125,13 @@ EOF
         fi
     fi
 
+    # 1.b c-debug-companion: .gdbinit pedagógico en el HOME portable
+    GDBINIT_SRC="$ROOT/config/gdb/gdbinit"
+    if [ -d "$HDIR" ] && [ -f "$GDBINIT_SRC" ] && [ ! -f "$HDIR/.gdbinit" ]; then
+        cp "$GDBINIT_SRC" "$HDIR/.gdbinit"
+        fixed ".gdbinit regenerado (c-debug-companion: explicar · dashboard · vars)."
+    fi
+
     # 2. Marcadores de estado (solo si el componente correspondiente existe en disco)
     ensure_marker() { # $1=archivo $2=etiqueta
         local m="$ROOT/$1"

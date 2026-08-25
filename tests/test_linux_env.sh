@@ -412,6 +412,17 @@ run_in_sandbox "cd '$SANDBOX/repo/home' && PLANTILLA_LIB_URL='$SANDBOX/plantilla
 assert "--tipo lib despliega el estándar de biblioteca sin historial de Git" \
     bash -c "[ -d '$SANDBOX/repo/home/mlib/include' ] && [ -d '$SANDBOX/repo/home/mlib/src' ] && [ ! -e '$SANDBOX/repo/home/mlib/.git' ]"
 
+# --- c-debug-companion: .gdbinit pedagógico provisionado por doctor --fix ---
+mkdir -p "$SANDBOX/repo/config/gdb"
+cp "$REPO_ROOT/config/gdb/gdbinit" "$SANDBOX/repo/config/gdb/gdbinit"
+run_in_sandbox "rm -f '$SANDBOX/repo/home/.gdbinit' && doctor --fix >/dev/null"
+assert "doctor --fix provee el .gdbinit del c-debug-companion" \
+    bash -c "grep -q 'explicar' '$SANDBOX/repo/home/.gdbinit'"
+TC=$(run_in_sandbox "gdb -q -batch -x \$HOME/.gdbinit -ex 'python print(\"companion-python-ok\")' >/dev/null 2>&1; echo \$?")
+if command -v gdb >/dev/null 2>&1; then
+    assert "el gdbinit del companion carga en GDB real" test "$TC" -eq 0
+fi
+
 echo ""
 if [ "$FAIL" -eq 0 ]; then
     echo "OK: $PASS pruebas superadas."

@@ -403,6 +403,7 @@ try {
                     "install-offline.ps1",
                     "bin/nuevo-proyecto",
                     "bin/ripley",
+                    "config/gdb/gdbinit",
                     "bin/backup",
                     "bin/restaurar",
                     "bin/entregar",

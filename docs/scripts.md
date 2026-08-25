@@ -163,7 +163,7 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 ### `doctor [--fix]`
 * **Propósito:** Verificación rápida de salud post-instalación y autorreparación ligera.
 * **Funcionamiento:** Compila, enlaza y ejecuta un programa mínimo; valida make/cmake/ninja, Python, identidad de Git, sesión de gh y presencia de los directorios del entorno en el PATH. Código de salida 0 solo si no hay fallos.
-* **Modo `--fix`:** regenera únicamente lo que falta, sin reinstalar componentes: el skel del HOME portable (`.bashrc`/`.bash_profile` con la variante canónica de cada plataforma), los marcadores de estado (`.msys_complete`, `.vscode_complete`, `.gh_complete`, `.wezterm_complete`, `.install_complete`, solo si el componente correspondiente existe en disco) y el `settings.json` base de VS Code. Nunca sobrescribe archivos del usuario; funciona incluso sin sesión activa resolviendo la raíz desde su propia ubicación.
+* **Modo `--fix`:** regenera únicamente lo que falta, sin reinstalar componentes: el skel del HOME portable (`.bashrc`/`.bash_profile` con la variante canónica de cada plataforma), el `.gdbinit` pedagógico del c-debug-companion (comandos `explicar`, `dashboard` y `vars` dentro de GDB, copiado desde `config/gdb/gdbinit`), los marcadores de estado (`.msys_complete`, `.vscode_complete`, `.gh_complete`, `.wezterm_complete`, `.install_complete`, solo si el componente correspondiente existe en disco) y el `settings.json` base de VS Code. Nunca sobrescribe archivos del usuario; funciona incluso sin sesión activa resolviendo la raíz desde su propia ubicación.
 
 ### `soporte`
 * **Propósito:** Estandarizar la consulta al docente con un único archivo adjunto.

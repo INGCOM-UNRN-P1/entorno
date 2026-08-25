@@ -1,0 +1,200 @@
+# ============================================================================
+# c-debug-companion — Asistente pedagógico de GDB para Programación 1
+# ----------------------------------------------------------------------------
+# Instalación: el entorno portable lo copia como ~/.gdbinit (doctor --fix) y
+# GDB lo carga automáticamente al iniciar. Todo lo que define vive en el
+# namespace "companion" para no chocar con sesiones avanzadas.
+#
+# Comandos que agrega:
+#   explicar        — traduce la señal/stop actual a lenguaje natural
+#   dashboard       — panel con fuente, registros y tope de pila
+#   vars            — locales + argumentos, con valores desreferenciados
+# ============================================================================
+
+python
+import gdb
+import re
+
+class Companion:
+    """Utilidades pedagógicas sobre la sesión GDB actual."""
+
+    SENALES = {
+        "SIGSEGV": ("Segfault: el programa tocó memoria que no le pertenece.",
+                    ["Desreferenciaste un puntero NULL o no inicializado.",
+                     "Índice fuera del rango del arreglo (off-by-one).",
+                     "Usaste memoria después de hacer free (use-after-free)."]),
+        "SIGFPE":  ("Excepción aritmética: operación matemática inválida.",
+                    ["División por cero (enteros).",
+                     "Módulo (%) con divisor cero."]),
+        "SIGBUS":  ("Error de bus: acceso a memoria mal alineado o inválido.",
+                    ["Cast de punteros que rompe el alineamiento natural del tipo."]),
+        "SIGABRT": ("El programa abortó solo (abort() o assert fallido).",
+                    ["Un assert() de tu código (o de la cátedra) evaluó falso.",
+                     "Doble free / heap corruption detectada por glibc."]),
+        "SIGINT":  ("Interrumpido con Ctrl+C.", []),
+        "SIGTERM": ("El proceso recibió una orden de terminación.", []),
+    }
+
+    @staticmethod
+    def _inferir_causa_segv():
+        """Heurísticas simples sobre el frame actual para afinar el diagnóstico."""
+        pistas = []
+        try:
+            linea = gdb.execute("list *", to_string=True)
+        except gdb.error:
+            return pistas
+        try:
+            frame = gdb.selected_frame()
+            nombre = frame.name() or ""
+        except gdb.error:
+            nombre = ""
+        if "scanf" in linea or "scanf" in nombre:
+            pistas.append("¿Olvidaste el & frente a la variable en scanf?")
+        if re.search(r"\.\w+\s*->|->", linea):
+            pistas.append("Verificá que el puntero a struct no sea NULL antes de ->.")
+        if "strcpy" in linea or "strcat" in linea:
+            pistas.append("¿El buffer destino es lo bastante grande? ¿La cadena tiene '\\0'?")
+        return pistas
+
+    def explicar(self, argumento, desde_tty=False):
+        """Traduce el estado de parada actual a lenguaje natural."""
+        try:
+            senal = None
+            info = None
+            try:
+                info = gdb.execute("info program", to_string=True)
+                m = re.search(r"It stopped with signal (\w+)", info)
+                if m:
+                    senal = m.group(1)
+            except gdb.error:
+                pass
+            if senal is None:
+                # fallback: último stop registrado por eventos
+                senal = getattr(Companion, "_ultima_senal", None)
+            print("\n════════ explicación (c-debug-companion) ════════")
+            if senal and senal in self.SENALES:
+                titulo, causas = self.SENALES[senal]
+                print(f"🛑 {senal}: {titulo}")
+                extra = self._inferir_causa_segv() if senal == "SIGSEGV" else []
+                for c in causas + extra:
+                    print(f"   • {c}")
+                try:
+                    frame = gdb.selected_frame()
+                    if frame.name():
+                        print(f"📍 Paró en {frame.name()}()")
+                        salto = frame.older()
+                        if salto and salto.name():
+                            print(f"   (llamada desde {salto.name()}())")
+                except gdb.error:
+                    pass
+            else:
+                print("ℹ️ El programa está detenido por un breakpoint, no por una señal.")
+                print("   Usá 'dashboard' o 'vars' para inspeccionar el estado.")
+            print("═════════════════════════════════════════════════\n")
+        except Exception as e:
+            print(f"[c-debug-companion] error: {e}")
+
+    def _ultima(self, evento):
+        try:
+            if hasattr(evento, "stop_signal"):
+                Companion._ultima_senal = evento.stop_signal
+        except Exception:
+            pass
+
+    def dashboard(self, argumento, desde_tty=False):
+        """Panel compacto: contexto actual + registros + tope de pila."""
+        print("\n┌── dashboard ──────────────────────────────────────")
+        try:
+            frame = gdb.selected_frame()
+            print(f"│ función : {frame.name()}")
+            try:
+                pc = frame.pc()
+                print(f"│ PC      : {pc}")
+            except gdb.error:
+                pass
+            salto = frame.older()
+            if salto and salto.name():
+                print(f"│ llamada desde {salto.name()}()")
+        except gdb.error as e:
+            print(f"│ (sin frame: {e})")
+        print("├── registros x86-64 ───────────────────────────────")
+        for reg in ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp"):
+            try:
+                val = gdb.parse_and_eval(f"${reg}")
+                print(f"│ {reg:>4} = {val} ({int(val) if val.type.code == gdb.TYPE_CODE_INT else '?'})")
+            except (gdb.error, gdb.MemoryError, ValueError, TypeError):
+                pass
+        print("├── tope de pila ───────────────────────────────────")
+        try:
+            rsp = int(gdb.parse_and_eval("$rsp"))
+            inf = gdb.selected_inferior()
+            datos = bytes(inf.read_memory(rsp, 32))
+            for i in range(0, 32, 8):
+                chunk = datos[i:i+8]
+                hexs = " ".join(f"{b:02x}" for b in chunk)
+                print(f"│ rsp+{i:<2} 0x{rsp+i:012x}: {hexs}")
+        except (gdb.error, gdb.MemoryError):
+            print("│ (no legible)")
+        print("└───────────────────────────────────────────────────")
+
+    def vars(self, argumento, desde_tty=False):
+        """Locales y argumentos, desreferenciando punteros seguros."""
+        print("\n┌── variables locales ──────────────────────────────")
+        try:
+            frame = gdb.selected_frame()
+            for v in frame.variables():
+                if not v.is_argument and not v.is_in_scope:
+                    continue
+                try:
+                    val = v.value(frame)
+                    linea = f"│ {v.name} = {val}"
+                    tipo = v.type
+                    if tipo.code == gdb.TYPE_CODE_PTR and str(val).endswith(" 0x0 >") is False:
+                        try:
+                            deref = val.dereference()
+                            linea += f"   → *{v.name} = {deref}"
+                        except (gdb.MemoryError, gdb.error):
+                            linea += "   → *(inválido)"
+                    print(linea)
+                except (gdb.error, ValueError):
+                    print(f"│ {v.name} = (no evaluable)")
+        except gdb.error as e:
+            print(f"│ (sin frame: {e})")
+        print("└───────────────────────────────────────────────────")
+
+
+_companion = Companion()
+
+Explicar = type("Explicar", (gdb.Command,), {
+    "__init__": lambda self: (gdb.Command.__init__(self, "explicar", gdb.COMMAND_SUPPORT)),
+    "invoke": staticmethod(_companion.explicar),
+})
+Dashboard = type("Dashboard", (gdb.Command,), {
+    "__init__": lambda self: (gdb.Command.__init__(self, "dashboard", gdb.COMMAND_STATUS)),
+    "invoke": staticmethod(_companion.dashboard),
+})
+VarsCmd = type("VarsCmd", (gdb.Command,), {
+    "__init__": lambda self: (gdb.Command.__init__(self, "vars", gdb.COMMAND_DATA)),
+    "invoke": staticmethod(_companion.vars),
+})
+
+try:
+    Explicar()
+    Dashboard()
+    VarsCmd()
+    print("[c-debug-companion] listo: comandos 'explicar', 'dashboard' y 'vars' disponibles")
+except gdb.error:
+    pass  # recargado: los comandos ya existen
+
+
+def on_stop(evento):
+    _companion._ultima(evento)
+    if hasattr(evento, "stop_signal") and evento.stop_signal in ("SIGSEGV", "SIGFPE", "SIGBUS"):
+        print("\n⚠️  El programa crasheó. Escribí 'explicar' para saber qué pasó.\n")
+
+
+gdb.events.stop.connect(on_stop)
+end
+
+# Atajo pedagógico: al iniciar, mostrar los comandos disponibles una sola vez.
+echo [c-debug-companion] cargado — comandos nuevos: explicar · dashboard · vars\n
