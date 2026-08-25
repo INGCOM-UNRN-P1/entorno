@@ -59,10 +59,15 @@ diagnose-env.sh     # informe técnico completo en diagnose.log
 ### Comandos de cátedra para trabajos prácticos
 ```bash
 nuevo-proyecto tp01 # estructura inicial lista para compilar
+nuevo-proyecto --tipo tp tp02   # plantilla modular (libs/ + ejercicios/ + ./tp.sh)
 clonar <url-tp>     # clona el assignment de GitHub Classroom en ~/proyectos
 verificar           # corre las pruebas de cátedra del TP (tests/caso_NN)
 entregar            # ZIP de entrega validado (compila y verifica antes de empacar)
+ripley check .      # auditoría con el motor de análisis (linters AST, reglas P1, ASan)
 ```
+
+> [!TIP]
+> **Motor Ripley:** el entorno lo descarga automáticamente (`bin/ripley.pyz`) durante la instalación o con `update-env.sh`. Los proyectos que declaran un manifiesto `ripley.toml` o un paquete `.ripkg` usan el motor completo al correr `verificar` y `entregar` (pre-validación estricta); sin manifiesto se aplica el corrector clásico.
 
 ### Descarga de Baseline de Paquetes (Caché Local)
 Para descargar todos los paquetes de pacman necesarios para la instalación inicial y guardarlos localmente, ejecutá:
@@ -99,7 +104,7 @@ customize-bash.sh
 ```
 
 ### Actualización del Entorno Portable
-Para actualizar todos los scripts del entorno a la última versión disponible en GitHub, y opcionalmente relanzar la actualización de las herramientas nativas (VS Code, MSYS2, gcc, etc.), ejecutá:
+Para actualizar todos los scripts del entorno a la última versión disponible en GitHub, refrescar el motor Ripley (`bin/ripley.pyz`) y opcionalmente relanzar la actualización de las herramientas nativas (VS Code, MSYS2, gcc, etc.), ejecutá:
 ```bash
 update-env.sh
 ```

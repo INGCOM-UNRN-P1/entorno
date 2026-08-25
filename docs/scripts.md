@@ -128,9 +128,17 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 * **Propósito:** Precargar caché de pacman para instalaciones offline.
 * **Funcionamiento:** Ejecuta `pacman -Sw` para descargar localmente a `descargas/pacman_cache` todos los paquetes definidos en `packages-baseline.txt` (fuente única compartida con setup.ps1).
 
-### `nuevo-proyecto <nombre>`
+### `nuevo-proyecto [--tipo plano|tp|lib] <nombre>`
 * **Propósito:** Crear la estructura inicial de un proyecto de cátedra.
-* **Funcionamiento:** Genera la carpeta con `main.c` (hola mundo parametrizado), `Makefile` de cátedra (`make` / `mingw32-make`, con `-g` para depurar) y `.gitignore`, validando el nombre y colisiones. Además deja la depuración lista: `.vscode/tasks.json` (compilación con Ctrl+Shift+B) y `.vscode/launch.json` (F5 compila y lanza con GDB, resolviendo el binario y el debugger según plataforma), más `.clang-format` (Shift+Alt+F) y `.editorconfig`.
+* **Funcionamiento:** Genera la carpeta con `main.c` (hola mundo parametrizado), `Makefile` de cátedra (`make` / `mingw32-make`) y `.gitignore`, validando el nombre y colisiones. Además deja la depuración lista: `.vscode/tasks.json` (compilación con Ctrl+Shift+B) y `.vscode/launch.json` (F5 compila y lanza con GDB, resolviendo el binario y el debugger según plataforma), más `.clang-format` (Shift+Alt+F) y `.editorconfig`.
+* **Tipos de proyecto (`--tipo`):**
+  * `plano` (predeterminado): proyecto monoprograma. El Makefile incluye los objetivos `debug` (símbolos sin optimizar), `asan` (AddressSanitizer + UBSan), `test` (corre los casos `tests/caso_NN.in/.out`) y `ripley` (auditoría con el motor de análisis).
+  * `tp`: clona la plantilla oficial de Trabajo Práctico modular (`libs/`, `ejercicios/`, gestor `./tp.sh`) desde GitHub; la URL puede personalizarse con la variable `PLANTILLA_TP_URL`.
+  * `lib`: clona la plantilla estándar de biblioteca estática (`include/`, `src/`, `tests/`, `manage.sh`); URL personalizable con `PLANTILLA_LIB_URL`.
+
+### `ripley <comando> [argumentos]`
+* **Propósito:** Motor pedagógico de análisis de código C (linters AST, reglas P1, AddressSanitizer, traducción de errores GCC).
+* **Funcionamiento:** Lanzador que ejecuta el zipapp autocontenido `bin/ripley.pyz` aprovisionado por `setup.ps1` / `update-env.sh` desde los Releases de GitHub; si no existe, delega en una instalación nativa (`uv tool install`). Comandos típicos: `ripley doctor` (diagnóstico), `ripley check .` (verificación del proyecto) y `ripley explain log.txt`.
 
 ### `backup [destino.zip]`
 * **Propósito:** Resguardar los datos del alumno ante pérdida o corrupción del pendrive.
@@ -142,7 +150,7 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 
 ### `verificar [directorio]`
 * **Propósito:** Corrector local: autoevaluación con las pruebas de cátedra antes de la entrega.
-* **Funcionamiento:** Compila el proyecto y compara la salida del binario contra los casos `tests/caso_NN.in` / `.out` (tolerando diferencias de espacios finales); si el Makefile define un objetivo `test:` tiene prioridad. Reporta cada caso con su salida esperada vs. obtenida y devuelve código de salida distinto de cero si algo falla. `nuevo-proyecto` deja un caso funcionando como ejemplo de la convención.
+* **Funcionamiento:** Si el proyecto declara un manifiesto de Ripley (`ripley.toml` o un paquete `.ripkg`), delega en `ripley check .` (análisis estático, AddressSanitizer y diagnóstico pedagógico); sin Ripley disponible, avisa y continúa en modo clásico. En modo clásico compila el proyecto y compara la salida del binario contra los casos `tests/caso_NN.in` / `.out` (tolerando diferencias de espacios finales); si el Makefile define un objetivo `test:` tiene prioridad. Reporta cada caso con su salida esperada vs. obtenida y devuelve código de salida distinto de cero si algo falla. `nuevo-proyecto` deja un caso funcionando como ejemplo de la convención.
 
 ### `clonar <url | owner/repo> [destino]`
 * **Propósito:** Flujo GitHub Classroom: clonar el trabajo práctico listo para programar.
@@ -150,7 +158,7 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
 
 ### `entregar [directorio]`
 * **Propósito:** Empaquetar el trabajo práctico para entrega.
-* **Funcionamiento:** Compila el proyecto vía Makefile (validación previa a la entrega), ejecuta el corrector local si existen pruebas (`verificar`) y genera `ENTREGA_<proyecto>_<fecha>.zip` con solo fuentes, excluyendo binarios, `.o`, builds y `.git`, usando Python para máxima portabilidad. Si el TP vive en un repositorio Git con remoto, ofrece publicar los cambios con commit + push (confirmación explícita del alumno).
+* **Funcionamiento:** Compila el proyecto vía Makefile (validación previa a la entrega), ejecuta el corrector local si existen pruebas (`verificar`) y, en proyectos con manifiesto de Ripley (`ripley.toml` / `.ripkg`), pre-valida con `ripley check . --strict` antes de empacar. Genera `ENTREGA_<proyecto>_<fecha>.zip` con solo fuentes, excluyendo binarios, `.o`, builds y `.git`, usando Python para máxima portabilidad. Si el TP vive en un repositorio Git con remoto, ofrece publicar los cambios con commit + push (confirmación explícita del alumno).
 
 ### `doctor [--fix]`
 * **Propósito:** Verificación rápida de salud post-instalación y autorreparación ligera.

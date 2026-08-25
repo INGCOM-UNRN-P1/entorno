@@ -10,6 +10,14 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 * `configure-git.sh`: las credenciales de respaldo para otros servidores ahora se eligen entre caché temporal en memoria (expira a la hora; recomendado en compartidas) o `store` persistente en texto plano.
 * Cobertura de pruebas ampliada: 53 pruebas bash (backup/restaurar, uninstall-lib, doctor --fix, verificar avanzado, exclusiones de entregar, diagnose-env, integridad de fuentes únicas), parcheo quirúrgico de settings bajo prueba, manifiesto de versiones (`Get-Pinned`) y quoting del lanzador C verificado contra reglas MSVCRT en cada push.
 * `diagnose-env.sh` disponible también en la variante Linux (prefijo portable, informe en la raíz).
+* **Integración con el motor Ripley** (Fase 3): aprovisionamiento automático del zipapp `ripley.pyz` desde GitHub Releases en `setup.ps1` (sección 6.5, pin vía clave `ripley` en `versions.json`, descarga con reintentos y validación) y en `update-env.sh`; lanzador `bin/ripley` que resuelve el zipapp portable o una instalación nativa; dependencias `python-typer` / `python-rich` agregadas al baseline pacman.
+* `nuevo-proyecto --tipo plano|tp|lib`: modalidades de proyecto (plano por defecto para retrocompatibilidad). El tipo `plano` genera un Makefile de cátedra con targets `debug`, `asan`, `test` (itera los casos con tolerancia a CRLF) y `ripley`; los tipos `tp`/`lib` clonan las plantillas oficiales (URLs sobreescribibles con `PLANTILLA_TP_URL` / `PLANTILLA_LIB_URL`) sin historial Git y con tarea de build de VS Code.
+* `bin/verificar` como adaptador: delega en `ripley check .` cuando el proyecto declara `ripley.toml` o un paquete `.ripkg`; sin motor disponible avisa y continúa con el corrector clásico.
+* `bin/entregar` pre-valida con `ripley check . --strict` antes de empacar en proyectos con manifiesto Ripley (aceptación explícita de observaciones).
+* Suite Linux ampliada a 67 pruebas: adaptadores verificar/entregar con stub de ripley, objetivos nuevos del Makefile generado, multitipo de nuevo-proyecto contra plantillas locales herméticas.
+
+### Cambiado
+* Documentación migrada a rutas relativas: se eliminaron los 41 enlaces absolutos heredados (`file:///home/mrtin/dev/p1/...`) del README; los manuales ahora funcionan desde cualquier ubicación del clon.
 
 ## [1.1.0] - 2026-08-23
 
