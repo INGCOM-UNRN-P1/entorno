@@ -293,7 +293,7 @@ $VOUT
 EOF"
 
 # Programa que cuelga: el timeout lo corta y el caso falla
-run_in_sandbox "cd '$TPV2' && sed -i '/^test:/,+1d' Makefile"
+run_in_sandbox "cd '$TPV2' && sed -i '/^# >>> bloque-test-catedra/,/^# <<< bloque-test-catedra/d' Makefile && sed -i '/^test:/,+1d' Makefile"
 run_in_sandbox "cd '$TPV2' && sed -i 's/return 0;/for(;;);/' main.c && rm -rf tests && mkdir tests && : > tests/caso_01.in && printf 'x\n' > tests/caso_01.out"
 VC=$(run_in_sandbox "cd '$TPV2' && verificar >/dev/null 2>&1; echo \$?")
 assert "verificar corta con timeout un programa que no responde" test "$VC" -ne 0
@@ -312,6 +312,105 @@ assert "entregar excluye .o/.exe/build del paquete" test "$ZIPRC" -eq 0
 run_in_sandbox "mkdir -p '$SANDBOX/repo/home/vacio' && cd '$SANDBOX/repo/home/vacio' && entregar >/dev/null 2>&1; echo \$?" > /tmp/entvacio.$$
 TC=$(cat /tmp/entvacio.$$); rm -f /tmp/entvacio.$$
 assert "entregar rechaza un directorio que no es proyecto C" test "$TC" -ne 0
+
+# --- Fase 3: integración con el motor Ripley (adaptadores y multitipo) ---
+
+# Stub de ripley instalado en linux/bin del sandbox (queda primero en el PATH
+# tras activar): registra sus argumentos y permite forzar el código de salida.
+cat > "$SANDBOX/repo/linux/bin/ripley" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$SANDBOX/ripley-llamadas.log"
+[ -n "\${RIPLEY_STUB_RC:-}" ] && exit "\$RIPLEY_STUB_RC"
+exit 0
+EOF
+chmod +x "$SANDBOX/repo/linux/bin/ripley"
+
+# nuevo-proyecto --tipo plano: objetivos nuevos del Makefile + objetivo ripley cableado
+run_in_sandbox "cd '$SANDBOX/repo/home' && nuevo-proyecto --tipo plano tpr >/dev/null"
+TPR="$SANDBOX/repo/home/tpr"
+assert "nuevo-proyecto genera los objetivos debug/asan/test/ripley" \
+    bash -c "grep -q '^debug:' '$TPR/Makefile' && grep -q '^asan:' '$TPR/Makefile' && grep -q '^test:' '$TPR/Makefile' && grep -q '^ripley:' '$TPR/Makefile'"
+
+rm -f "$SANDBOX/ripley-llamadas.log"
+MR=$(run_in_sandbox "cd '$TPR' && make ripley >/dev/null 2>&1; echo \$?")
+assert "make ripley se construye sin errores" test "$MR" -eq 0
+assert "el objetivo make ripley invoca al motor" \
+    bash -c "grep -q 'check .' '$SANDBOX/ripley-llamadas.log'"
+
+# verificar delega en ripley si el proyecto declara manifiesto (ripley.toml o .ripkg)
+rm -f "$SANDBOX/ripley-llamadas.log"
+run_in_sandbox "cd '$TPR' && : > ripley.toml"
+VC=$(run_in_sandbox "cd '$TPR' && verificar >/dev/null 2>&1; echo \$?")
+assert "verificar delega en ripley cuando hay manifiesto" test "$VC" -eq 0
+assert "verificar invoca 'ripley check .'" \
+    bash -c "grep -qx 'check .' '$SANDBOX/ripley-llamadas.log'"
+
+# Sin Ripley instalado: avisa y cae al corrector clásico (los casos siguen corriendo)
+mv "$SANDBOX/repo/linux/bin/ripley" "$SANDBOX/ripley-stub-guardado"
+VC=$(run_in_sandbox "cd '$TPR' && verificar >/dev/null 2>&1; echo \$?")
+assert "verificar cae al corrector clásico sin Ripley disponible" test "$VC" -eq 0
+mv "$SANDBOX/ripley-stub-guardado" "$SANDBOX/repo/linux/bin/ripley"
+
+# Detección por paquete .ripkg
+rm -f "$SANDBOX/ripley-llamadas.log"
+run_in_sandbox "cd '$TPR' && rm -f ripley.toml && : > practica.ripkg"
+run_in_sandbox "cd '$TPR' && verificar >/dev/null 2>&1"
+assert "verificar detecta el paquete .ripkg como manifiesto" \
+    bash -c "grep -qx 'check .' '$SANDBOX/ripley-llamadas.log'"
+run_in_sandbox "cd '$TPR' && rm -f practica.ripkg"
+
+# entregar pre-valida con 'ripley check . --strict' y respeta la decisión del alumno
+rm -f "$SANDBOX/ripley-llamadas.log"
+run_in_sandbox "cd '$TPR' && : > ripley.toml"
+printf 's\ns\n' | run_in_sandbox "cd '$TPR' && entregar >/dev/null"
+assert "entregar pre-valida con 'ripley check . --strict'" \
+    bash -c "grep -q 'check . --strict' '$SANDBOX/ripley-llamadas.log'"
+
+TC=$(printf 's\ns\nn\n' | run_in_sandbox "cd '$TPR' && RIPLEY_STUB_RC=1 entregar >/dev/null 2>&1; echo \$?")
+assert "entregar cancela si Ripley falla y el alumno no acepta" test "$TC" -ne 0
+
+# Los ZIP usan nombre con resolución de minutos y la suite corre en menos de un
+# minuto: se rebobina el mtime del último ZIP para detectar la regeneración
+# aunque caiga en el mismo segundo.
+ZIP_TPR="$(ls -t "$SANDBOX/repo/home"/ENTREGA_tpr_*.zip 2>/dev/null | head -n1)"
+touch -d '2020-01-01 00:00:00' "$ZIP_TPR" 2>/dev/null || true
+printf 's\ns\ns\n' | run_in_sandbox "cd '$TPR' && RIPLEY_STUB_RC=1 entregar >/dev/null 2>&1"
+MTIME_DESPUES=$(stat -c %Y "$ZIP_TPR" 2>/dev/null || echo 0)
+assert "entregar empaca igual si el alumno acepta las observaciones" test "$MTIME_DESPUES" -gt 1577836800
+
+# nuevo-proyecto: validaciones de --tipo
+TC=$(run_in_sandbox "cd '$SANDBOX/repo/home' && nuevo-proyecto --tipo invalido x >/dev/null 2>&1; echo \$?")
+assert "nuevo-proyecto rechaza un tipo desconocido" test "$TC" -ne 0
+TC=$(run_in_sandbox "cd '$SANDBOX/repo/home' && nuevo-proyecto demo --tipo >/dev/null 2>&1; echo \$?")
+assert "nuevo-proyecto exige valor para --tipo" test "$TC" -ne 0
+
+# nuevo-proyecto --tipo tp / lib desde plantillas locales (hermético, sin red)
+sembrar_plantilla() { # sembrar_plantilla <bare.git> <archivo-extra>
+    local bare="$1" extra="$2" seed="${1%.git}-seed"
+    # Git no rastrea directorios vacíos: .gitkeep asegura la estructura en el clon
+    mkdir -p "$seed/libs" "$seed/ejercicios" "$seed/include" "$seed/src" "$seed/tests"
+    touch "$seed/libs/.gitkeep" "$seed/ejercicios/.gitkeep" "$seed/include/.gitkeep" "$seed/src/.gitkeep" "$seed/tests/.gitkeep"
+    printf '# plantilla\n' > "$seed/README.md"
+    printf '%s\n' "$extra" > "$seed/$extra"
+    git -C "$seed" init -q -b main
+    git -C "$seed" add -A
+    git -C "$seed" -c user.name=S -c user.email=s@t.local commit -qm plantilla
+    git -C "$seed" push -q "$bare" main
+}
+git init -q --bare "$SANDBOX/plantilla-tp.git"
+git -C "$SANDBOX/plantilla-tp.git" symbolic-ref HEAD refs/heads/main
+git init -q --bare "$SANDBOX/plantilla-lib.git"
+git -C "$SANDBOX/plantilla-lib.git" symbolic-ref HEAD refs/heads/main
+sembrar_plantilla "$SANDBOX/plantilla-tp.git" "tp.sh"
+sembrar_plantilla "$SANDBOX/plantilla-lib.git" "manage.sh"
+
+run_in_sandbox "cd '$SANDBOX/repo/home' && PLANTILLA_TP_URL='$SANDBOX/plantilla-tp.git' nuevo-proyecto --tipo tp mtp >/dev/null"
+assert "--tipo tp despliega la estructura modular sin historial de Git" \
+    bash -c "[ -d '$SANDBOX/repo/home/mtp/libs' ] && [ -d '$SANDBOX/repo/home/mtp/ejercicios' ] && [ ! -e '$SANDBOX/repo/home/mtp/.git' ]"
+
+run_in_sandbox "cd '$SANDBOX/repo/home' && PLANTILLA_LIB_URL='$SANDBOX/plantilla-lib.git' nuevo-proyecto --tipo lib mlib >/dev/null"
+assert "--tipo lib despliega el estándar de biblioteca sin historial de Git" \
+    bash -c "[ -d '$SANDBOX/repo/home/mlib/include' ] && [ -d '$SANDBOX/repo/home/mlib/src' ] && [ ! -e '$SANDBOX/repo/home/mlib/.git' ]"
 
 echo ""
 if [ "$FAIL" -eq 0 ]; then
