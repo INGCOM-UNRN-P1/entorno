@@ -248,10 +248,18 @@ EOF
     cat > "$NAME/.clang-format" <<'EOF'
 ---
 BasedOnStyle: LLVM
-IndentWidth: 4
-ColumnLimit: 100
-AlignConsecutiveMacros: Consecutive
+BreakBeforeBraces: Allman
+AllowShortIfStatementsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+IndentCaseLabels: true
+ColumnLimit: 80
+SpaceBeforeParens: ControlStatements
+PointerAlignment: Right
 SortIncludes: CaseSensitive
 EOF
 
