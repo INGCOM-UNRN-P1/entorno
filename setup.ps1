@@ -584,7 +584,7 @@ if (-not (Test-Path $bashProfilePath)) {
 
 $bashrcPath = Join-Path $homeDir ".bashrc"
 if (-not (Test-Path $bashrcPath)) {
-    $bashrcContent = "# .bashrc`n# Aqui podes agregar tus alias y funciones personalizadas.`n`n# Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)`nif [ -n `"`$PORTABLE_ROOT`" ]; then`n    UNIX_ROOT=`$`(cygpath -u `"`$PORTABLE_ROOT`"`)`n    case `":`$PATH:`" in`n        *`":`${UNIX_ROOT}bin:`"*) : ;;`n        *) export PATH=`"`${UNIX_ROOT}bin:`${UNIX_ROOT}msys64/ucrt64/bin:`${UNIX_ROOT}msys64/usr/bin:`$PATH`" ;;`n    esac`nfi`n"
+    $bashrcContent = "# .bashrc`n# Aqui podes agregar tus alias y funciones personalizadas.`n`n# Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)`nif [ -n `"`$PORTABLE_ROOT`" ]; then`n    UNIX_ROOT=`$`(cygpath -u `"`$PORTABLE_ROOT`"` 2>/dev/null || echo `"`$PORTABLE_ROOT`"`)`n    case `":`$PATH:`" in`n        *`":`${UNIX_ROOT}/bin:`"*|*`":`${UNIX_ROOT}/linux/bin:`"*) : ;;`n        *) export PATH=`"`${UNIX_ROOT}/bin:`${UNIX_ROOT}/linux/bin:`${UNIX_ROOT}/local/bin:`${UNIX_ROOT}/msys64/ucrt64/bin:`${UNIX_ROOT}/msys64/usr/bin:`$PATH`" ;;`n    esac`nfi`n"
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
 
@@ -824,7 +824,7 @@ if ($isUpdateMode -or -not $isMsysComplete) {
             'echo "  UNRN Andina - Programacion 1"',
             'echo "======================================================================"',
             'echo -e "\e[0m"',
-            'ayuda',
+            'command -v ayuda >/dev/null 2>&1 && ayuda',
             $endInstMarker
         ) -join "`r`n"
         

@@ -50,10 +50,10 @@ if (-not (Test-Path $bashrcPath)) {
 
 # Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)
 if [ -n "$PORTABLE_ROOT" ]; then
-    UNIX_ROOT=$(cygpath -u "$PORTABLE_ROOT")
+    UNIX_ROOT=$(cygpath -u "$PORTABLE_ROOT" 2>/dev/null || echo "$PORTABLE_ROOT")
     case ":$PATH:" in
-        *":${UNIX_ROOT}/bin:"*) : ;;
-        *) export PATH="${UNIX_ROOT}/bin:${UNIX_ROOT}/msys64/ucrt64/bin:${UNIX_ROOT}/msys64/usr/bin:${PATH}" ;;
+        *":${UNIX_ROOT}/bin:"*|*":${UNIX_ROOT}/linux/bin:"*) : ;;
+        *) export PATH="${UNIX_ROOT}/bin:${UNIX_ROOT}/linux/bin:${UNIX_ROOT}/local/bin:${UNIX_ROOT}/msys64/ucrt64/bin:${UNIX_ROOT}/msys64/usr/bin:${PATH}" ;;
     esac
 fi
 '@
