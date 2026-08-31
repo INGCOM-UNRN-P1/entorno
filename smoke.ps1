@@ -1,10 +1,10 @@
-﻿# smoke.ps1 - Ejecuta la suite de aceptación automatizada (bin/smoke.sh) en el bash portable.
+# smoke.ps1 - Ejecuta la suite de aceptacion automatizada (bin/smoke.sh) en el bash portable.
 $ErrorActionPreference = "Stop"
 $portableRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($portableRoot)) { $portableRoot = (Get-Location).Path }
 $bashPath = Join-Path $portableRoot "msys64\usr\bin\bash.exe"
 if (-not (Test-Path $bashPath)) {
-    Write-Error "No se encontró MSYS2. Ejecutá setup.ps1 primero."
+    Write-Error "No se encontro MSYS2. Ejecuta setup.ps1 primero."
     exit 1
 }
 $env:PORTABLE_ROOT = $portableRoot

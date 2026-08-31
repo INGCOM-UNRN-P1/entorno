@@ -1,11 +1,11 @@
-﻿# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
-# Diseñado para usarse antes de desconectarse o cerrar sesión en computadoras compartidas.
+# clean-shared-host.ps1 - Limpia datos personales, credenciales e historial del entorno portable.
+# Disenado para usarse antes de desconectarse o cerrar sesion en computadoras compartidas.
 
 $ErrorActionPreference = "Stop"
 
 $portableRoot = $PSScriptRoot
 
-# Cargar configuración de directorio HOME
+# Cargar configuracion de directorio HOME
 $homeDirName = "home"
 $envFile = Join-Path $portableRoot ".env"
 if (Test-Path $envFile) {
@@ -23,32 +23,32 @@ $msysTemp = Join-Path $portableRoot "msys64\tmp"
 Write-Host "==========================================================================" -ForegroundColor Red
 Write-Host "            LIMPIEZA DE DATOS PERSONALES Y CREDENCIALES                   " -ForegroundColor Red
 Write-Host "==========================================================================" -ForegroundColor Red
-Write-Host "Este script removerá de forma permanente todo rastro de tu identidad,"
+Write-Host "Este script removera de forma permanente todo rastro de tu identidad,"
 Write-Host "credenciales y configuraciones guardadas en este entorno portable."
 Write-Host ""
-Write-Host "EFECTOS DE LA EJECUCIÓN:" -ForegroundColor Yellow
-Write-Host "1. ELIMINACIÓN DE CLAVES Y CONFIGURACIONES DE USUARIO:"
-Write-Host "   Se borrará la carpeta '$homeDirName/' completa. Esto incluye:"
-Write-Host "   - Credenciales guardadas e inicios de sesión en GitHub (.git-credentials)."
-Write-Host "   - Configuración de identidad y firma de Git (.gitconfig)."
+Write-Host "EFECTOS DE LA EJECUCION:" -ForegroundColor Yellow
+Write-Host "1. ELIMINACION DE CLAVES Y CONFIGURACIONES DE USUARIO:"
+Write-Host "   Se borrara la carpeta '$homeDirName/' completa. Esto incluye:"
+Write-Host "   - Credenciales guardadas e inicios de sesion en GitHub (.git-credentials)."
+Write-Host "   - Configuracion de identidad y firma de Git (.gitconfig)."
 Write-Host "   - Claves de acceso SSH (.ssh/)."
 Write-Host "   - Historial de comandos ejecutados en el terminal (.bash_history)."
-Write-Host "   - Configuraciones y cachés de Python locales (.config/, .local/)."
+Write-Host "   - Configuraciones y caches de Python locales (.config/, .local/)."
 Write-Host ""
-Write-Host "2. ELIMINACIÓN DE DATOS DE VS CODE PORTABLE:"
-Write-Host "   Se borrará la carpeta 'vscode/data/' completa. Esto incluye:"
-Write-Host "   - Configuraciones del editor y caché de visualización."
+Write-Host "2. ELIMINACION DE DATOS DE VS CODE PORTABLE:"
+Write-Host "   Se borrara la carpeta 'vscode/data/' completa. Esto incluye:"
+Write-Host "   - Configuraciones del editor y cache de visualizacion."
 Write-Host "   - Extensiones instaladas de forma personalizada."
 Write-Host "   - Historial de archivos abiertos y estados de proyectos."
 Write-Host ""
 Write-Host "3. LIMPIEZA DE TEMPORALES:"
-Write-Host "   Se vaciarán las carpetas de descargas y temporales ('descargas/' y 'msys64/tmp/')."
+Write-Host "   Se vaciaran las carpetas de descargas y temporales ('descargas/' y 'msys64/tmp/')."
 Write-Host "==========================================================================" -ForegroundColor Red
 Write-Host ""
 
-$choice = Read-Host "Esta acción es IRREVERSIBLE. ¿Deseás continuar? (s/n)"
+$choice = Read-Host "Esta accion es IRREVERSIBLE. Deseas continuar? (s/n)"
 if ($choice -notmatch "^[sS]$") {
-    Write-Host "Operación cancelada. Tus datos no han sido modificados." -ForegroundColor Green
+    Write-Host "Operacion cancelada. Tus datos no han sido modificados." -ForegroundColor Green
     exit 0
 }
 
@@ -60,13 +60,13 @@ if (Test-Path $homeDir) {
     Remove-Item -Path $homeDir -Recurse -Force
 }
 
-# Recrear home/ vacío para que los lanzadores funcionen
+# Recrear home/ vacio para que los lanzadores funcionen
 New-Item -ItemType Directory -Path $homeDir | Out-Null
 
 $bashPath = Join-Path $portableRoot "msys64\usr\bin\bash.exe"
 if (Test-Path $bashPath) {
     # Inicializar bash con el HOME portable para que cree el .bashrc base.
-    # Nota: bash no acepta '-env'; la variable debe inyectarse en la sesión previamente.
+    # Nota: bash no acepta '-env'; la variable debe inyectarse en la sesion previamente.
     $env:HOME = $homeDir
     & $bashPath --login -c "exit"
     
@@ -98,7 +98,7 @@ if (Test-Path $bashPath) {
             "clear",
             'echo -e "\e[35m"', # Violeta
             'echo "======================================================================"',
-            'echo "  UNRN Andina - Programación 1"',
+            'echo "  UNRN Andina - Programacion 1"',
             'echo "======================================================================"',
             'echo -e "\e[0m"',
             'ayuda',
@@ -115,7 +115,7 @@ if (Test-Path $vscodeDataDir) {
     Remove-Item -Path $vscodeDataDir -Recurse -Force
 }
 
-# Recrear estructura inicial básica de VS Code para que quede listo para el siguiente inicio
+# Recrear estructura inicial basica de VS Code para que quede listo para el siguiente inicio
 $userSettingsDir = Join-Path $vscodeDataDir "user-data\User"
 New-Item -ItemType Directory -Path $userSettingsDir | Out-Null
 
@@ -138,11 +138,11 @@ $defaultSettings = @{
 } | ConvertTo-Json -Depth 10
 
 Set-Content -Path $settingsJsonPath -Value $defaultSettings
-Write-Host "  -> Datos de VS Code restablecidos a la configuración inicial." -ForegroundColor Green
+Write-Host "  -> Datos de VS Code restablecidos a la configuracion inicial." -ForegroundColor Green
 
 # 3. Eliminar descargas/
 if (Test-Path $tempDir) {
-    Write-Host "* Vaciando caché de descargas..."
+    Write-Host "* Vaciando cache de descargas..."
     Remove-Item -Path $tempDir -Recurse -Force
 }
 
@@ -152,9 +152,9 @@ if (Test-Path $msysTemp) {
     Get-ChildItem -Path $msysTemp | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-# 5. Eliminar archivos de estado de instalación
+# 5. Eliminar archivos de estado de instalacion
 # Solo se elimina '.install_complete': los marcadores por componente se conservan
-# para que el próximo setup.ps1 no re-descargue binarios (VS Code, MSYS2, etc.)
+# para que el proximo setup.ps1 no re-descargue binarios (VS Code, MSYS2, etc.)
 # que siguen instalados y ya fueron saneados arriba.
 $completeMarkers = @(".install_complete")
 foreach ($marker in $completeMarkers) {
@@ -165,5 +165,5 @@ foreach ($marker in $completeMarkers) {
     }
 }
 
-Write-Host "`n=== LIMPIEZA COMPLETADA CON ÉXITO ===" -ForegroundColor Green
+Write-Host "`n=== LIMPIEZA COMPLETADA CON EXITO ===" -ForegroundColor Green
 Write-Host "El entorno portable se encuentra libre de credenciales y datos personales." -ForegroundColor Green

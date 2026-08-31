@@ -1,4 +1,4 @@
-﻿# fix-antivirus.ps1 - Agrega una exclusión en Windows Defender para el entorno portable.
+# fix-antivirus.ps1 - Agrega una exclusion en Windows Defender para el entorno portable.
 # Esto soluciona errores como 'Mingw-w64 runtime failure: VirtualProtect failed with code 0x5af'
 # al compilar con Clang, el cual es causado por restricciones agresivas de memoria del antivirus.
 
@@ -10,7 +10,7 @@ if ([string]::IsNullOrEmpty($portableRoot)) {
     $portableRoot = (Get-Location).Path
 }
 
-# Función para verificar privilegios de administrador
+# Funcion para verificar privilegios de administrador
 function Test-IsAdmin {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($identity)
@@ -21,7 +21,7 @@ if (-not (Test-IsAdmin)) {
     Write-Host "==========================================================================" -ForegroundColor Yellow
     Write-Host "Se requieren permisos de Administrador para ajustar el Antivirus." -ForegroundColor Yellow
     Write-Host "Intentando reiniciar este script con privilegios elevados..." -ForegroundColor Yellow
-    Write-Host "Por favor, aceptá la ventana de confirmación (UAC)." -ForegroundColor Yellow
+    Write-Host "Por favor, acepta la ventana de confirmacion (UAC)." -ForegroundColor Yellow
     Write-Host "==========================================================================" -ForegroundColor Yellow
     
     Start-Sleep -Seconds 2
@@ -30,15 +30,15 @@ if (-not (Test-IsAdmin)) {
         Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
         exit
     } catch {
-        Write-Error "No se pudo elevar los privilegios automáticamente. Por favor, abrí PowerShell como Administrador y ejecutá este script manualmente."
+        Write-Error "No se pudo elevar los privilegios automaticamente. Por favor, abri PowerShell como Administrador y ejecuta este script manualmente."
         exit
     }
 }
 
-Write-Host "=== Configuración de Excepciones de Windows Defender ===" -ForegroundColor Cyan
+Write-Host "=== Configuracion de Excepciones de Windows Defender ===" -ForegroundColor Cyan
 Write-Host "Ruta del entorno: $portableRoot" -ForegroundColor Cyan
-# Exclusión granular: solo los directorios con binarios que ejecutan compilaciones,
-# en lugar de la carpeta raíz completa (menor superficie expuesta).
+# Exclusion granular: solo los directorios con binarios que ejecutan compilaciones,
+# en lugar de la carpeta raiz completa (menor superficie expuesta).
 $exclusionTargets = @(
     @{ Path = Join-Path $portableRoot "msys64";  Desc = "compiladores y toolchain" },
     @{ Path = Join-Path $portableRoot "vscode";  Desc = "editor y extensiones" },
@@ -46,7 +46,7 @@ $exclusionTargets = @(
 )
 
 try {
-    # Verificar si el servicio de Defender está disponible
+    # Verificar si el servicio de Defender esta disponible
     $defenderPrefs = Get-MpPreference -ErrorAction Stop
     $exclusions = $defenderPrefs.ExclusionPath
 
@@ -54,19 +54,19 @@ try {
         if ($exclusions -and $exclusions -contains $target.Path) {
             Write-Host "`n[OK] Ya excluido: $($target.Path) ($($target.Desc))." -ForegroundColor Green
         } elseif (Test-Path $target.Path) {
-            Write-Host "`nAgregando exclusión para $($target.Desc): $($target.Path)"
+            Write-Host "`nAgregando exclusion para $($target.Desc): $($target.Path)"
             Add-MpPreference -ExclusionPath $target.Path
-            Write-Host "[ÉXITO] Exclusión agregada correctamente." -ForegroundColor Green
+            Write-Host "[EXITO] Exclusion agregada correctamente." -ForegroundColor Green
         } else {
-            Write-Host "`n[INFO] $($target.Path) no existe aún (¿falta inicializar el entorno?); se omite." -ForegroundColor DarkGray
+            Write-Host "`n[INFO] $($target.Path) no existe aun (falta inicializar el entorno?); se omite." -ForegroundColor DarkGray
         }
     }
 } catch {
-    Write-Host "`n[ERROR] Ocurrió un error al intentar modificar Windows Defender." -ForegroundColor Red
+    Write-Host "`n[ERROR] Ocurrio un error al intentar modificar Windows Defender." -ForegroundColor Red
     Write-Host "Motivos comunes:" -ForegroundColor Yellow
-    Write-Host "1. Estás usando otro Antivirus principal (Avast, McAfee, Norton, etc.) que desactiva Defender." -ForegroundColor Yellow
-    Write-Host "2. Las políticas de grupo (GPO) de Windows restringen estas modificaciones." -ForegroundColor Yellow
-    Write-Host "`nSi usás otro Antivirus, por favor agregá la carpeta del entorno a sus exclusiones manualmente." -ForegroundColor Yellow
+    Write-Host "1. Estas usando otro Antivirus principal (Avast, McAfee, Norton, etc.) que desactiva Defender." -ForegroundColor Yellow
+    Write-Host "2. Las politicas de grupo (GPO) de Windows restringen estas modificaciones." -ForegroundColor Yellow
+    Write-Host "`nSi usas otro Antivirus, por favor agrega la carpeta del entorno a sus exclusiones manualmente." -ForegroundColor Yellow
 }
 
 # Detectar antivirus de terceros registrados en el Centro de Seguridad de Windows
@@ -78,12 +78,12 @@ try {
         foreach ($av in $thirdPartyAv) {
             Write-Host "  * $($av.displayName)" -ForegroundColor Yellow
         }
-        Write-Host "La exclusión de Defender no los cubre: agregá manualmente la carpeta del entorno" -ForegroundColor Yellow
+        Write-Host "La exclusion de Defender no los cubre: agrega manualmente la carpeta del entorno" -ForegroundColor Yellow
         Write-Host "a las exclusiones de cada uno de esos productos para evitar bloqueos al compilar." -ForegroundColor Yellow
     }
 } catch {
     # El namespace SecurityCenter2 puede no estar disponible en algunos sistemas; ignorar silenciosamente.
 }
 
-Write-Host "`nPresioná cualquier tecla para salir..."
+Write-Host "`nPresiona cualquier tecla para salir..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

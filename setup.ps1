@@ -8,19 +8,19 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Acelerar Invoke-WebRequest en Windows PowerShell 5.1 (la barra de progreso es hasta 10x más lenta)
+# Acelerar Invoke-WebRequest en Windows PowerShell 5.1 (la barra de progreso es hasta 10x mas lenta)
 $ProgressPreference = "SilentlyContinue"
 
 # Compatibilidad PowerShell 7 (pwsh): el instalador se valida contra Windows PowerShell 5.1.
 # Bajo pwsh funciona en modo informativo, pero diferencias de encoding y ConvertTo-Json
-# pueden producir resultados distintos; ante dudas, ejecutar con 'powershell' clásico.
+# pueden producir resultados distintos; ante dudas, ejecutar con 'powershell' clasico.
 if ($PSVersionTable.PSVersion.Major -ge 6) {
-    Write-Warning "Estás ejecutando setup.ps1 con PowerShell $($PSVersionTable.PSVersion) (pwsh)."
-    Write-Warning "La validación completa de la cátedra es sobre Windows PowerShell 5.1 ('powershell')."
-    Write-Warning "Si algo falla de forma extraña (encoding, JSON), probá primero con: powershell -ExecutionPolicy Bypass -File setup.ps1"
+    Write-Warning "Estas ejecutando setup.ps1 con PowerShell $($PSVersionTable.PSVersion) (pwsh)."
+    Write-Warning "La validacion completa de la catedra es sobre Windows PowerShell 5.1 ('powershell')."
+    Write-Warning "Si algo falla de forma extrana (encoding, JSON), proba primero con: powershell -ExecutionPolicy Bypass -File setup.ps1"
 }
 
-# Directorio base del script (con fallback al directorio actual si se ejecuta desde internet vía IEX)
+# Directorio base del script (con fallback al directorio actual si se ejecuta desde internet via IEX)
 $portableRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($portableRoot)) {
     $portableRoot = (Get-Location).Path
@@ -35,7 +35,7 @@ $homeDir = Join-Path $portableRoot $HomeDirName
 $vscodeDir = Join-Path $portableRoot "vscode"
 $isUpdateMode = Test-Path (Join-Path $portableRoot ".install_complete")
 
-# Manifiesto de versiones por cuatrimestre (versions.json): valores null = última disponible.
+# Manifiesto de versiones por cuatrimestre (versions.json): valores null = ultima disponible.
 # Por defecto se respetan los pines para reproducibilidad; -Latest los ignora.
 $pinnedVersions = $null
 $manifestFile = Join-Path $portableRoot "versions.json"
@@ -46,7 +46,7 @@ if ((Test-Path $manifestFile) -and (-not $Latest)) {
             Write-Host "Canal de versiones configurado: $($pinnedVersions.canal)" -ForegroundColor DarkGray
         }
     } catch {
-        Write-Warning "versions.json inválido ($_). Se usarán las últimas versiones disponibles."
+        Write-Warning "versions.json invalido ($_). Se usaran las ultimas versiones disponibles."
         $pinnedVersions = $null
     }
 }
@@ -58,10 +58,10 @@ function Get-Pinned([string]$Key) {
     return $null
 }
 
-# Caché de respuestas de la API de GitHub: en aulas con NAT compartido el límite
-# de 60 consultas por hora por IP se agota rápido. Guarda cada respuesta en
+# Cache de respuestas de la API de GitHub: en aulas con NAT compartido el limite
+# de 60 consultas por hora por IP se agota rapido. Guarda cada respuesta en
 # descargas/api_cache con vencimiento (24 horas) y, si la API no responde o
-# rechaza por límite de peticiones, reutiliza la última copia aunque esté vencida.
+# rechaza por limite de peticiones, reutiliza la ultima copia aunque este vencida.
 function Get-GitHubApiCached {
     param([string]$Url)
     $cacheDir = Join-Path $descargasDir "api_cache"
@@ -87,7 +87,7 @@ function Get-GitHubApiCached {
             } catch { }
         }
         if ($cacheFresh) {
-            Write-Host "Respuesta de la API de GitHub servida desde la caché local." -ForegroundColor DarkGray
+            Write-Host "Respuesta de la API de GitHub servida desde la cache local." -ForegroundColor DarkGray
             try { return ($cachedJson | ConvertFrom-Json) } catch { }
         }
     }
@@ -100,7 +100,7 @@ function Get-GitHubApiCached {
         return $response
     } catch {
         if (-not [string]::IsNullOrEmpty($cachedJson)) {
-            Write-Warning "Consulta a la API de GitHub fallida; se usa la caché local (aunque vencida)."
+            Write-Warning "Consulta a la API de GitHub fallida; se usa la cache local (aunque vencida)."
             try { return ($cachedJson | ConvertFrom-Json) } catch { }
         }
         throw
@@ -108,7 +108,7 @@ function Get-GitHubApiCached {
 }
 
 # Descarga uniforme con reintentos para archivos grandes (MSYS2, VS Code, gh, WezTerm).
-# Un único punto para ajustar cantidad de intentos y espera entre intentos.
+# Un unico punto para ajustar cantidad de intentos y espera entre intentos.
 function Invoke-DownloadWithRetry {
     param(
         [string]$Url,
@@ -130,8 +130,8 @@ function Invoke-DownloadWithRetry {
 }
 
 # Espejo regional de pacman: mide latencia contra candidatos (prioridad sudamericana
-# para Red UNRN) y configura el más rápido como primera opción de cada mirrorlist.
-# Devuelve el espejo elegido o $null si ninguno respondió (no toca archivos en ese caso).
+# para Red UNRN) y configura el mas rapido como primera opcion de cada mirrorlist.
+# Devuelve el espejo elegido o $null si ninguno respondio (no toca archivos en ese caso).
 function Select-PacmanMirrorByLatency {
     param(
         [string]$MsysDir,
@@ -162,7 +162,7 @@ function Select-PacmanMirrorByLatency {
             }
         }
         if (-not $bestMirror) {
-            Write-Warning "Ningún espejo de pacman respondió; se conservan los servidores por defecto."
+            Write-Warning "Ningun espejo de pacman respondio; se conservan los servidores por defecto."
             return $null
         }
         Write-Host "Espejo pacman seleccionado: $bestMirror (${bestMs} ms)" -ForegroundColor Green
@@ -183,7 +183,7 @@ function Select-PacmanMirrorByLatency {
         }
         return $bestMirror
     } catch {
-        Write-Warning "Fallo la selección de espejo de pacman; se conservan los servidores por defecto."
+        Write-Warning "Fallo la seleccion de espejo de pacman; se conservan los servidores por defecto."
         return $null
     }
 }
@@ -192,7 +192,7 @@ function Select-PacmanMirrorByLatency {
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
 
-# Función para extraer el nombre de archivo de una URL o usar un fallback
+# Funcion para extraer el nombre de archivo de una URL o usar un fallback
 function Get-FileNameFromUrl {
     param(
         [string]$Url,
@@ -209,7 +209,7 @@ function Get-FileNameFromUrl {
     return $DefaultName
 }
 
-# Función para ejecutar comandos de pacman con reintentos
+# Funcion para ejecutar comandos de pacman con reintentos
 function Invoke-PacmanWithRetry {
     param(
         [string]$BashPath,
@@ -234,59 +234,59 @@ function Invoke-PacmanWithRetry {
         if ($LASTEXITCODE -eq 0) {
             $success = $true
         } else {
-            Write-Warning "El comando 'pacman $Arguments' falló con código de salida: $LASTEXITCODE"
+            Write-Warning "El comando 'pacman $Arguments' fallo con codigo de salida: $LASTEXITCODE"
         }
     }
     
     if (-not $success) {
-        throw "No se pudo completar la instalación o actualización de paquetes con pacman tras $MaxAttempts intentos."
+        throw "No se pudo completar la instalacion o actualizacion de paquetes con pacman tras $MaxAttempts intentos."
     }
 }
 
-# Iniciar log de instalación
+# Iniciar log de instalacion
 $logPath = Join-Path $portableRoot "install.log"
 $transcriptStarted = $false
 try {
     Start-Transcript -Path $logPath -Force -ErrorAction Stop | Out-Null
     $transcriptStarted = $true
 } catch {
-    Write-Warning "No se pudo iniciar el log oficial de PowerShell. La instalación continuará sin registrar salida en archivo."
+    Write-Warning "No se pudo iniciar el log oficial de PowerShell. La instalacion continuara sin registrar salida en archivo."
 }
 
-# Escribir información del entorno y fecha/hora de inicio en el log
+# Escribir informacion del entorno y fecha/hora de inicio en el log
 Write-Host "======================================================================"
-Write-Host "LOG DE INSTALACIÓN DETALLADO"
+Write-Host "LOG DE INSTALACION DETALLADO"
 Write-Host "======================================================================"
 Write-Host "Fecha/Hora de Inicio : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 $versionFile = Join-Path $portableRoot "VERSION"
 $entornoVersion = "?"
 if (Test-Path $versionFile) { $entornoVersion = (Get-Content $versionFile -Raw).Trim() }
-Write-Host "Versión del Entorno  : $entornoVersion"
+Write-Host "Version del Entorno  : $entornoVersion"
 if ($PSVersionTable.PSVersion.Major -ge 6) {
-    Write-Host "Aviso de Compatibilidad: estás ejecutando PowerShell $($PSVersionTable.PSVersion); el instalador está validado principalmente sobre Windows PowerShell 5.1." -ForegroundColor Yellow
+    Write-Host "Aviso de Compatibilidad: estas ejecutando PowerShell $($PSVersionTable.PSVersion); el instalador esta validado principalmente sobre Windows PowerShell 5.1." -ForegroundColor Yellow
 }
-Write-Host "Entorno de Ejecución : $($PSVersionTable.OS) / OS: $($env:OS)"
+Write-Host "Entorno de Ejecucion : $($PSVersionTable.OS) / OS: $($env:OS)"
 Write-Host "Nombre del Equipo    : $($env:COMPUTERNAME)"
 Write-Host "Usuario Ejecutor     : $($env:USERNAME)"
-Write-Host "Versión PowerShell   : $($PSVersionTable.PSVersion)"
+Write-Host "Version PowerShell   : $($PSVersionTable.PSVersion)"
 Write-Host "Ruta de la Carpeta   : $portableRoot"
-Write-Host "Parámetros Utilizados: -HomeDirName '$HomeDirName' -ImportHostConfig: $ImportHostConfig"
-Write-Host "Modo de Ejecución    : $(if ($isUpdateMode) { 'Actualización' } else { 'Instalación/Finalización' })"
+Write-Host "Parametros Utilizados: -HomeDirName '$HomeDirName' -ImportHostConfig: $ImportHostConfig"
+Write-Host "Modo de Ejecucion    : $(if ($isUpdateMode) { 'Actualizacion' } else { 'Instalacion/Finalizacion' })"
 Write-Host "======================================================================`n"
 
 try {
     # ==========================================
-    # 0. Actualización automática de scripts
+    # 0. Actualizacion automatica de scripts
     # ==========================================
     if ($SkipUpdate) {
-        Write-Host "=== Omitiendo actualización de scripts (-SkipUpdate) ===" -ForegroundColor DarkGray
+        Write-Host "=== Omitiendo actualizacion de scripts (-SkipUpdate) ===" -ForegroundColor DarkGray
     } else {
         Write-Host "=== Comprobando actualizaciones de los scripts del entorno ===" -ForegroundColor Cyan
         
         $didUpdate = $false
         $repoOwner = "INGCOM-UNRN-P1"
     $repoName = "entorno"
-    # Canal de actualización configurable vía .env (ej: CHANNEL=estable-2026c1).
+    # Canal de actualizacion configurable via .env (ej: CHANNEL=estable-2026c1).
     # Solo aplica a instalaciones standalone; en repos Git rige la rama local.
     $branch = "main"
     $envFileEarly = Join-Path $portableRoot ".env"
@@ -301,7 +301,7 @@ try {
     $isGitRepo = Test-Path (Join-Path $portableRoot ".git")
 
     if ($isGitRepo) {
-        Write-Host "Repositorio Git detectado. Intentando actualizar vía 'git pull'..." -ForegroundColor Cyan
+        Write-Host "Repositorio Git detectado. Intentando actualizar via 'git pull'..." -ForegroundColor Cyan
         
         $gitExe = "git"
         $msysGit = Join-Path $portableRoot "msys64\usr\bin\git.exe"
@@ -312,13 +312,13 @@ try {
         try {
             $process = Start-Process -FilePath $gitExe -ArgumentList "pull" -WorkingDirectory $portableRoot -Wait -NoNewWindow -PassThru -ErrorAction Stop
             if ($process.ExitCode -eq 0) {
-                Write-Host "Scripts actualizados con éxito a través de Git.`n" -ForegroundColor Green
+                Write-Host "Scripts actualizados con exito a traves de Git.`n" -ForegroundColor Green
                 $didUpdate = $true
             } else {
-                Write-Warning "Fallo al realizar git pull (código de salida: $($process.ExitCode)). Se continuará con la ejecución local."
+                Write-Warning "Fallo al realizar git pull (codigo de salida: $($process.ExitCode)). Se continuara con la ejecucion local."
             }
         } catch {
-            Write-Warning "No se pudo ejecutar git para la actualización automática: $_. Se continuará con la ejecución local."
+            Write-Warning "No se pudo ejecutar git para la actualizacion automatica: $_. Se continuara con la ejecucion local."
         }
     } else {
         $hasExistingScripts = Test-Path (Join-Path $portableRoot "launch.bat")
@@ -327,15 +327,15 @@ try {
         if ($hasExistingScripts) {
             Write-Host "Se detectaron scripts de consola existentes en el directorio." -ForegroundColor Yellow
             if ($Yes) {
-                Write-Host "(--Yes) Actualizando scripts automáticamente..." -ForegroundColor DarkGray
-            } elseif ((Read-Host "¿Deseás actualizar todos los scripts del entorno a la última versión desde GitHub? (s/n)") -notmatch "^[sS]$") {
+                Write-Host "(--Yes) Actualizando scripts automaticamente..." -ForegroundColor DarkGray
+            } elseif ((Read-Host "Deseas actualizar todos los scripts del entorno a la ultima version desde GitHub? (s/n)") -notmatch "^[sS]$") {
                 $shouldUpdate = $false
-                Write-Host "Se omite la actualización de los scripts. Se utilizarán las versiones locales.`n" -ForegroundColor Yellow
+                Write-Host "Se omite la actualizacion de los scripts. Se utilizaran las versiones locales.`n" -ForegroundColor Yellow
             }
         }
         
         if ($shouldUpdate) {
-            Write-Host "No se detectó un repositorio de Git (carpeta standalone). Descargando snapshot del repositorio..." -ForegroundColor Cyan
+            Write-Host "No se detecto un repositorio de Git (carpeta standalone). Descargando snapshot del repositorio..." -ForegroundColor Cyan
             
             if (-not (Test-Path $descargasDir)) {
                 New-Item -ItemType Directory -Path $descargasDir | Out-Null
@@ -345,7 +345,7 @@ try {
             $zipPath = Join-Path $descargasDir "repo_temp.zip"
             $extractTempDir = Join-Path $descargasDir "repo_extracted"
             
-            # Limpiar directorio de extracción si ya existía
+            # Limpiar directorio de extraccion si ya existia
             if (Test-Path $extractTempDir) {
                 Remove-Item -Path $extractTempDir -Recurse -Force -ErrorAction SilentlyContinue
             }
@@ -374,7 +374,7 @@ try {
                 
                 $extractedRepoDir = Join-Path $extractTempDir "$repoName-$branch"
                 if (-not (Test-Path $extractedRepoDir)) {
-                    throw "No se pudo encontrar la carpeta extraída '$repoName-$branch' en el archivo zip."
+                    throw "No se pudo encontrar la carpeta extraida '$repoName-$branch' en el archivo zip."
                 }
                 
                 $filesToCopy = @(
@@ -450,10 +450,10 @@ try {
                     }
                 }
                 
-                Write-Host "Actualización de scripts completada con éxito.`n" -ForegroundColor Green
+                Write-Host "Actualizacion de scripts completada con exito.`n" -ForegroundColor Green
                 $didUpdate = $true
             } catch {
-                Write-Warning "Fallo al descargar o extraer la actualización de los scripts: $_"
+                Write-Warning "Fallo al descargar o extraer la actualizacion de los scripts: $_"
             } finally {
                 # Limpieza final de temporales
                 if (Test-Path $extractTempDir) {
@@ -467,7 +467,7 @@ try {
     }
 
     if ($didUpdate) {
-        Write-Host "Relanzando setup.ps1 para aplicar la versión más reciente en memoria..." -ForegroundColor Magenta
+        Write-Host "Relanzando setup.ps1 para aplicar la version mas reciente en memoria..." -ForegroundColor Magenta
         $newArgs = @{
             SkipUpdate = $true
         }
@@ -484,11 +484,11 @@ try {
     }
 }
 
-# Escribir archivo de configuración .env local
+# Escribir archivo de configuracion .env local
     $envFilePath = Join-Path $portableRoot ".env"
     Set-Content -Path $envFilePath -Value ('set "HOME_DIR_NAME={0}"' -f $HomeDirName)
 
-# Asegurar que el archivo .env, el directorio personalizado y la carpeta descargas estén excluidos en .gitignore
+# Asegurar que el archivo .env, el directorio personalizado y la carpeta descargas esten excluidos en .gitignore
 $gitignorePath = Join-Path $portableRoot ".gitignore"
 if (Test-Path $gitignorePath) {
     $gitignoreContent = Get-Content $gitignorePath -Raw
@@ -506,11 +506,11 @@ if (Test-Path $gitignorePath) {
 
 Write-Host "=== Entorno Portable de Desarrollo C + Python + VS Code ===" -ForegroundColor Cyan
 if ($isUpdateMode) {
-    Write-Host ">>> MODO ACTUALIZACIÓN: Se detectó una instalación previa completa. <<<" -ForegroundColor Green
+    Write-Host ">>> MODO ACTUALIZACION: Se detecto una instalacion previa completa. <<<" -ForegroundColor Green
 } else {
-    Write-Host ">>> MODO INSTALACIÓN/FINALIZACIÓN: Completando o finalizando instalación... <<<" -ForegroundColor Yellow
+    Write-Host ">>> MODO INSTALACION/FINALIZACION: Completando o finalizando instalacion... <<<" -ForegroundColor Yellow
 }
-Write-Host "Directorio de instalación: $portableRoot`n"
+Write-Host "Directorio de instalacion: $portableRoot`n"
 
 # Validar espacios, caracteres no ASCII o carpetas sincronizadas en la ruta (causan errores con Make/compiladores)
 $hasSpaces = $portableRoot -match ' '
@@ -522,30 +522,30 @@ if ($hasSpaces -or $hasNonAscii -or $hasSyncFolder) {
     Write-Host "ADVERTENCIA: RUTA CON POSIBLES CONFLICTOS DETECTADA" -ForegroundColor Yellow
     Write-Host "==========================================================================" -ForegroundColor Yellow
     if ($hasSpaces) {
-        Write-Host "* La ruta de instalación contiene espacios en blanco." -ForegroundColor Yellow
+        Write-Host "* La ruta de instalacion contiene espacios en blanco." -ForegroundColor Yellow
     }
     if ($hasNonAscii) {
-        Write-Host "* La ruta de instalación contiene caracteres no ASCII (acentos, eñes, etc.)." -ForegroundColor Yellow
+        Write-Host "* La ruta de instalacion contiene caracteres no ASCII (acentos, enes, etc.)." -ForegroundColor Yellow
     }
     if ($hasSyncFolder) {
-        Write-Host "* La ruta está dentro de una carpeta sincronizada (OneDrive/Dropbox/etc.)," -ForegroundColor Yellow
+        Write-Host "* La ruta esta dentro de una carpeta sincronizada (OneDrive/Dropbox/etc.)," -ForegroundColor Yellow
         Write-Host "  conocida por corromper instalaciones y compilaciones." -ForegroundColor Yellow
     }
     Write-Host "--------------------------------------------------------------------------"
-    Write-Host "Muchas herramientas de compilación de C (como Make, CMake y compiladores)"
-    Write-Host "fallan o tienen comportamientos erráticos con este tipo de rutas."
+    Write-Host "Muchas herramientas de compilacion de C (como Make, CMake y compiladores)"
+    Write-Host "fallan o tienen comportamientos erraticos con este tipo de rutas."
     Write-Host "Se recomienda mover la carpeta a una ruta simple (Ej: C:\dev\entorno)."
     Write-Host "--------------------------------------------------------------------------"
 
     if ($Yes) {
-        Write-Host "(--Yes) Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
+        Write-Host "(--Yes) Continuando con la instalacion bajo riesgo del usuario...`n" -ForegroundColor Yellow
     } else {
-        $choice = Read-Host "¿Deseás continuar con la instalación de todas formas? (s/n)"
+        $choice = Read-Host "Deseas continuar con la instalacion de todas formas? (s/n)"
         if ($choice -notmatch "^[sS]$") {
-            Write-Host "Instalación cancelada." -ForegroundColor Red
+            Write-Host "Instalacion cancelada." -ForegroundColor Red
             return
         }
-        Write-Host "Continuando con la instalación bajo riesgo del usuario...`n" -ForegroundColor Yellow
+        Write-Host "Continuando con la instalacion bajo riesgo del usuario...`n" -ForegroundColor Yellow
     }
 }
 
@@ -558,7 +558,7 @@ if (-not (Test-Path $homeDir)) {
 # ==========================================
 # 0.5 Preflight de recursos
 # ==========================================
-# Espacio en disco: la instalación completa requiere ~4 GB libres.
+# Espacio en disco: la instalacion completa requiere ~4 GB libres.
 try {
     $driveName = ($portableRoot.Substring(0, 2)).TrimEnd('\')
     $drive = Get-PSDrive -Name $driveName[0] -ErrorAction Stop
@@ -570,10 +570,10 @@ try {
 } catch [System.Management.Automation.PSInvalidOperationException] {
     Write-Warning "No se pudo verificar el espacio en disco para '$portableRoot'. Continuando..."
 } 
-# Rutas largas: msys64 agrega profundidad significativa; el límite clásico es 260 caracteres.
+# Rutas largas: msys64 agrega profundidad significativa; el limite clasico es 260 caracteres.
 if ($portableRoot.Length -gt 100) {
-    Write-Warning ("La ruta de instalación tiene {0} caracteres y puede exceder el límite clásico de 260 al extraer MSYS2." -f $portableRoot.Length)
-    Write-Warning "Si la extracción falla con 'path too long', mové el entorno a una ruta más corta (ej: C:\dev\entorno)."
+    Write-Warning ("La ruta de instalacion tiene {0} caracteres y puede exceder el limite clasico de 260 al extraer MSYS2." -f $portableRoot.Length)
+    Write-Warning "Si la extraccion falla con 'path too long', move el entorno a una ruta mas corta (ej: C:\dev\entorno)."
 }
 
 $bashProfilePath = Join-Path $homeDir ".bash_profile"
@@ -584,7 +584,7 @@ if (-not (Test-Path $bashProfilePath)) {
 
 $bashrcPath = Join-Path $homeDir ".bashrc"
 if (-not (Test-Path $bashrcPath)) {
-    $bashrcContent = "# .bashrc`n# Aquí podés agregar tus alias y funciones personalizadas.`n`n# Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)`nif [ -n `"`$PORTABLE_ROOT`" ]; then`n    UNIX_ROOT=`$`(cygpath -u `"`$PORTABLE_ROOT`"`)`n    case `":`$PATH:`" in`n        *`":`${UNIX_ROOT}bin:`"*) : ;;`n        *) export PATH=`"`${UNIX_ROOT}bin:`${UNIX_ROOT}msys64/ucrt64/bin:`${UNIX_ROOT}msys64/usr/bin:`$PATH`" ;;`n    esac`nfi`n"
+    $bashrcContent = "# .bashrc`n# Aqui podes agregar tus alias y funciones personalizadas.`n`n# Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)`nif [ -n `"`$PORTABLE_ROOT`" ]; then`n    UNIX_ROOT=`$`(cygpath -u `"`$PORTABLE_ROOT`"`)`n    case `":`$PATH:`" in`n        *`":`${UNIX_ROOT}bin:`"*) : ;;`n        *) export PATH=`"`${UNIX_ROOT}bin:`${UNIX_ROOT}msys64/ucrt64/bin:`${UNIX_ROOT}msys64/usr/bin:`$PATH`" ;;`n    esac`nfi`n"
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
 
@@ -593,14 +593,14 @@ if (-not (Test-Path $descargasDir)) {
 }
 
 # ==========================================
-# 1. Gestión e Instalación de MSYS2
+# 1. Gestion e Instalacion de MSYS2
 # ==========================================
 $isMsysInstalled = Test-Path (Join-Path $msysDir "usr\bin\bash.exe")
 $isMsysComplete = Test-Path (Join-Path $portableRoot ".msys_complete")
 
 if (-not $isMsysInstalled -or -not $isMsysComplete) {
     if (-not $isMsysInstalled) {
-        Write-Host "[Instalación] MSYS2 no detectado. Iniciando descarga..." -ForegroundColor Yellow
+        Write-Host "[Instalacion] MSYS2 no detectado. Iniciando descarga..." -ForegroundColor Yellow
 
         # MSYS2 puede estar fijado en versions.json (canal reproducible)
         $downloadUrl = Get-Pinned 'msys2'
@@ -613,16 +613,16 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
         try {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
             $releasesUrl = "https://api.github.com/repos/msys2/msys2-installer/releases"
-            Write-Host "Consultando API de GitHub por la última versión de MSYS2..."
+            Write-Host "Consultando API de GitHub por la ultima version de MSYS2..."
             $releases = Get-GitHubApiCached -Url $releasesUrl
-            # Buscar la primera versión que no sea un build 'nightly' y que contenga el archivo sfx.exe
+            # Buscar la primera version que no sea un build 'nightly' y que contenga el archivo sfx.exe
             foreach ($release in $releases) {
                 if ($release.tag_name -notlike "*nightly*") {
                     $asset = $release.assets | Where-Object { $_.name -like "msys2-base-x86_64-*.sfx.exe" }
                     if ($asset) {
                         $downloadUrl = $asset.browser_download_url
                         $fileName = $asset.name
-                        Write-Host "Última versión estable detectada: $fileName (Tag: $($release.tag_name))" -ForegroundColor Green
+                        Write-Host "Ultima version estable detectada: $fileName (Tag: $($release.tag_name))" -ForegroundColor Green
                         break
                     }
                 }
@@ -643,34 +643,34 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
         $shaUrl = "$downloadUrl.sha256"
         $isDownloadedAndValid = $false
 
-        # Verificar si ya existe una descarga previa válida para evitar descargas duplicadas en reintentos
+        # Verificar si ya existe una descarga previa valida para evitar descargas duplicadas en reintentos
         if (Test-Path $exePath) {
-            Write-Host "Se detectó un instalador de MSYS2 descargado previamente. Verificando firma..." -ForegroundColor Yellow
+            Write-Host "Se detecto un instalador de MSYS2 descargado previamente. Verificando firma..." -ForegroundColor Yellow
             try {
                 if (-not (Test-Path $shaPath)) {
                     Invoke-WebRequest -Uri $shaUrl -OutFile $shaPath -UseBasicParsing -ErrorAction Stop
                 }
                 $shaContent = (Get-Content $shaPath -Raw).Trim()
                 if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
-                    throw "El archivo de firma contiene HTML (posible página de error del servidor)."
+                    throw "El archivo de firma contiene HTML (posible pagina de error del servidor)."
                 }
                 $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
                 if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
                     $truncatedHash = $expectedHash
                     if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
-                    throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
+                    throw "El hash esperado recuperado no tiene un formato SHA256 valido: '$truncatedHash'"
                 }
                 $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
                 if ($actualHash -eq $expectedHash) {
                     $isDownloadedAndValid = $true
-                    Write-Host "El archivo existente es válido. Se omitirá la descarga." -ForegroundColor Green
+                    Write-Host "El archivo existente es valido. Se omitira la descarga." -ForegroundColor Green
                 } else {
-                    Write-Host "La firma del archivo existente no coincide. Se procederá a descargar nuevamente." -ForegroundColor Yellow
+                    Write-Host "La firma del archivo existente no coincide. Se procedera a descargar nuevamente." -ForegroundColor Yellow
                     Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
                     Remove-Item -Path $exePath -Force -ErrorAction SilentlyContinue
                 }
             } catch {
-                Write-Host "No se pudo verificar la firma del archivo existente. Se procederá a descargar nuevamente. Detalles: $_" -ForegroundColor Yellow
+                Write-Host "No se pudo verificar la firma del archivo existente. Se procedera a descargar nuevamente. Detalles: $_" -ForegroundColor Yellow
                 Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
             }
         }
@@ -679,7 +679,7 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
             Write-Host "Descargando $fileName..." -ForegroundColor Cyan
             Invoke-DownloadWithRetry -Url $downloadUrl -OutFile $exePath
 
-            Write-Host "Descargando verificación SHA256..." -ForegroundColor Cyan
+            Write-Host "Descargando verificacion SHA256..." -ForegroundColor Cyan
             try {
                 $attempts = 0
                 $success = $false
@@ -703,55 +703,55 @@ if (-not $isMsysInstalled -or -not $isMsysComplete) {
             try {
                 $shaContent = (Get-Content $shaPath -Raw).Trim()
                 if ($shaContent -match '<html' -or $shaContent -match '<!DOCTYPE') {
-                    throw "El archivo de firma contiene HTML (posible página de error del servidor o rate limit)."
+                    throw "El archivo de firma contiene HTML (posible pagina de error del servidor o rate limit)."
                 }
                 $expectedHash = $shaContent.Split(" ")[0].Trim().ToLower()
                 if ($expectedHash -notmatch '^[0-9a-f]{64}$') {
                     $truncatedHash = $expectedHash
                     if ($truncatedHash.Length -gt 100) { $truncatedHash = $truncatedHash.Substring(0, 100) + "..." }
-                    throw "El hash esperado recuperado no tiene un formato SHA256 válido: '$truncatedHash'"
+                    throw "El hash esperado recuperado no tiene un formato SHA256 valido: '$truncatedHash'"
                 }
                 $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLower()
 
                 if ($actualHash -ne $expectedHash) {
                     throw "El hash calculado ($actualHash) no coincide con el esperado ($expectedHash)."
                 }
-                Write-Host "Firma SHA256 verificada con éxito." -ForegroundColor Green
+                Write-Host "Firma SHA256 verificada con exito." -ForegroundColor Green
             } catch {
                 Remove-Item -Path $shaPath -Force -ErrorAction SilentlyContinue
-                throw "Falla crítica en la verificación de firma SHA256. La instalación se detiene. Detalles: $_"
+                throw "Falla critica en la verificacion de firma SHA256. La instalacion se detiene. Detalles: $_"
             }
         }
 
         Write-Host "Extrayendo entorno base MSYS2 en: $portableRoot" -ForegroundColor Cyan
         $process = Start-Process -FilePath $exePath -ArgumentList "-y", "-o$portableRoot" -Wait -NoNewWindow -PassThru
         if ($process.ExitCode -ne 0) {
-            throw "Error durante la extracción de MSYS2 (código de salida: $($process.ExitCode))"
+            throw "Error durante la extraccion de MSYS2 (codigo de salida: $($process.ExitCode))"
         }
-        Write-Host "Instalación base de MSYS2 completada con éxito.`n" -ForegroundColor Green
+        Write-Host "Instalacion base de MSYS2 completada con exito.`n" -ForegroundColor Green
     } else {
-        Write-Host "Se detectó una instalación previa incompleta de MSYS2. Intentando continuar con la instalación existente..." -ForegroundColor Yellow
+        Write-Host "Se detecto una instalacion previa incompleta de MSYS2. Intentando continuar con la instalacion existente..." -ForegroundColor Yellow
     }
 } else {
-    Write-Host "[Actualización] MSYS2 base ya instalado y verificado." -ForegroundColor Green
+    Write-Host "[Actualizacion] MSYS2 base ya instalado y verificado." -ForegroundColor Green
 }
 
 if ($isUpdateMode -or -not $isMsysComplete) {
     # ==========================================
-    # 2. Inicialización y Actualización de MSYS2
+    # 2. Inicializacion y Actualizacion de MSYS2
     # ==========================================
     Write-Host "Inicializando entorno de consola..." -ForegroundColor Cyan
     $bashPath = Join-Path $msysDir "usr\bin\bash.exe"
     & $bashPath --login -c "exit"
 
-    # Acelerar la instalación inicial habilitando descargas paralelas en pacman
+    # Acelerar la instalacion inicial habilitando descargas paralelas en pacman
     & $bashPath --login -c "sed -i -E 's/^#?[[:space:]]*ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf"
 
     # Espejo regional de pacman: medir latencia contra candidatos (con prioridad
-    # sudamericana para Red UNRN) y configurar el más rápido como primera opción.
+    # sudamericana para Red UNRN) y configurar el mas rapido como primera opcion.
     $null = Select-PacmanMirrorByLatency -MsysDir $msysDir
 
-    # Resolver la ruta de caché local y pasarla a pacman utilizando el ejecutable cygpath nativo
+    # Resolver la ruta de cache local y pasarla a pacman utilizando el ejecutable cygpath nativo
     $cygpathExe = Join-Path $msysDir "usr\bin\cygpath.exe"
     $unixCacheDir = & $cygpathExe -u "$descargasDir/pacman_cache"
     $unixCacheDir = $unixCacheDir.Trim()
@@ -771,18 +771,18 @@ if ($isUpdateMode -or -not $isMsysComplete) {
     }
 
     # ==========================================
-    # 3. Instalación de Clang y Python
+    # 3. Instalacion de Clang y Python
     # ==========================================
-    # Lista única de paquetes mantenida en packages-baseline.txt
+    # Lista unica de paquetes mantenida en packages-baseline.txt
     # (compartida con bin/download-baseline.sh; admite comentarios con #)
     $pkgFile = Join-Path $portableRoot "packages-baseline.txt"
     if (-not (Test-Path $pkgFile)) {
-        throw "No se encontró packages-baseline.txt en la raíz del entorno."
+        throw "No se encontro packages-baseline.txt en la raiz del entorno."
     }
     $packages = @(Get-Content -Path $pkgFile | ForEach-Object { ($_ -split '#')[0].Trim() } | Where-Object { $_ })
 
     $pkgString = $packages -join " "
-    Write-Host "Instalando compiladores, herramientas de compilación, Python y librerías comunes..." -ForegroundColor Cyan
+    Write-Host "Instalando compiladores, herramientas de compilacion, Python y librerias comunes..." -ForegroundColor Cyan
     Invoke-PacmanWithRetry -BashPath $bashPath -Arguments "-S --needed --noconfirm --cachedir '$unixCacheDir' $pkgString"
 
     # Configurar alias en el HOME portable
@@ -812,7 +812,7 @@ if ($isUpdateMode -or -not $isMsysComplete) {
             $isModified = $true
         }
 
-        # Agregar banner institucional (UNRN Andina - Programación 1)
+        # Agregar banner institucional (UNRN Andina - Programacion 1)
         $startInstMarker = "# === START INSTITUTIONAL BANNER ==="
         $endInstMarker = "# === END INSTITUTIONAL BANNER ==="
         $instBanner = @(
@@ -821,7 +821,7 @@ if ($isUpdateMode -or -not $isMsysComplete) {
             "clear",
             'echo -e "\e[35m"', # Violeta
             'echo "======================================================================"',
-            'echo "  UNRN Andina - Programación 1"',
+            'echo "  UNRN Andina - Programacion 1"',
             'echo "======================================================================"',
             'echo -e "\e[0m"',
             'ayuda',
@@ -835,15 +835,15 @@ if ($isUpdateMode -or -not $isMsysComplete) {
         
         if ($isModified) {
             [System.IO.File]::WriteAllText($bashrcPath, $content, $utf8NoBom)
-            Write-Host "Configuración de terminal personalizada guardada." -ForegroundColor Green
+            Write-Host "Configuracion de terminal personalizada guardada." -ForegroundColor Green
         }
     }
     Set-Content -Path (Join-Path $portableRoot ".msys_complete") -Value "Complete"
 } else {
-    Write-Host "[Actualización] MSYS2 y herramientas de desarrollo ya configuradas. Se omite pacman para agilizar la ejecución." -ForegroundColor Green
+    Write-Host "[Actualizacion] MSYS2 y herramientas de desarrollo ya configuradas. Se omite pacman para agilizar la ejecucion." -ForegroundColor Green
 }
 
-# Garantizar que make.exe exista como ejecutable nativo en ucrt64/bin (además del alias interactivo)
+# Garantizar que make.exe exista como ejecutable nativo en ucrt64/bin (ademas del alias interactivo)
 $mingwMakeExe = Join-Path $msysDir "ucrt64\bin\mingw32-make.exe"
 $makeExe = Join-Path $msysDir "ucrt64\bin\make.exe"
 if ((Test-Path $mingwMakeExe) -and -not (Test-Path $makeExe)) {
@@ -851,13 +851,13 @@ if ((Test-Path $mingwMakeExe) -and -not (Test-Path $makeExe)) {
 }
 
 # ==========================================
-# 4. Gestión e Instalación de VS Code Portable
+# 4. Gestion e Instalacion de VS Code Portable
 # ==========================================
 $vscodeZipUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive"
 $isCodeInstalled = Test-Path (Join-Path $vscodeDir "Code.exe")
 $isCodeComplete = Test-Path (Join-Path $portableRoot ".vscode_complete")
 
-# Resolver la URL de redirección final de VS Code
+# Resolver la URL de redireccion final de VS Code
 $resolvedVscodeUrl = $vscodeZipUrl
 $vscodePinned = Get-Pinned 'vscode'
 if ($vscodePinned) {
@@ -891,14 +891,14 @@ if ($isUpdateMode -or -not $isCodeComplete) {
                 $resolvedVscodeUrl = $vscodeZipUrl
             }
         } catch {
-            Write-Warning "No se pudo resolver la URL final de redirección de VS Code. Se usará la URL directa."
+            Write-Warning "No se pudo resolver la URL final de redireccion de VS Code. Se usara la URL directa."
         }
     }
     } # fin if (-not $vscodePinned)
 }
 
 if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
-    Write-Host "VS Code ya se encuentra instalado y configurado de una ejecución previa." -ForegroundColor Green
+    Write-Host "VS Code ya se encuentra instalado y configurado de una ejecucion previa." -ForegroundColor Green
 } else {
     $shouldInstallOrUpdateVscode = $false
     if ($isUpdateMode) {
@@ -909,15 +909,15 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
         }
         
         if ($resolvedVscodeUrl -ne $installedVscodeUrl) {
-            Write-Host "Hay una nueva versión de VS Code disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-            if ($Yes -or ((Read-Host "¿Deseás descargar e instalar la actualización de VS Code? (s/n)") -match "^[sS]$")) {
+            Write-Host "Hay una nueva version de VS Code disponible para actualizar (o no pudo verificarse la version local)." -ForegroundColor Yellow
+            if ($Yes -or ((Read-Host "Deseas descargar e instalar la actualizacion de VS Code? (s/n)") -match "^[sS]$")) {
                 $shouldInstallOrUpdateVscode = $true
-                if ($Yes) { Write-Host "(--Yes) Actualizando VS Code automáticamente..." -ForegroundColor DarkGray }
+                if ($Yes) { Write-Host "(--Yes) Actualizando VS Code automaticamente..." -ForegroundColor DarkGray }
             } else {
-                Write-Host "Omitiendo actualización de VS Code." -ForegroundColor DarkGray
+                Write-Host "Omitiendo actualizacion de VS Code." -ForegroundColor DarkGray
             }
         } else {
-            Write-Host "VS Code ya se encuentra en la versión más reciente ($resolvedVscodeUrl)." -ForegroundColor Green
+            Write-Host "VS Code ya se encuentra en la version mas reciente ($resolvedVscodeUrl)." -ForegroundColor Green
         }
     } else {
         $shouldInstallOrUpdateVscode = $true
@@ -925,7 +925,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
 
     if ($shouldInstallOrUpdateVscode) {
         if (-not $isUpdateMode -and $isCodeInstalled) {
-            Write-Host "Se detectó una instalación previa incompleta de VS Code. Se intentará continuar con la configuración..." -ForegroundColor Yellow
+            Write-Host "Se detecto una instalacion previa incompleta de VS Code. Se intentara continuar con la configuracion..." -ForegroundColor Yellow
             $dataDir = Join-Path $vscodeDir "data"
             $userSettingsDir = Join-Path $dataDir "user-data\User"
             $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
@@ -952,36 +952,36 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                 Set-Content -Path $settingsJsonPath -Value $defaultSettings
             }
         } else {
-            # Resolver nombre de archivo de forma dinámica e identificar versión
+            # Resolver nombre de archivo de forma dinamica e identificar version
             $vscodeZipName = Get-FileNameFromUrl -Url $resolvedVscodeUrl -DefaultName "vscode_archive.zip"
             $vscodeZipPath = Join-Path $descargasDir $vscodeZipName
 
             $vscodeZipValid = $false
             if (Test-Path $vscodeZipPath) {
-                Write-Host "Se detectó una descarga previa de VS Code ($vscodeZipName). Verificando..." -ForegroundColor Yellow
+                Write-Host "Se detecto una descarga previa de VS Code ($vscodeZipName). Verificando..." -ForegroundColor Yellow
                 try {
                     $fileSize = (Get-Item $vscodeZipPath).Length
                     if ($fileSize -gt 50MB) {
-                        # Verificación activa: si existe el hash registrado de una descarga previa, compararlo
+                        # Verificacion activa: si existe el hash registrado de una descarga previa, compararlo
                         $sidecar = "$vscodeZipPath.sha256"
                         if (Test-Path $sidecar) {
                             $expectedHash = (Get-Content $sidecar -Raw).Trim()
                             $actualHash = (Get-FileHash -Path $vscodeZipPath -Algorithm SHA256).Hash
                             if ($actualHash -ne $expectedHash) {
-                                Write-Host "El ZIP previo de VS Code está corrupto (SHA256 no coincide). Se volverá a descargar." -ForegroundColor Yellow
+                                Write-Host "El ZIP previo de VS Code esta corrupto (SHA256 no coincide). Se volvera a descargar." -ForegroundColor Yellow
                             } else {
                                 $vscodeZipValid = $true
-                                Write-Host "El archivo ZIP previo es válido (SHA256 verificado)." -ForegroundColor Green
+                                Write-Host "El archivo ZIP previo es valido (SHA256 verificado)." -ForegroundColor Green
                             }
                         } else {
                             $vscodeZipValid = $true
-                            Write-Host "El archivo ZIP previo es válido (sin hash previo registrado)." -ForegroundColor Green
+                            Write-Host "El archivo ZIP previo es valido (sin hash previo registrado)." -ForegroundColor Green
                         }
                     } else {
-                        Write-Host "El archivo ZIP previo está incompleto o dañado. Se volverá a descargar." -ForegroundColor Yellow
+                        Write-Host "El archivo ZIP previo esta incompleto o danado. Se volvera a descargar." -ForegroundColor Yellow
                     }
                 } catch {
-                    Write-Host "No se pudo verificar el archivo ZIP previo. Se volverá a descargar." -ForegroundColor Yellow
+                    Write-Host "No se pudo verificar el archivo ZIP previo. Se volvera a descargar." -ForegroundColor Yellow
                 }
             }
             
@@ -995,8 +995,8 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
             $dataDir = Join-Path $vscodeDir "data"
             $extractTemp = Join-Path $descargasDir "vscode_extract"
 
-            # Actualización atómica: se extrae y valida en un directorio temporal
-            # antes de tocar la instalación vigente; ante cualquier fallo se restaura el respaldo.
+            # Actualizacion atomica: se extrae y valida en un directorio temporal
+            # antes de tocar la instalacion vigente; ante cualquier fallo se restaura el respaldo.
             try {
                 if (Test-Path $extractTemp) {
                     Remove-Item -Path $extractTemp -Recurse -Force -ErrorAction SilentlyContinue
@@ -1006,7 +1006,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                 Write-Host "Extrayendo VS Code a directorio temporal..." -ForegroundColor Cyan
                 Expand-Archive -Path $vscodeZipPath -DestinationPath $extractTemp -Force
                 if (-not (Test-Path (Join-Path $extractTemp "Code.exe"))) {
-                    throw "El ZIP extraído no contiene Code.exe; se cancela el reemplazo de la instalación vigente."
+                    throw "El ZIP extraido no contiene Code.exe; se cancela el reemplazo de la instalacion vigente."
                 }
 
                 if ((Test-Path $dataDir)) {
@@ -1018,7 +1018,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                 }
 
                 if (Test-Path $vscodeDir) {
-                    Write-Host "Reemplazando instalación anterior de VS Code..." -ForegroundColor Cyan
+                    Write-Host "Reemplazando instalacion anterior de VS Code..." -ForegroundColor Cyan
                     Remove-Item -Path $vscodeDir -Recurse -Force -ErrorAction SilentlyContinue
                 }
                 Move-Item -Path $extractTemp -Destination $vscodeDir
@@ -1033,7 +1033,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                     New-Item -ItemType Directory -Path $userSettingsDir | Out-Null
                 }
                 
-                # Escribir configuración inicial de settings.json para aislar telemetría y configurar bash
+                # Escribir configuracion inicial de settings.json para aislar telemetria y configurar bash
                 $settingsJsonPath = Join-Path $userSettingsDir "settings.json"
                 $defaultSettings = @{
                     "telemetry.telemetryLevel" = "off"
@@ -1055,7 +1055,7 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
                 Set-Content -Path $settingsJsonPath -Value $defaultSettings
                 }
             } catch {
-                Write-Warning "Fallo durante la actualización de VS Code: $_"
+                Write-Warning "Fallo durante la actualizacion de VS Code: $_"
                 # Rollback: si el respaldo existe y la data no fue restaurada, reconstruir
                 if ((Test-Path $backupDataDir) -and (-not (Test-Path $dataDir))) {
                     Write-Host "Restaurando respaldo de datos de VS Code tras el fallo..." -ForegroundColor Yellow
@@ -1074,18 +1074,18 @@ if (-not $isUpdateMode -and $isCodeComplete -and $isCodeInstalled) {
         
         Set-Content -Path (Join-Path $vscodeDir ".version") -Value $resolvedVscodeUrl
         Set-Content -Path (Join-Path $portableRoot ".vscode_complete") -Value "Complete"
-        Write-Host "VS Code Portable configurado/actualizado con éxito." -ForegroundColor Green
+        Write-Host "VS Code Portable configurado/actualizado con exito." -ForegroundColor Green
     }
 }
 
 # ==========================================
-# 5. Instalación de Extensiones de VS Code
+# 5. Instalacion de Extensiones de VS Code
 # ==========================================
 $codeCmd = Join-Path $vscodeDir "bin\code.cmd"
 if (Test-Path $codeCmd) {
     if ($isUpdateMode -or -not $isCodeComplete) {
         Write-Host "Verificando e instalando extensiones de VS Code..." -ForegroundColor Cyan
-        # Versiones pineadas en versions.json (campo "extensiones": id -> versión o null)
+        # Versiones pineadas en versions.json (campo "extensiones": id -> version o null)
         $extensions = @(
             "ms-vscode.cpptools",
             "ms-vscode.cpptools-extension-pack",
@@ -1105,19 +1105,19 @@ if (Test-Path $codeCmd) {
             }
         }
         foreach ($ext in $extensions) {
-            Write-Host "Instalando/verificando extensión: $ext..."
+            Write-Host "Instalando/verificando extension: $ext..."
             $process = Start-Process -FilePath $codeCmd -ArgumentList "--install-extension", $ext, "--force" -Wait -NoNewWindow -PassThru
             if ($process.ExitCode -eq 0) {
-                Write-Host "Extensión $ext instalada/verificada." -ForegroundColor Green
+                Write-Host "Extension $ext instalada/verificada." -ForegroundColor Green
             } else {
-                Write-Warning "No se pudo instalar/verificar la extensión $ext."
+                Write-Warning "No se pudo instalar/verificar la extension $ext."
             }
         }
     }
 }
 
 # ==========================================
-# 5.5. Gestión e Instalación de GitHub CLI (gh)
+# 5.5. Gestion e Instalacion de GitHub CLI (gh)
 # ==========================================
 $ghExe = Join-Path $portableRoot "bin\gh.exe"
 $isGhInstalled = Test-Path $ghExe
@@ -1140,7 +1140,7 @@ if ($isUpdateMode -or -not $isGhComplete -or -not $isGhInstalled) {
         $ghAsset = $ghRelease.assets | Where-Object { $_.name -like "*windows_amd64.zip" }
         if ($ghAsset) {
             $ghDownloadUrl = $ghAsset.browser_download_url
-            Write-Host "Última versión detectada de GitHub CLI: $($ghAsset.name)" -ForegroundColor Green
+            Write-Host "Ultima version detectada de GitHub CLI: $($ghAsset.name)" -ForegroundColor Green
         }
     } catch {
         Write-Warning "Fallo al consultar la API de GitHub para GitHub CLI. Usando fallback fijo."
@@ -1154,7 +1154,7 @@ if ($isUpdateMode -or -not $isGhComplete -or -not $isGhInstalled) {
 }
 
 if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
-    Write-Host "GitHub CLI ya está instalado y configurado de una ejecución previa." -ForegroundColor Green
+    Write-Host "GitHub CLI ya esta instalado y configurado de una ejecucion previa." -ForegroundColor Green
 } else {
     if ($isUpdateMode) {
         $installedGhVersionFile = Join-Path $portableRoot "bin\.gh_version"
@@ -1163,22 +1163,22 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
             $installedGhUrl = (Get-Content $installedGhVersionFile -Raw).Trim()
         }
         if ($ghDownloadUrl -ne $installedGhUrl) {
-            # Si se usó la URL de fallback porque falló la API y ya hay una versión instalada,
-            # asumimos que la instalada es válida para no sugerir un downgrade o alertar innecesariamente.
+            # Si se uso la URL de fallback porque fallo la API y ya hay una version instalada,
+            # asumimos que la instalada es valida para no sugerir un downgrade o alertar innecesariamente.
             $isFallback = ($ghDownloadUrl -eq $ghFallbackUrl)
             if ($isFallback -and $installedGhUrl) {
-                Write-Host "Omitiendo comprobación de actualización de GitHub CLI (la API de GitHub no está disponible)." -ForegroundColor Green
+                Write-Host "Omitiendo comprobacion de actualizacion de GitHub CLI (la API de GitHub no esta disponible)." -ForegroundColor Green
             } else {
-                Write-Host "Hay una nueva versión de GitHub CLI disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-                if ($Yes -or ((Read-Host "¿Deseás descargar e instalar la actualización de GitHub CLI? (s/n)") -match "^[sS]$")) {
+                Write-Host "Hay una nueva version de GitHub CLI disponible para actualizar (o no pudo verificarse la version local)." -ForegroundColor Yellow
+                if ($Yes -or ((Read-Host "Deseas descargar e instalar la actualizacion de GitHub CLI? (s/n)") -match "^[sS]$")) {
                     $shouldInstallOrUpdateGh = $true
-                    if ($Yes) { Write-Host "(--Yes) Actualizando GitHub CLI automáticamente..." -ForegroundColor DarkGray }
+                    if ($Yes) { Write-Host "(--Yes) Actualizando GitHub CLI automaticamente..." -ForegroundColor DarkGray }
                 } else {
-                    Write-Host "Omitiendo actualización de GitHub CLI." -ForegroundColor DarkGray
+                    Write-Host "Omitiendo actualizacion de GitHub CLI." -ForegroundColor DarkGray
                 }
             }
         } else {
-            Write-Host "GitHub CLI ya se encuentra en la versión más reciente ($ghDownloadUrl)." -ForegroundColor Green
+            Write-Host "GitHub CLI ya se encuentra en la version mas reciente ($ghDownloadUrl)." -ForegroundColor Green
         }
     } else {
         $shouldInstallOrUpdateGh = $true
@@ -1186,15 +1186,15 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
 
     if ($shouldInstallOrUpdateGh) {
         if (-not $isUpdateMode -and $isGhInstalled) {
-            Write-Host "Se detectó una instalación previa incompleta de GitHub CLI. Se continuará con la instalación existente..." -ForegroundColor Yellow
+            Write-Host "Se detecto una instalacion previa incompleta de GitHub CLI. Se continuara con la instalacion existente..." -ForegroundColor Yellow
         } else {
-            # Resolver nombre de archivo de forma dinámica
+            # Resolver nombre de archivo de forma dinamica
             $ghZipName = Get-FileNameFromUrl -Url $ghDownloadUrl -DefaultName "gh_archive.zip"
             $ghZipPath = Join-Path $descargasDir $ghZipName
 
             $isGhZipValid = $false
             if (Test-Path $ghZipPath) {
-                Write-Host "Se detectó un archivo ZIP de GitHub CLI descargado previamente ($ghZipName). Verificando..." -ForegroundColor Yellow
+                Write-Host "Se detecto un archivo ZIP de GitHub CLI descargado previamente ($ghZipName). Verificando..." -ForegroundColor Yellow
                 try {
                     $fileSize = (Get-Item $ghZipPath).Length
                     if ($fileSize -gt 5MB) {
@@ -1203,20 +1203,20 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
                             $expectedHash = (Get-Content $sidecar -Raw).Trim()
                             $actualHash = (Get-FileHash -Path $ghZipPath -Algorithm SHA256).Hash
                             if ($actualHash -ne $expectedHash) {
-                                Write-Host "El ZIP previo de GitHub CLI está corrupto (SHA256 no coincide). Se volverá a descargar." -ForegroundColor Yellow
+                                Write-Host "El ZIP previo de GitHub CLI esta corrupto (SHA256 no coincide). Se volvera a descargar." -ForegroundColor Yellow
                             } else {
                                 $isGhZipValid = $true
-                                Write-Host "El ZIP previo de GitHub CLI es válido (SHA256 verificado)." -ForegroundColor Green
+                                Write-Host "El ZIP previo de GitHub CLI es valido (SHA256 verificado)." -ForegroundColor Green
                             }
                         } else {
                             $isGhZipValid = $true
-                            Write-Host "El archivo ZIP previo de GitHub CLI es válido (sin hash previo registrado)." -ForegroundColor Green
+                            Write-Host "El archivo ZIP previo de GitHub CLI es valido (sin hash previo registrado)." -ForegroundColor Green
                         }
                     } else {
-                        Write-Host "El archivo ZIP previo de GitHub CLI está incompleto. Se volverá a descargar." -ForegroundColor Yellow
+                        Write-Host "El archivo ZIP previo de GitHub CLI esta incompleto. Se volvera a descargar." -ForegroundColor Yellow
                     }
                 } catch {
-                    Write-Host "No se pudo verificar el archivo ZIP previo de GitHub CLI. Se volverá a descargar." -ForegroundColor Yellow
+                    Write-Host "No se pudo verificar el archivo ZIP previo de GitHub CLI. Se volvera a descargar." -ForegroundColor Yellow
                 }
             }
 
@@ -1242,23 +1242,23 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
                     New-Item -ItemType Directory -Path $binDir | Out-Null
                 }
                 Move-Item -Path $extractedGhExe.FullName -Destination $ghExe -Force
-                Write-Host "GitHub CLI copiado con éxito a $ghExe." -ForegroundColor Green
+                Write-Host "GitHub CLI copiado con exito a $ghExe." -ForegroundColor Green
             } else {
-                Write-Error "No se pudo encontrar gh.exe en el paquete extraído."
+                Write-Error "No se pudo encontrar gh.exe en el paquete extraido."
             }
 
             Remove-Item -Path $ghTempDir -Recurse -Force -ErrorAction SilentlyContinue
-            # No removemos el archivo zip para mantener la caché de descargas
+            # No removemos el archivo zip para mantener la cache de descargas
         }
 
         Set-Content -Path (Join-Path $portableRoot "bin\.gh_version") -Value $ghDownloadUrl
         Set-Content -Path (Join-Path $portableRoot ".gh_complete") -Value "Complete"
-        Write-Host "GitHub CLI instalado con éxito." -ForegroundColor Green
+        Write-Host "GitHub CLI instalado con exito." -ForegroundColor Green
     }
 }
 
 # ==========================================
-# 6. Gestión e Instalación de WezTerm Portable
+# 6. Gestion e Instalacion de WezTerm Portable
 # ==========================================
 $wezDir = Join-Path $portableRoot "wezterm"
 $isWezInstalled = Test-Path (Join-Path $wezDir "wezterm.exe")
@@ -1275,12 +1275,12 @@ if ($isUpdateMode -or -not $isWezComplete) {
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $wezReleaseUrl = "https://api.github.com/repos/wez/wezterm/releases/latest"
-        Write-Host "Consultando API de GitHub por la última versión de WezTerm..."
+        Write-Host "Consultando API de GitHub por la ultima version de WezTerm..."
         $wezRelease = Get-GitHubApiCached -Url $wezReleaseUrl
         $wezAsset = $wezRelease.assets | Where-Object { $_.name -like "WezTerm-windows-*.zip" -and $_.name -notlike "*setup*" }
         if ($wezAsset) {
             $wezDownloadUrl = $wezAsset.browser_download_url
-            Write-Host "Última versión detectada de WezTerm: $($wezAsset.name)" -ForegroundColor Green
+            Write-Host "Ultima version detectada de WezTerm: $($wezAsset.name)" -ForegroundColor Green
         }
     } catch {
         Write-Warning "Fallo al consultar la API de GitHub para WezTerm. Usando fallback fijo."
@@ -1294,7 +1294,7 @@ if ($isUpdateMode -or -not $isWezComplete) {
 }
 
 if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
-    Write-Host "WezTerm ya está instalado y configurado de una ejecución previa." -ForegroundColor Green
+    Write-Host "WezTerm ya esta instalado y configurado de una ejecucion previa." -ForegroundColor Green
 } else {
     $shouldInstallOrUpdateWez = $false
     if ($isUpdateMode) {
@@ -1305,22 +1305,22 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         }
         
         if ($wezDownloadUrl -ne $installedWezUrl) {
-            # Si se usó la URL de fallback porque falló la API y ya hay una versión instalada,
-            # asumimos que la instalada es válida para no sugerir un downgrade o alertar innecesariamente.
+            # Si se uso la URL de fallback porque fallo la API y ya hay una version instalada,
+            # asumimos que la instalada es valida para no sugerir un downgrade o alertar innecesariamente.
             $isFallback = ($wezDownloadUrl -eq $wezFallbackUrl)
             if ($isFallback -and $installedWezUrl) {
-                Write-Host "Omitiendo comprobación de actualización de WezTerm (la API de GitHub no está disponible)." -ForegroundColor Green
+                Write-Host "Omitiendo comprobacion de actualizacion de WezTerm (la API de GitHub no esta disponible)." -ForegroundColor Green
             } else {
-                Write-Host "Hay una nueva versión de WezTerm disponible para actualizar (o no pudo verificarse la versión local)." -ForegroundColor Yellow
-                if ($Yes -or ((Read-Host "¿Deseás descargar e instalar la actualización de WezTerm? (s/n)") -match "^[sS]$")) {
+                Write-Host "Hay una nueva version de WezTerm disponible para actualizar (o no pudo verificarse la version local)." -ForegroundColor Yellow
+                if ($Yes -or ((Read-Host "Deseas descargar e instalar la actualizacion de WezTerm? (s/n)") -match "^[sS]$")) {
                     $shouldInstallOrUpdateWez = $true
-                    if ($Yes) { Write-Host "(--Yes) Actualizando WezTerm automáticamente..." -ForegroundColor DarkGray }
+                    if ($Yes) { Write-Host "(--Yes) Actualizando WezTerm automaticamente..." -ForegroundColor DarkGray }
                 } else {
-                    Write-Host "Omitiendo actualización de WezTerm." -ForegroundColor DarkGray
+                    Write-Host "Omitiendo actualizacion de WezTerm." -ForegroundColor DarkGray
                 }
             }
         } else {
-            Write-Host "WezTerm ya se encuentra en la versión más reciente ($wezDownloadUrl)." -ForegroundColor Green
+            Write-Host "WezTerm ya se encuentra en la version mas reciente ($wezDownloadUrl)." -ForegroundColor Green
         }
     } else {
         $shouldInstallOrUpdateWez = $true
@@ -1328,15 +1328,15 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
 
     if ($shouldInstallOrUpdateWez) {
         if (-not $isUpdateMode -and $isWezInstalled) {
-            Write-Host "Se detectó una instalación previa incompleta de WezTerm. Se continuará con la instalación existente..." -ForegroundColor Yellow
+            Write-Host "Se detecto una instalacion previa incompleta de WezTerm. Se continuara con la instalacion existente..." -ForegroundColor Yellow
         } else {
-            # Resolver nombre de archivo de forma dinámica
+            # Resolver nombre de archivo de forma dinamica
             $wezZipName = Get-FileNameFromUrl -Url $wezDownloadUrl -DefaultName "wezterm_archive.zip"
             $wezZipPath = Join-Path $descargasDir $wezZipName
 
             $isWezZipValid = $false
             if (Test-Path $wezZipPath) {
-                Write-Host "Se detectó un archivo ZIP de WezTerm descargado previamente ($wezZipName). Verificando..." -ForegroundColor Yellow
+                Write-Host "Se detecto un archivo ZIP de WezTerm descargado previamente ($wezZipName). Verificando..." -ForegroundColor Yellow
                 try {
                     $fileSize = (Get-Item $wezZipPath).Length
                     if ($fileSize -gt 10MB) {
@@ -1345,20 +1345,20 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
                             $expectedHash = (Get-Content $sidecar -Raw).Trim()
                             $actualHash = (Get-FileHash -Path $wezZipPath -Algorithm SHA256).Hash
                             if ($actualHash -ne $expectedHash) {
-                                Write-Host "El ZIP previo de WezTerm está corrupto (SHA256 no coincide). Se volverá a descargar." -ForegroundColor Yellow
+                                Write-Host "El ZIP previo de WezTerm esta corrupto (SHA256 no coincide). Se volvera a descargar." -ForegroundColor Yellow
                             } else {
                                 $isWezZipValid = $true
-                                Write-Host "El ZIP previo de WezTerm es válido (SHA256 verificado)." -ForegroundColor Green
+                                Write-Host "El ZIP previo de WezTerm es valido (SHA256 verificado)." -ForegroundColor Green
                             }
                         } else {
                             $isWezZipValid = $true
-                            Write-Host "El archivo ZIP previo de WezTerm es válido (sin hash previo registrado)." -ForegroundColor Green
+                            Write-Host "El archivo ZIP previo de WezTerm es valido (sin hash previo registrado)." -ForegroundColor Green
                         }
                     } else {
-                        Write-Host "El archivo ZIP previo de WezTerm está incompleto. Se volverá a descargar." -ForegroundColor Yellow
+                        Write-Host "El archivo ZIP previo de WezTerm esta incompleto. Se volvera a descargar." -ForegroundColor Yellow
                     }
                 } catch {
-                    Write-Host "No se pudo verificar el archivo ZIP previo de WezTerm. Se volverá a descargar." -ForegroundColor Yellow
+                    Write-Host "No se pudo verificar el archivo ZIP previo de WezTerm. Se volvera a descargar." -ForegroundColor Yellow
                 }
             }
 
@@ -1368,8 +1368,8 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
                 (Get-FileHash -Path $wezZipPath -Algorithm SHA256).Hash | Set-Content -Path "$wezZipPath.sha256"
             }
 
-            # Actualización atómica: extraer y aplanar en un directorio temporal,
-            # validar wezterm.exe y recién entonces reemplazar la instalación vigente.
+            # Actualizacion atomica: extraer y aplanar en un directorio temporal,
+            # validar wezterm.exe y recien entonces reemplazar la instalacion vigente.
             $wezExtractTemp = Join-Path $descargasDir "wezterm_extract"
             try {
                 if (Test-Path $wezExtractTemp) {
@@ -1380,10 +1380,10 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
                 Write-Host "Extrayendo WezTerm a directorio temporal..." -ForegroundColor Cyan
                 Expand-Archive -Path $wezZipPath -DestinationPath $wezExtractTemp -Force
 
-                # Si la descompresión creó un subdirectorio (ej: WezTerm-windows-...), aplanar dentro del temporal
+                # Si la descompresion creo un subdirectorio (ej: WezTerm-windows-...), aplanar dentro del temporal
                 $subExe = Get-ChildItem -Path $wezExtractTemp -Filter "wezterm.exe" -Recurse | Select-Object -First 1
                 if (-not $subExe) {
-                    throw "El ZIP extraído no contiene wezterm.exe; se cancela el reemplazo de la instalación vigente."
+                    throw "El ZIP extraido no contiene wezterm.exe; se cancela el reemplazo de la instalacion vigente."
                 }
                 if ($subExe.DirectoryName -ne $wezExtractTemp) {
                     Write-Host "Aplanando estructura de carpetas de WezTerm..." -ForegroundColor Cyan
@@ -1392,12 +1392,12 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
                 }
 
                 if (Test-Path $wezDir) {
-                    Write-Host "Reemplazando instalación anterior de WezTerm..." -ForegroundColor Cyan
+                    Write-Host "Reemplazando instalacion anterior de WezTerm..." -ForegroundColor Cyan
                     Remove-Item -Path $wezDir -Recurse -Force -ErrorAction SilentlyContinue
                 }
                 Move-Item -Path $wezExtractTemp -Destination $wezDir
             } catch {
-                Write-Warning "Fallo durante la actualización de WezTerm: $_"
+                Write-Warning "Fallo durante la actualizacion de WezTerm: $_"
                 throw
             } finally {
                 if (Test-Path $wezExtractTemp) {
@@ -1408,29 +1408,29 @@ if (-not $isUpdateMode -and $isWezComplete -and $isWezInstalled) {
         
         Set-Content -Path (Join-Path $wezDir ".version") -Value $wezDownloadUrl
         Set-Content -Path (Join-Path $portableRoot ".wezterm_complete") -Value "Complete"
-        Write-Host "WezTerm Portable instalado con éxito." -ForegroundColor Green
+        Write-Host "WezTerm Portable instalado con exito." -ForegroundColor Green
     }
 }
 
-# Escribir configuración wezterm.lua a partir de la plantilla canónica única
+# Escribir configuracion wezterm.lua a partir de la plantilla canonica unica
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
 $wezTemplateFile = Join-Path $portableRoot "wezterm.lua.template"
 if (-not (Test-Path $wezConfigPath) -or $isUpdateMode -or $shouldInstallOrUpdateWez) {
     if (-not (Test-Path $wezTemplateFile)) {
-        throw "No se encontró wezterm.lua.template en la raíz del entorno."
+        throw "No se encontro wezterm.lua.template en la raiz del entorno."
     }
     $wezConfigContent = Get-Content $wezTemplateFile -Raw
     $wezConfigContent = $wezConfigContent.Replace('@HOME_DIR_NAME@', $HomeDirName)
     [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
-    Write-Host "Configuración wezterm.lua creada/actualizada desde la plantilla." -ForegroundColor Green
+    Write-Host "Configuracion wezterm.lua creada/actualizada desde la plantilla." -ForegroundColor Green
 }
 
 # ==========================================
 # 6.5 Aprovisionamiento del motor Ripley (zipapp ripley.pyz)
 # ==========================================
-# Ripley es el verificador pedagógico de C que usan bin/verificar, bin/entregar,
+# Ripley es el verificador pedagogico de C que usan bin/verificar, bin/entregar,
 # nuevo-proyecto y tp.sh. Se distribuye como zipapp autocontenido (ripley.pyz)
-# adjunto a los Releases de GitHub: no requiere venv ni instalación.
+# adjunto a los Releases de GitHub: no requiere venv ni instalacion.
 $ripleyPyzPath = Join-Path $portableRoot "bin\ripley.pyz"
 $ripleyUrl = Get-Pinned 'ripley'
 if (-not $ripleyUrl) {
@@ -1449,9 +1449,9 @@ function Test-ZipappValid([string]$Path) {
 $needsRipleyDownload = $false
 if (-not (Test-Path $ripleyPyzPath)) {
     $needsRipleyDownload = $true
-    Write-Host "El motor Ripley no está descargado todavía." -ForegroundColor Yellow
+    Write-Host "El motor Ripley no esta descargado todavia." -ForegroundColor Yellow
 } elseif ($isUpdateMode -or $Latest) {
-    # En modo actualización se refresca silenciosamente (el zipapp pesa ~200 KB)
+    # En modo actualizacion se refresca silenciosamente (el zipapp pesa ~200 KB)
     $needsRipleyDownload = $true
 } else {
     Write-Host "Motor Ripley ya aprovisionado en bin\ripley.pyz." -ForegroundColor Green
@@ -1464,24 +1464,24 @@ if ($needsRipleyDownload) {
         $ripleyTmpPath = "$ripleyPyzPath.tmp"
         Invoke-DownloadWithRetry -Url $ripleyUrl -OutFile $ripleyTmpPath
         if (-not (Test-ZipappValid $ripleyTmpPath)) {
-            throw "El archivo descargado no parece un zipapp válido."
+            throw "El archivo descargado no parece un zipapp valido."
         }
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ripleyPyzPath) | Out-Null
         Move-Item -Path $ripleyTmpPath -Destination $ripleyPyzPath -Force
-        Write-Host "Motor Ripley aprovisionado con éxito ($( '{0:N0}' -f ((Get-Item $ripleyPyzPath).Length / 1KB) ) KB)." -ForegroundColor Green
+        Write-Host "Motor Ripley aprovisionado con exito ($( '{0:N0}' -f ((Get-Item $ripleyPyzPath).Length / 1KB) ) KB)." -ForegroundColor Green
         Write-Host "Probalo con: ripley doctor" -ForegroundColor DarkGray
     } catch {
-        # No bloquea la instalación: verificar/entregar caen al corrector diff clásico sin Ripley.
-        Write-Warning "No se pudo descargar ripley.pyz ($_). El corrector local funcionará en modo clásico."
+        # No bloquea la instalacion: verificar/entregar caen al corrector diff clasico sin Ripley.
+        Write-Warning "No se pudo descargar ripley.pyz ($_). El corrector local funcionara en modo clasico."
         if (Test-Path "$ripleyPyzPath.tmp") { Remove-Item "$ripleyPyzPath.tmp" -Force -ErrorAction SilentlyContinue }
     }
 }
 
 # ==========================================
-# 7. Importación de configuración del host (opcional)
+# 7. Importacion de configuracion del host (opcional)
 # ==========================================
 if ($ImportHostConfig) {
-    Write-Host "Importando configuración desde el host..." -ForegroundColor Cyan
+    Write-Host "Importando configuracion desde el host..." -ForegroundColor Cyan
     
     # 1. SSH Config
     $hostSshDir = Join-Path $env:USERPROFILE ".ssh"
@@ -1492,9 +1492,9 @@ if ($ImportHostConfig) {
             New-Item -ItemType Directory -Path $portableSshDir | Out-Null
         }
         Copy-Item -Path (Join-Path $hostSshDir "*") -Destination $portableSshDir -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Host "Configuración de SSH copiada." -ForegroundColor Green
+        Write-Host "Configuracion de SSH copiada." -ForegroundColor Green
     } else {
-        Write-Host "No se encontró la configuración de SSH en el host." -ForegroundColor Yellow
+        Write-Host "No se encontro la configuracion de SSH en el host." -ForegroundColor Yellow
     }
 
     # 2. Git Config
@@ -1503,9 +1503,9 @@ if ($ImportHostConfig) {
     if (Test-Path $hostGitConfig) {
         Write-Host "Copiando .gitconfig desde $hostGitConfig..." -ForegroundColor Cyan
         Copy-Item -Path $hostGitConfig -Destination $portableGitConfig -Force
-        Write-Host "Configuración de Git copiada." -ForegroundColor Green
+        Write-Host "Configuracion de Git copiada." -ForegroundColor Green
     } else {
-        Write-Host "No se encontró el archivo .gitconfig en el host." -ForegroundColor Yellow
+        Write-Host "No se encontro el archivo .gitconfig en el host." -ForegroundColor Yellow
     }
     
     $hostGitCreds = Join-Path $env:USERPROFILE ".git-credentials"
@@ -1534,11 +1534,11 @@ if ($ImportHostConfig) {
                 $settingsObj = @{}
             }
         } catch {
-            Write-Warning "No se pudo leer o procesar el settings.json del host. Se va a usar una configuración limpia."
+            Write-Warning "No se pudo leer o procesar el settings.json del host. Se va a usar una configuracion limpia."
             $settingsObj = @{}
         }
         
-        # Forzar/Asegurar parámetros de portabilidad e inhabilitar IA/Copilot
+        # Forzar/Asegurar parametros de portabilidad e inhabilitar IA/Copilot
         $settingsObj | Add-Member -NotePropertyName "telemetry.telemetryLevel" -NotePropertyValue "off" -Force
         $settingsObj | Add-Member -NotePropertyName "update.mode" -NotePropertyValue "none" -Force
         $settingsObj | Add-Member -NotePropertyName "extensions.autoUpdate" -NotePropertyValue $false -Force
@@ -1555,23 +1555,23 @@ if ($ImportHostConfig) {
         $settingsObj | Add-Member -NotePropertyName "terminal.integrated.profiles.windows" -NotePropertyValue $terminalProfiles -Force
         $settingsObj | Add-Member -NotePropertyName "terminal.integrated.defaultProfile.windows" -NotePropertyValue "UCRT64 Bash" -Force
         
-        # Guardar configuración fusionada
+        # Guardar configuracion fusionada
         $mergedSettingsJson = $settingsObj | ConvertTo-Json -Depth 10
         Set-Content -Path $portableVscodeSettings -Value $mergedSettingsJson
-        Write-Host "Configuración de VS Code importada y adaptada para portabilidad." -ForegroundColor Green
+        Write-Host "Configuracion de VS Code importada y adaptada para portabilidad." -ForegroundColor Green
     } else {
-        Write-Host "No se encontró la configuración de VS Code en el host." -ForegroundColor Yellow
+        Write-Host "No se encontro la configuracion de VS Code en el host." -ForegroundColor Yellow
     }
 } else {
-    Write-Host "No se especificó -ImportHostConfig. Se deja de lado la configuración del host para empezar con un entorno limpio." -ForegroundColor Yellow
+    Write-Host "No se especifico -ImportHostConfig. Se deja de lado la configuracion del host para empezar con un entorno limpio." -ForegroundColor Yellow
 }
 
 # ==========================================
 # 8. Limpieza final de temporales
 # ==========================================
-# Se mantiene la carpeta 'descargas' de forma permanente como caché local para acelerar futuras instalaciones.
+# Se mantiene la carpeta 'descargas' de forma permanente como cache local para acelerar futuras instalaciones.
 
-    # Guardar el indicador final de instalación completa exitosa
+    # Guardar el indicador final de instalacion completa exitosa
     Set-Content -Path (Join-Path $portableRoot ".install_complete") -Value "Complete"
 
     # Resumen de componentes para el usuario
@@ -1589,18 +1589,18 @@ if ($ImportHostConfig) {
     }
 
     Write-Host "`n=== ENTORNO PORTABLE CONFIGURADO Y LISTO ===" -ForegroundColor Green
-    Write-Host "Ejecutá 'launch.bat' para iniciar la consola." -ForegroundColor Green
-    Write-Host "Ejecutá 'launch-vscode.bat' para iniciar VS Code." -ForegroundColor Green
+    Write-Host "Ejecuta 'launch.bat' para iniciar la consola." -ForegroundColor Green
+    Write-Host "Ejecuta 'launch-vscode.bat' para iniciar VS Code." -ForegroundColor Green
 }
 finally {
     if ($transcriptStarted) {
         Write-Host "`n======================================================================"
-        Write-Host "FIN DE LA INSTALACIÓN: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+        Write-Host "FIN DE LA INSTALACION: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
         Write-Host "======================================================================"
         try {
             Stop-Transcript -ErrorAction SilentlyContinue | Out-Null
         } catch {
-            # Ignorar si no está transcribiendo en este momento
+            # Ignorar si no esta transcribiendo en este momento
         }
     }
 }

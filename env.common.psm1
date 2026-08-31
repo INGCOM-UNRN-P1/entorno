@@ -1,13 +1,13 @@
-# env.common.psm1 - Lógica compartida por los lanzadores del entorno portable.
+# env.common.psm1 - Logica compartida por los lanzadores del entorno portable.
 # Consumido por launch.ps1 y launch-vscode.ps1: advertencia de ruta conflictiva,
-# resolución del HOME portable desde .env e inyección de la sesión de trabajo
+# resolucion del HOME portable desde .env e inyeccion de la sesion de trabajo
 # (PATH del toolchain y variables de C/C++) en el proceso que lanza la GUI.
 # Compatible con Windows PowerShell 5.1 y PowerShell 7 (pwsh).
 
 function Test-ConflictivePath {
     <#
     .SYNOPSIS
-    Detecta condiciones de ruta que rompen herramientas de compilación.
+    Detecta condiciones de ruta que rompen herramientas de compilacion.
     .OUTPUTS
     PSCustomObject con HasSpaces, HasNonAscii, HasSyncFolder e IsConflictive.
     #>
@@ -34,18 +34,18 @@ function Show-PathWarning {
 
     $info = Test-ConflictivePath -Path $Path
     Write-Host "==========================================================================" -ForegroundColor Yellow
-    Write-Host "[ADVERTENCIA] La ruta de instalación contiene caracteres conflictivos:" -ForegroundColor Yellow
+    Write-Host "[ADVERTENCIA] La ruta de instalacion contiene caracteres conflictivos:" -ForegroundColor Yellow
     if ($info.HasSpaces) {
         Write-Host "* Espacios en blanco." -ForegroundColor Yellow
     }
     if ($info.HasNonAscii) {
-        Write-Host "* Caracteres no ASCII (acentos, eñes, etc.)." -ForegroundColor Yellow
+        Write-Host "* Caracteres no ASCII (acentos, enes, etc.)." -ForegroundColor Yellow
     }
     if ($info.HasSyncFolder) {
         Write-Host "* Carpeta sincronizada (OneDrive/Dropbox/etc.), puede corromper compilaciones." -ForegroundColor Yellow
     }
     Write-Host "Ruta: '$Path'"
-    Write-Host "Esto puede romper herramientas de compilación de C (Make, CMake, etc.)."
+    Write-Host "Esto puede romper herramientas de compilacion de C (Make, CMake, etc.)."
     Write-Host "Se recomienda mover el entorno a una ruta simple (Ej: C:\dev\entorno)."
     Write-Host "==========================================================================" -ForegroundColor Yellow
     Write-Host ""
@@ -56,7 +56,7 @@ function Get-PortableHomeName {
     .SYNOPSIS
     Resuelve el nombre del directorio HOME portable desde .env (clave
     HOME_DIR_NAME, con o sin comillas y con o sin 'set'). Devuelve "home"
-    ante ausencia de archivo o valor inválido.
+    ante ausencia de archivo o valor invalido.
     #>
     param([string]$PortableRoot)
 
@@ -77,7 +77,7 @@ function Get-PortableHomeName {
 function Set-PortableSession {
     <#
     .SYNOPSIS
-    Inyecta la sesión portable completa en el proceso actual: crea el HOME
+    Inyecta la sesion portable completa en el proceso actual: crea el HOME
     portable si falta, antepone los PATH del entorno y exporta las variables
     del toolchain de C/C++ hacia MSYS2 UCRT64. Devuelve la ruta del HOME.
     #>
@@ -91,7 +91,7 @@ function Set-PortableSession {
         New-Item -ItemType Directory -Path $homeDir | Out-Null
     }
 
-    # Variables base de la sesión portable
+    # Variables base de la sesion portable
     $env:PORTABLE_ROOT = $PortableRoot
     $env:HOME = $homeDir
     $env:MSYSTEM = "UCRT64"
@@ -104,8 +104,8 @@ function Set-PortableSession {
     $usrPath = Join-Path $PortableRoot "msys64\usr\bin"
     $env:PATH = "$binPath;$gccPath;$usrPath;$env:PATH"
 
-    # Variables específicas del Toolchain de C/C++
-    # (GCC en MSYS2 resuelve sus directorios internos relativos a su ubicación;
+    # Variables especificas del Toolchain de C/C++
+    # (GCC en MSYS2 resuelve sus directorios internos relativos a su ubicacion;
     # no se definen GCC_EXEC_PREFIX ni LIBRARY_PATH manualmente)
     $env:CC  = "gcc"
     $env:CXX = "g++"
@@ -128,10 +128,10 @@ function Set-PortableSession {
 function Set-VsCodeCompilerSettings {
     <#
     .SYNOPSIS
-    Parcheo quirúrgico del settings.json de VS Code: actualiza únicamente las
+    Parcheo quirurgico del settings.json de VS Code: actualiza unicamente las
     claves C_Cpp.default.* (ruta del compilador e IntelliSense) preservando el
     resto del archivo tal cual (comentarios, orden y formato del usuario).
-    Escribe solo si hubo cambios, en UTF-8 con BOM. Devuelve $true si escribió.
+    Escribe solo si hubo cambios, en UTF-8 con BOM. Devuelve $true si escribio.
     #>
     param(
         [string]$PortableRoot,

@@ -1,5 +1,5 @@
-﻿# install.ps1 - Bootstrap para el Entorno Portable
-# Este archivo está guardado en UTF-8 sin BOM para poder ejecutarse directamente desde internet:
+# install.ps1 - Bootstrap para el Entorno Portable
+# Este archivo esta guardado en UTF-8 sin BOM para poder ejecutarse directamente desde internet:
 # irm https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
@@ -8,7 +8,7 @@ $ProgressPreference = "SilentlyContinue"
 $setupUrl = "https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/setup.ps1"
 $destPath = Join-Path (Get-Location).Path "setup.ps1"
 
-Write-Host "Descargando script principal de instalación..." -ForegroundColor Cyan
+Write-Host "Descargando script principal de instalacion..." -ForegroundColor Cyan
 
 try {
     # Descargar con soporte TLS 1.2
@@ -16,7 +16,7 @@ try {
     $content = Invoke-RestMethod -Uri $setupUrl -UseBasicParsing
     
     if ([string]::IsNullOrEmpty($content)) {
-        throw "El archivo descargado está vacío."
+        throw "El archivo descargado esta vacio."
     }
     
     # Remover el BOM si viene en el texto remoto
@@ -27,7 +27,7 @@ try {
     [System.IO.File]::WriteAllText($destPath, $content, $utf8WithBom)
     
     Write-Host "`n======================================================================" -ForegroundColor Green
-    Write-Host " DESCARGA DE SETUP COMPLETADA. INICIANDO INSTALACIÓN..." -ForegroundColor Green
+    Write-Host " DESCARGA DE SETUP COMPLETADA. INICIANDO INSTALACION..." -ForegroundColor Green
     Write-Host "======================================================================`n" -ForegroundColor Green
     
     # Ejecutar setup.ps1 pasando los mismos argumentos recibidos en este script

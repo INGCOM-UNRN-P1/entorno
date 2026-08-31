@@ -1,5 +1,5 @@
-﻿# customize-terminal.ps1 - Facilita la personalización estética de la consola portable (WezTerm y Bash)
-# Idioma: Español rioplatense con voseo.
+# customize-terminal.ps1 - Facilita la personalizacion estetica de la consola portable (WezTerm y Bash)
+# Idioma: Espanol rioplatense con voseo.
 
 $ErrorActionPreference = "Stop"
 
@@ -9,7 +9,7 @@ if ([string]::IsNullOrEmpty($portableRoot)) {
     $portableRoot = (Get-Location).Path
 }
 
-# Cargar configuración de directorio HOME
+# Cargar configuracion de directorio HOME
 $homeDirName = "home"
 $envFile = Join-Path $portableRoot ".env"
 if (Test-Path $envFile) {
@@ -21,11 +21,11 @@ if (Test-Path $envFile) {
 $homeDir = Join-Path $portableRoot $homeDirName
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
 
-# Función de ayuda para ejecutar operaciones críticas con reintentos automáticos ante fallos (ej: archivos bloqueados)
+# Funcion de ayuda para ejecutar operaciones criticas con reintentos automaticos ante fallos (ej: archivos bloqueados)
 function Execute-WithRetry {
     param(
         [scriptblock]$Action,
-        [string]$ErrorMessage = "Ocurrió un error al realizar la operación.",
+        [string]$ErrorMessage = "Ocurrio un error al realizar la operacion.",
         [int]$MaxRetries = 3,
         [int]$DelaySeconds = 2
     )
@@ -52,9 +52,9 @@ function Execute-WithRetry {
 # Limpiar pantalla e inicio del asistente
 Clear-Host
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "        Asistente de Personalización de Consola Portable" -ForegroundColor Cyan
+Write-Host "        Asistente de Personalizacion de Consola Portable" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "Este script te permite personalizar la estética de la consola WezTerm.`n"
+Write-Host "Este script te permite personalizar la estetica de la consola WezTerm.`n"
 
 # Asegurar existencia del HOME portable
 if (-not (Test-Path $homeDir)) {
@@ -64,16 +64,16 @@ if (-not (Test-Path $homeDir)) {
 }
 
 # ---------------------------------------------------------
-# Parte 1: Personalización de la Terminal (WezTerm)
+# Parte 1: Personalizacion de la Terminal (WezTerm)
 # ---------------------------------------------------------
-# (La personalización del banner de bienvenida y entorno Bash se maneja por medio de customize-bash.sh)
+# (La personalizacion del banner de bienvenida y entorno Bash se maneja por medio de customize-bash.sh)
 
 # ---------------------------------------------------------
-# Parte 2: Personalización de la Terminal (WezTerm)
+# Parte 2: Personalizacion de la Terminal (WezTerm)
 # ---------------------------------------------------------
 $configureWez = $null
 while ($configureWez -notmatch "^[sSnN]$") {
-    $configureWez = Read-Host "`n¿Querés cambiar la apariencia de la terminal WezTerm? (s/n)"
+    $configureWez = Read-Host "`nQueres cambiar la apariencia de la terminal WezTerm? (s/n)"
 }
 
 if ($configureWez -match "^[sS]$") {
@@ -95,7 +95,7 @@ if ($configureWez -match "^[sS]$") {
         }
     }
     
-    Write-Host "`nElegí un esquema de color para WezTerm:" -ForegroundColor Cyan
+    Write-Host "`nElegi un esquema de color para WezTerm:" -ForegroundColor Cyan
     Write-Host "1) Tokyo Night (Actual: $currentColorScheme)"
     Write-Host "2) Dracula"
     Write-Host "3) Gruvbox Dark (Retro)"
@@ -105,7 +105,7 @@ if ($configureWez -match "^[sS]$") {
     
     $themeChoice = ""
     while ($themeChoice -notmatch "^[123456]$") {
-        $themeChoice = Read-Host "Seleccioná un tema (1-6)"
+        $themeChoice = Read-Host "Selecciona un tema (1-6)"
     }
     
     $selectedScheme = $currentColorScheme
@@ -120,11 +120,11 @@ if ($configureWez -match "^[sS]$") {
         $selectedScheme = $themeMap[$themeChoice]
     }
     
-    # Tamaño de fuente
+    # Tamano de fuente
     $validFontSize = $false
     $selectedFontSize = $currentFontSize
     while (-not $validFontSize) {
-        $fontInput = Read-Host "Ingresá el tamaño de fuente (8-24, actual: $currentFontSize) [Presioná Enter para mantener]"
+        $fontInput = Read-Host "Ingresa el tamano de fuente (8-24, actual: $currentFontSize) [Presiona Enter para mantener]"
         if ([string]::IsNullOrEmpty($fontInput)) {
             $validFontSize = $true
         } else {
@@ -133,7 +133,7 @@ if ($configureWez -match "^[sS]$") {
                 $selectedFontSize = $fontInput
                 $validFontSize = $true
             } else {
-                Write-Host "Por favor, ingresá un número válido entre 8 y 24." -ForegroundColor Yellow
+                Write-Host "Por favor, ingresa un numero valido entre 8 y 24." -ForegroundColor Yellow
             }
         }
     }
@@ -142,7 +142,7 @@ if ($configureWez -match "^[sS]$") {
     $validOpacity = $false
     $selectedOpacity = $currentOpacity
     while (-not $validOpacity) {
-        $opacityInput = Read-Host "Ingresá la opacidad del fondo (0.50 a 1.00, actual: $currentOpacity) [Presioná Enter para mantener]"
+        $opacityInput = Read-Host "Ingresa la opacidad del fondo (0.50 a 1.00, actual: $currentOpacity) [Presiona Enter para mantener]"
         if ([string]::IsNullOrEmpty($opacityInput)) {
             $validOpacity = $true
         } else {
@@ -153,22 +153,22 @@ if ($configureWez -match "^[sS]$") {
                 $selectedOpacity = $opacityNormalized
                 $validOpacity = $true
             } else {
-                Write-Host "Por favor, ingresá un número decimal válido entre 0.50 y 1.00." -ForegroundColor Yellow
+                Write-Host "Por favor, ingresa un numero decimal valido entre 0.50 y 1.00." -ForegroundColor Yellow
             }
         }
     }
 
-    # Barra de pestañas (Tabs)
+    # Barra de pestanas (Tabs)
     $enableTabBar = $null
     while ($enableTabBar -notmatch "^[sSnN]$") {
-        $enableTabBar = Read-Host "¿Querés habilitar la barra de pestañas (múltiples tabs) en la terminal? (s/n)"
+        $enableTabBar = Read-Host "Queres habilitar la barra de pestanas (multiples tabs) en la terminal? (s/n)"
     }
     $selectedTabBar = "false"
     if ($enableTabBar -match "^[sS]$") {
         $selectedTabBar = "true"
     }
     
-    # Generar contenido final de wezterm.lua (plantilla canónica, idéntica a setup.ps1)
+    # Generar contenido final de wezterm.lua (plantilla canonica, identica a setup.ps1)
     $wezConfigContent = @"
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
@@ -216,8 +216,8 @@ return config
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($wezConfigPath, $wezConfigContent, $utf8NoBom)
     } -ErrorMessage "Fallo al escribir en el archivo wezterm.lua."
-    Write-Host "Configuración de apariencia de WezTerm actualizada correctamente." -ForegroundColor Green
+    Write-Host "Configuracion de apariencia de WezTerm actualizada correctamente." -ForegroundColor Green
 }
 
-Write-Host "`n=== PERSONALIZACIÓN COMPLETADA ===" -ForegroundColor Green
-Write-Host "Los cambios se aplicarán de inmediato al abrir una nueva terminal." -ForegroundColor Green
+Write-Host "`n=== PERSONALIZACION COMPLETADA ===" -ForegroundColor Green
+Write-Host "Los cambios se aplicaran de inmediato al abrir una nueva terminal." -ForegroundColor Green

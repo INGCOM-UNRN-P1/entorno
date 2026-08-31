@@ -54,7 +54,7 @@ OUT=$(bash -c '
     OLD_HOME="$HOME"
     source '"$SANDBOX/repo/linux/activate.sh"' >/dev/null
     deactivate >/dev/null
-    { [ "$HOME" = "$OLD_HOME" ] && ! type -t deactivate >/dev/null; } && echo ok || echo mal
+    { [ "$HOME" = "$OLD_HOME" ] && [ "$(type -t deactivate)" != "function" ]; } && echo ok || echo mal
 ')
 assert "deactivate restaura HOME y elimina la función" test "$OUT" = "ok"
 

@@ -1,4 +1,4 @@
-﻿# test_env_common.ps1 - Pruebas del módulo compartido de los lanzadores
+# test_env_common.ps1 - Pruebas del modulo compartido de los lanzadores
 # (env.common.psm1). Se ejecutan en cualquier plataforma con PowerShell 7.
 #
 # Uso:  pwsh -NoProfile -File tests/test_env_common.ps1
@@ -24,7 +24,7 @@ Assert-True "ruta limpia no es conflictiva" (-not $r.IsConflictive)
 $r = Test-ConflictivePath -Path "C:\Users\juan perez\entorno"
 Assert-True "espacios detectados" ($r.HasSpaces -and $r.IsConflictive)
 
-$r = Test-ConflictivePath -Path "C:\users\josé\entorno"
+$r = Test-ConflictivePath -Path "C:\users\jose\entorno"
 Assert-True "caracteres no ASCII detectados" ($r.HasNonAscii -and $r.IsConflictive)
 
 foreach ($sincronizada in @("C:\Users\x\OneDrive\entorno", "D:\Dropbox\p1", "E:\Google Drive\p1", "F:\iCloud\p1")) {
@@ -42,7 +42,7 @@ try {
     Assert-True "sin .env usa 'home'" ((Get-PortableHomeName -PortableRoot $root) -eq "home")
 
     Set-Content (Join-Path $root ".env") -Value 'set "HOME_DIR_NAME=alumno2026"'
-    Assert-True 'formato canónico set "..." se respeta' ((Get-PortableHomeName -PortableRoot $root) -eq "alumno2026")
+    Assert-True 'formato canonico set "..." se respeta' ((Get-PortableHomeName -PortableRoot $root) -eq "alumno2026")
 
     Set-Content (Join-Path $root ".env") -Value 'HOME_DIR_NAME="mi_home"'
     Assert-True "forma plana con comillas se respeta" ((Get-PortableHomeName -PortableRoot $root) -eq "mi_home")
@@ -54,7 +54,7 @@ try {
 }
 
 # ============================================================
-# 3. Set-PortableSession (inyección real sobre el proceso actual)
+# 3. Set-PortableSession (inyeccion real sobre el proceso actual)
 # ============================================================
 $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ("envsession-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $fixture | Out-Null
@@ -73,7 +73,7 @@ try {
     Assert-True "devuelve la ruta del HOME portable creado" ($homeDevuelto -eq (Join-Path $fixture "curso"))
     Assert-True "el directorio HOME portable se crea si falta" (Test-Path (Join-Path $fixture "curso"))
 
-    Assert-True "PORTABLE_ROOT apunta a la raíz" ($env:PORTABLE_ROOT -eq $fixture)
+    Assert-True "PORTABLE_ROOT apunta a la raiz" ($env:PORTABLE_ROOT -eq $fixture)
     Assert-True "HOME redirigido al subdirectorio del .env" ($env:HOME -eq (Join-Path $fixture "curso"))
     Assert-True "MSYSTEM es UCRT64" ($env:MSYSTEM -eq "UCRT64")
     Assert-True "CHERE_INVOKING activo" ($env:CHERE_INVOKING -eq "1")
@@ -112,7 +112,7 @@ $out = (& { Show-PathWarning -Path "C:\dev\mi entorno" } 6>&1) | Out-String
 Assert-True "aviso menciona espacios en blanco" ($out -match "Espacios")
 
 # ============================================================
-# 5. Set-VsCodeCompilerSettings (parcheo quirúrgico de settings.json)
+# 5. Set-VsCodeCompilerSettings (parcheo quirurgico de settings.json)
 # ============================================================
 $vsc = Join-Path ([System.IO.Path]::GetTempPath()) ("vscodecfg-" + [guid]::NewGuid().ToString("N"))
 $gccEsperado = (($vsc + "\msys64\ucrt64\bin\gcc.exe") -replace "\\", "/")
@@ -139,25 +139,25 @@ try {
     Assert-True "no aplana arrays de un elemento" ($final -match "\[1\]")
     Assert-True "preserva otras claves" ($final -match "editor\.fontSize")
 
-    # Caso B: segunda corrida idéntica no reescribe
+    # Caso B: segunda corrida identica no reescribe
     $antes = Get-Content $jsonPath -Raw
     $escribio2 = Set-VsCodeCompilerSettings -PortableRoot $vsc -VscodeDir $vsc
     $despues = Get-Content $jsonPath -Raw
     Assert-True "segunda corrida no escribe (idempotente)" ($escribio2 -eq $false -and $antes -eq $despues)
 
-    # Caso C: settings inexistente -> crea uno mínimo válido
+    # Caso C: settings inexistente -> crea uno minimo valido
     Remove-Item $jsonPath -Force
     $null = Set-VsCodeCompilerSettings -PortableRoot $vsc -VscodeDir $vsc
     $minimo = Get-Content $jsonPath -Raw
     Assert-True "crea settings.json con ambas claves si falta" (
         $minimo -match [regex]::Escape($gccEsperado) -and $minimo -match "windows-gcc-x64")
 
-    # Caso D: JSON de objeto vacío recibe inserción limpia
+    # Caso D: JSON de objeto vacio recibe insercion limpia
     Remove-Item $jsonPath -Force
     Set-Content $jsonPath -Value '{}'
     $null = Set-VsCodeCompilerSettings -PortableRoot $vsc -VscodeDir $vsc
     $objeto = Get-Content $jsonPath -Raw
-    Assert-True "objeto vacío queda con las dos claves y sin basura" (
+    Assert-True "objeto vacio queda con las dos claves y sin basura" (
         $objeto -match "compilerPath" -and $objeto -notmatch "^," )
 } finally {
     Remove-Item -Recurse -Force $vsc -ErrorAction SilentlyContinue
@@ -172,5 +172,5 @@ if ($Fail -eq 0) {
     exit 0
 }
 Write-Host ""
-Write-Host "FALLOS: $Fail verificación(es) fallida(s)."
+Write-Host "FALLOS: $Fail verificacion(es) fallida(s)."
 exit 1

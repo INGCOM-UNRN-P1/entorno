@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 
 $portableRoot = $PSScriptRoot
 
-# Lógica compartida con launch-vscode.ps1 (advertencia de ruta, .env, sesión)
+# Logica compartida con launch-vscode.ps1 (advertencia de ruta, .env, sesion)
 Import-Module (Join-Path $portableRoot "env.common.psm1") -Force
 
 # Advertencia temprana ante espacios, caracteres no ASCII o carpetas sincronizadas
@@ -13,7 +13,7 @@ if ($infoRuta.IsConflictive) {
     Show-PathWarning -Path $portableRoot
 }
 
-# Cargar configuración de directorio HOME
+# Cargar configuracion de directorio HOME
 $homeDirName = Get-PortableHomeName -PortableRoot $portableRoot
 
 $homeDir = Join-Path $portableRoot $homeDirName
@@ -46,7 +46,7 @@ $bashrcPath = Join-Path $homeDir ".bashrc"
 if (-not (Test-Path $bashrcPath)) {
     $bashrcContent = @'
 # .bashrc
-# Aquí podés agregar tus alias y funciones personalizadas.
+# Aqui podes agregar tus alias y funciones personalizadas.
 
 # Agregar bin portable al PATH en formato Unix (sin duplicar en shells anidados)
 if [ -n "$PORTABLE_ROOT" ]; then
@@ -60,10 +60,10 @@ fi
     [System.IO.File]::WriteAllText($bashrcPath, $bashrcContent, $utf8NoBom)
 }
 
-# Inyectar la sesión portable común (HOME, PATH del toolchain, variables de C/C++)
+# Inyectar la sesion portable comun (HOME, PATH del toolchain, variables de C/C++)
 Set-PortableSession -PortableRoot $portableRoot -HomeDirName $homeDirName | Out-Null
 
-# Configuración de WezTerm para esta sesión
+# Configuracion de WezTerm para esta sesion
 $wezConfigPath = Join-Path $portableRoot "wezterm.lua"
 $env:WEZTERM_CONFIG_FILE = $wezConfigPath
 
@@ -89,7 +89,7 @@ if (-not (Test-Path $wezConfigPath)) {
     }
 }
 
-# Autocorrección estructural para WezTerm (aplanado de directorios)
+# Autocorreccion estructural para WezTerm (aplanado de directorios)
 if (-not (Test-Path $wezExe) -and (Test-Path $wezDir)) {
     $subDirExe = Get-ChildItem -Path $wezDir -Filter "wezterm.exe" -Recurse | Select-Object -First 1
     if ($subDirExe) {
@@ -100,17 +100,17 @@ if (-not (Test-Path $wezExe) -and (Test-Path $wezDir)) {
     }
 }
 
-# Lanzar WezTerm o fallar de vuelta a Bash estándar
+# Lanzar WezTerm o fallar de vuelta a Bash estandar
 if (Test-Path $wezExe) {
     $si = New-Object System.Diagnostics.ProcessStartInfo
     $si.FileName = $wezExe
     $si.UseShellExecute = $true
     [System.Diagnostics.Process]::Start($si) | Out-Null
 } else {
-    Write-Host "[INFO] WezTerm no encontrado. Lanzando Bash en consola estándar..." -ForegroundColor Yellow
+    Write-Host "[INFO] WezTerm no encontrado. Lanzando Bash en consola estandar..." -ForegroundColor Yellow
     if (-not (Test-Path $bashPath)) {
         Add-Type -AssemblyName System.Windows.Forms
-        [System.Windows.Forms.MessageBox]::Show("No se encuentra la instalación de MSYS2 en la ruta:`n$msysDir`n`nPor favor, ejecutá setup.ps1 primero para instalar el entorno completo.", "Error - Lanzador Portable", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        [System.Windows.Forms.MessageBox]::Show("No se encuentra la instalacion de MSYS2 en la ruta:`n$msysDir`n`nPor favor, ejecuta setup.ps1 primero para instalar el entorno completo.", "Error - Lanzador Portable", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         return
     }
     & $bashPath --login -i
