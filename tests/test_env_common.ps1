@@ -24,7 +24,7 @@ Assert-True "ruta limpia no es conflictiva" (-not $r.IsConflictive)
 $r = Test-ConflictivePath -Path "C:\Users\juan perez\entorno"
 Assert-True "espacios detectados" ($r.HasSpaces -and $r.IsConflictive)
 
-$r = Test-ConflictivePath -Path "C:\users\jose\entorno"
+$r = Test-ConflictivePath -Path "C:\users\jos$([char]0x00E9)\entorno"
 Assert-True "caracteres no ASCII detectados" ($r.HasNonAscii -and $r.IsConflictive)
 
 foreach ($sincronizada in @("C:\Users\x\OneDrive\entorno", "D:\Dropbox\p1", "E:\Google Drive\p1", "F:\iCloud\p1")) {
