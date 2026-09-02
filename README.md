@@ -18,6 +18,33 @@ Entorno de desarrollo completamente autocontenido para Windows. Integra una term
 
 ---
 
+## 🎯 Alcance
+
+### Qué cubre
+- Aprovisionamiento, configuración y mantenimiento de un entorno de desarrollo portable y unificado para C y Python en Windows (MSYS2 UCRT64), WSL y Linux nativo.
+- Scripts de instalación y actualización automática de herramientas de cátedra (`ripley`, `daedalus`, `gcc`, `gdb`, `make`).
+- Perfiles preconfigurados de editores de código (VS Code, Neovim) optimizados para educación universitaria, libres de telemetría e IA invasiva.
+- Batería de validación y autodiagnóstico del entorno de desarrollo (`test_linux_env.sh`, `doctor`).
+
+### Qué no cubre (Límites y Delegación)
+- Calificación de estudiantes ni gestión de aulas virtuales (delegado a `dredd` / `sulaco`).
+- Análisis estático ni verificación de código (el entorno aloja y ejecuta las herramientas, no implementa las reglas).
+
+---
+
+## 📋 Requisitos
+
+### Requisitos de Sistema y Entorno
+- Windows 10/11 x64 (PowerShell 5.1+ o 7+, MSYS2 UCRT64) o Linux nativo / WSL (Bash, Python >= 3.10).
+
+### Dependencias Externas y Binarios
+- `curl`, `wget`, `tar`, `gcc`, `gdb`, `make`.
+
+### Integración en el Ecosistema
+- Meta-herramienta consumida por los estudiantes y docentes de la cátedra de Programación 1 (UNRN).
+
+---
+
 ## Manuales y Documentación
 
 En la carpeta [`docs/`](docs/) disponés de guías completas detalladas:
