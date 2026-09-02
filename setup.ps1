@@ -1434,7 +1434,7 @@ if (-not (Test-Path $wezConfigPath) -or $isUpdateMode -or $shouldInstallOrUpdate
 $ripleyPyzPath = Join-Path $portableRoot "bin\ripley.pyz"
 $ripleyUrl = Get-Pinned 'ripley'
 if (-not $ripleyUrl) {
-    $ripleyUrl = "https://github.com/martinvilu/ripley/releases/latest/download/ripley.pyz"
+    $ripleyUrl = "https://github.com/INGCOM-UNRN-P1/ripley/releases/latest/download/ripley.pyz"
 }
 
 function Test-ZipappValid([string]$Path) {

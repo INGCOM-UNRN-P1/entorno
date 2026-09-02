@@ -61,7 +61,7 @@ echo -e "\e[32m[ÉXITO] Scripts del entorno actualizados a la última versión.\
 # 2. Actualizar el motor Ripley (zipapp autocontenido desde GitHub Releases)
 echo -e "\n\e[33m[2/3] Actualizando el motor de análisis Ripley (ripley.pyz)...\e[0m"
 
-RIPLEY_URL="https://github.com/martinvilu/ripley/releases/latest/download/ripley.pyz"
+RIPLEY_URL="https://github.com/INGCOM-UNRN-P1/ripley/releases/latest/download/ripley.pyz"
 RIPLEY_DEST="$PORTABLE_ROOT/bin/ripley.pyz"
 RIPLEY_TMP="$(mktemp -t ripley-XXXXXX)"
 

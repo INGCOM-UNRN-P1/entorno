@@ -52,5 +52,5 @@ fi
 
 echo -e "${RED}[ERROR] No encontré el motor Ripley en este entorno.${RESET}" >&2
 echo "Ejecutá setup.ps1 / update-env.sh para descargar ripley.pyz," >&2
-echo "o instalalo manualmente con: uv tool install git+https://github.com/martinvilu/ripley" >&2
+echo "o instalalo manualmente con: uv tool install git+https://github.com/INGCOM-UNRN-P1/ripley" >&2
 exit 1
