@@ -52,6 +52,7 @@ Entorno de desarrollo unificado y autocontenido para la cátedra de Programació
 En la carpeta [`docs/`](docs/) disponés de guías completas detalladas:
 
 *   [Manual del Entorno Portable](docs/entorno.md): Arquitectura, inicialización y arranque de servicios.
+*   [Guía de Instalación y Uso en Windows (con Capturas)](docs/windows.md): Procedimiento paso a paso para descargar, instalar y poner en marcha el entorno en Windows.
 *   [Casos de Uso del Entorno](docs/casos-de-uso.md): Situaciones educativas y logísticas (desarrollo offline, laboratorios públicos, consistencia de cátedra) que resuelve el proyecto.
 *   [Documentación de Scripts](docs/scripts.md): Detalle técnico exhaustivo del funcionamiento interno, parámetros y comportamiento de cada script del entorno.
 *   [Manual de Compilación con GCC](docs/compilacion-gcc.md): Flujo de compilación (preprocesado, compilación, ensamble, enlazado) y optimización en C.
