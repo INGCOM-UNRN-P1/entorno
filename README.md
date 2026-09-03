@@ -1,6 +1,8 @@
-# Entorno de Desarrollo Portable en C y Python para Windows
+# Entorno de Desarrollo Portable en C y Python (Windows y Linux)
 
-Entorno de desarrollo completamente autocontenido para Windows. Integra una terminal acelerada por GPU basada en WezTerm con userland Unix completo de MSYS2, el compilador GCC nativo, una distribución de Python 3 y un entorno preconfigurado de VS Code Portable.
+Entorno de desarrollo unificado y autocontenido para la cátedra de Programación 1 (UNRN Andina). Provee dos modalidades de despliegue:
+1. **Windows**: Entorno portable completo con terminal acelerada por GPU (WezTerm), userland Unix (MSYS2 UCRT64), compilador GCC nativo, Python 3 con `uv`, VS Code Portable preconfigurado y lanzadores invisibles `.exe`.
+2. **Linux Nativo y WSL**: Activación de sesión modular y no invasiva (`source linux/activate.sh`) con redirección aislada de `$HOME`, toolchain C local (`local/`), paridad funcional total en comandos de cátedra y política estricta de cero modificaciones al sistema host (sin `sudo`).
 
 ## Componentes Principales
 
@@ -190,30 +192,87 @@ Al iniciar VS Code o WezTerm a través de cualquiera de los cargadores, heredar�
 
 ---
 
-## Uso en Linux
+## Uso en Linux y Estado Actual
 
-El repositorio incluye una variante nativa para Linux basada en activación de sesión. **Por diseño, esta variante no modifica nada del sistema host ni requiere permisos de administrador**: la activación solo altera la sesión de terminal actual, y todo lo generado (archivos de usuario, librerías instaladas) queda dentro de la carpeta del repositorio.
+El repositorio incluye una variante nativa para GNU/Linux y WSL (Windows Subsystem for Linux) basada en activación de sesión en Bash.
 
-Requisitos: `git`, `gcc`, `g++`, `make`, `cmake`, `ninja`, `python3`, `pip`, `curl`. El entorno no los instala; podés verificar si están presentes con:
+### Filosofía de Diseño: Aislamiento Estricto y Cero Sudo
+* **No invasivo**: No modifica ningún archivo fuera del directorio del repositorio.
+* **Sin privilegios elevados**: Nunca ejecuta gestores de paquetes con `sudo` ni requiere permisos de administrador.
+* **Aislamiento de usuario**: Redirige `$HOME` hacia `home/` (o el nombre definido en `.env`), resguardando tus configuraciones personales, historial de Bash, llaves SSH y credenciales de Git dentro del entorno portable.
+* **Limpieza absoluta**: La activación afecta únicamente la subshell o sesión actual de terminal; al invocar `deactivate` o cerrar la terminal, el sistema anfitrión queda en su estado original sin residuos.
+
+### Diagnóstico de Dependencias del Host (`linux/bootstrap.sh`)
+Dado que el entorno no instala paquetes a nivel de sistema operativo, incluye un asistente de diagnóstico que audita las herramientas requeridas:
 
 ```bash
-linux/bootstrap.sh    # solo diagnóstico: sugiere comandos, nunca ejecuta instalaciones ni usa sudo
+linux/bootstrap.sh
 ```
 
-Para activar el entorno en tu sesión actual de Bash:
+El script detecta automáticamente el gestor de paquetes de tu distribución (`apt`, `dnf`, `pacman`, `zypper`, `apk`) y clasifica el estado de:
+* **Herramientas obligatorias (Core):** `git`, `gcc`, `g++`, `make`, `cmake`, `ninja`, `python3`, `pip`, `curl`.
+* **Herramientas recomendadas (Toolchain ampliado):** `gdb`, `cppcheck`, `doxygen`, `gh` (GitHub CLI), `uv`.
+
+Si falta alguna herramienta, `bootstrap.sh` imprime el comando exacto para que el usuario la instale en su distribución según corresponda (por ejemplo: `sudo apt install build-essential cmake ninja-build python3-pip curl`).
+
+### Activación y Desactivación de Sesión
+
+Para ingresar al entorno portable desde tu terminal de Linux:
 
 ```bash
-source linux/activate.sh       # activa HOME portable + toolchain en el PATH
-ayuda                          # guía rápida de comandos
-deactivate                     # restaura tu sesión original
+source linux/activate.sh       # Activa toolchain, HOME local y scripts en PATH
+ayuda                          # Muestra la guía interactiva de comandos
+deactivate                     # Restaura la sesión original de Bash
 ```
 
-Scripts disponibles una vez activado el entorno (en `linux/bin/`, agregados al `PATH`):
+Al activarse:
+1. Redirige `$HOME` al directorio portable (`$PORTABLE_ROOT/home`).
+2. Agrega `$PORTABLE_ROOT/linux/bin` y `$PORTABLE_ROOT/local/bin` al inicio del `$PATH`.
+3. Configura el toolchain de C para resolver bibliotecas locales sin tocar `/usr`:
+   - `CC=gcc`, `CXX=g++`
+   - `CPATH=$PORTABLE_ROOT/local/include`
+   - `LIBRARY_PATH=$PORTABLE_ROOT/local/lib`
+   - `LD_LIBRARY_PATH=$PORTABLE_ROOT/local/lib`
+   - `PKG_CONFIG_PATH=$PORTABLE_ROOT/local/lib/pkgconfig`
+   - `CMAKE_PREFIX_PATH=$PORTABLE_ROOT/local`
+4. Aplica el prompt decorado con el prefijo institucional y muestra el banner de bienvenida con el comando `ayuda`.
 
-*   `configure-git.sh`: configura Git paso a paso (identidad, preferencias y credenciales) e inicia sesión con GitHub CLI (`gh`). Todo queda aislado en el HOME portable.
-*   `customize-terminal.sh`: asistente para personalizar el banner de bienvenida y el prompt de Bash.
-*   `install-lib.sh <usuario/repositorio> [rama_o_tag]`: compila e instala librerías de C desde GitHub en el prefijo local del entorno (`local/`), resuelto automáticamente por el compilador gracias a las variables exportadas por la activación. También acepta rutas locales a proyectos.
-*   `nuevo-proyecto`, `verificar`, `entregar`, `ripley`: mismos comandos de cátedra que la variante Windows (ver [Comandos de cátedra](#comandos-de-cátedra)), incluyendo el soporte multitipo y la delegación en el motor Ripley.
+### Catálogo de Herramientas Portadas a Linux (`linux/bin/`)
+
+Una vez activado el entorno, disponés en tu `$PATH` de las herramientas de desarrollo con paridad funcional total respecto a Windows:
+
+| Comando | Descripción y Uso en Linux |
+| :--- | :--- |
+| `ayuda` | Despliega la guía de referencia rápida con el catálogo de comandos de cátedra. |
+| `doctor` | Diagnóstico automatizado de salud: verifica compilación y ejecución C, versión de Python, herramientas de build y configuración de Git. |
+| `nuevo-proyecto <nombre>` | Genera la estructura de un proyecto de cátedra con Makefile modular (`debug`, `asan`, `test`, `ripley`), `.clang-format`, `.editorconfig` y configuración de depuración para VS Code. Soporta flags `--tipo tp`, `--tipo lib` y `--tipo plano`. |
+| `verificar` | Validador de trabajos prácticos: corre suites de prueba `tests/caso_NN.in/.out` o delega en `ripley check .` si existe manifiesto. |
+| `entregar` | Compila, valida y genera el ZIP de entrega del trabajo práctico excluyendo binarios y artefactos de compilación. |
+| `ripley` | Linter pedagógico, ejecutor de AddressSanitizer y traductor de advertencias de GCC en lenguaje claro para estudiantes. |
+| `clonar <url>` | Clona repositorios de Git directamente dentro del directorio de proyectos del HOME portable. |
+| `install-lib.sh <repo> [ref]` | Descarga, compila e instala bibliotecas de C en `$PORTABLE_ROOT/local/` generando manifiestos de desinstalación. |
+| `uninstall-lib.sh <nombre>` | Desinstala bibliotecas locales a partir de su manifiesto sin dejar archivos huérfanos. |
+| `configure-git.sh` | Asistente interactivo para configurar nombre, correo y credenciales de GitHub (`gh auth login`) en el HOME portable. |
+| `customize-terminal.sh` | Personalizador del banner institucional de bienvenida y colores del prompt de Bash. |
+| `diagnose-env.sh` | Genera un informe detallado con versiones exactas de compiladores, librerías y variables de entorno activas. |
+| `backup` | Respalda el `$HOME` portable y manifiestos en un archivo `.zip` fechado. |
+| `restaurar <archivo.zip>` | Restaura un respaldo previo sobre el `$HOME` portable actual. |
+| `smoke.sh` | Ejecuta la batería de smoke test local del entorno (compilación, Cppcheck, Python, CMake y librerías). |
+| `soporte` | Empaqueta registros y diagnósticos del entorno para solicitar asistencia al equipo docente. |
+| `update-env.sh` | Actualiza los scripts del entorno desde el repositorio oficial de GitHub (`INGCOM-UNRN-P1/entorno`). |
+
+### Estado Actual y Certificación de Calidad
+
+* **Paridad Funcional:** 100% de paridad con la versión Windows en flujo de proyectos, compilación, auditoría con Ripley, empaquetado de entregas y gestión de librerías.
+* **Suite de Pruebas Automatizadas:** Verificado mediante [`tests/test_linux_env.sh`](tests/test_linux_env.sh), que ejecuta **69 pruebas unitarias y de integración** en un sandbox aislado (`mktemp -d`), certificando:
+  - Activación, desactivación y restauración limpia de variables de entorno sin mutación del host.
+  - Creación de skel (`.bashrc`, `.bash_profile`) y deduplicación de `$PATH` ante subshells anidadas.
+  - Compilación e instalación de librerías locales con manifiestos (`install-lib.sh`, `uninstall-lib.sh`).
+  - Creación y compilación de proyectos con `nuevo-proyecto` (modos plano, tp y lib).
+  - Ciclo de validación y empaquetado de entregas con `verificar` y `entregar`.
+  - Respaldos y restauraciones con `backup` y `restaurar`.
+  - Diagnósticos de salud con `doctor` y `bootstrap.sh`.
+* **Compatibilidad de Distribuciones:** Probado y operativo en Fedora, Arch Linux, Ubuntu/Debian, openSUSE y entornos WSL2 (Windows Subsystem for Linux).
 
 ---
 
