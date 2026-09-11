@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# doctor - Diagnóstico de salud del entorno en computadoras personales (macOS y Linux)
+# Uso: doctor
+
+set -u
+
+CYAN='\033[36m'; GREEN='\033[32m'; RED='\033[31m'; YELLOW='\033[33m'; RESET='\033[0m'
+BOLD='\033[1m'
+
+PASS=0
+FAIL=0
+WARN=0
+
+ok()   { printf "${GREEN}[PASS]${RESET} %s\n" "$1"; PASS=$((PASS+1)); }
+bad()  { printf "${RED}[FALLA]${RESET} %s\n" "$1"; FAIL=$((FAIL+1)); }
+warn() { printf "${YELLOW}[AVISO]${RESET} %s\n" "$1"; WARN=$((WARN+1)); }
+
+echo -e "${CYAN}${BOLD}======================================================================${RESET}"
+echo -e "${CYAN}${BOLD}      Diagnóstico de Salud del Entorno Personal (macOS / Linux)       ${RESET}"
+echo -e "${CYAN}${BOLD}======================================================================${RESET}"
+echo -e "Sistema Operativo : $(uname -s) ($(uname -m))"
+echo -e "Usuario actual    : ${USER:-$(whoami)}"
+echo -e "Directorio HOME   : ${HOME}"
+echo ""
+
+# 1. Herramientas base de desarrollo
+echo -e "${CYAN}1. Herramientas del Sistema:${RESET}"
+
+# Compilador C
+if command -v clang >/dev/null 2>&1; then
+    ok "Compilador C disponible: $(clang --version | head -n1)"
+elif command -v gcc >/dev/null 2>&1; then
+    ok "Compilador C disponible: $(gcc --version | head -n1)"
+else
+    bad "No se encontró ningún compilador C (clang o gcc)."
+fi
+
+# Make
+if command -v make >/dev/null 2>&1; then
+    ok "Herramienta make: $(make --version 2>/dev/null | head -n1 || echo 'disponible')"
+else
+    bad "No se encontró 'make'."
+fi
+
+# Git
+if command -v git >/dev/null 2>&1; then
+    ok "Control de versiones git: $(git --version)"
+else
+    bad "No se encontró 'git'."
+fi
+
+# Python 3
+if command -v python3 >/dev/null 2>&1; then
+    ok "Intérprete python3: $(python3 --version)"
+else
+    bad "No se encontró 'python3'."
+fi
+
+# 2. Herramientas del perfil de usuario (uv y gh)
+echo ""
+echo -e "${CYAN}2. Herramientas en el Perfil del Estudiante:${RESET}"
+
+# uv
+if command -v uv >/dev/null 2>&1; then
+    ok "Gestor de paquetes uv: $(uv --version)"
+else
+    bad "No se encontró 'uv'. Ejecutá setup-personal.sh para instalarlo en tu perfil."
+fi
+
+# gh (GitHub CLI)
+if command -v gh >/dev/null 2>&1; then
+    ok "GitHub CLI (gh): $(gh --version | head -n1)"
+    if gh auth status >/dev/null 2>&1; then
+        ok "Sesión de GitHub CLI: iniciada correctamente."
+    else
+        warn "Sesión de GitHub CLI no iniciada. Ejecutá 'gh auth login' para acceder a tus TPs privados."
+    fi
+else
+    bad "No se encontró 'gh' en tu PATH. Ejecutá setup-personal.sh para instalarlo localmente."
+fi
+
+# 3. Scripts de gestión de cátedra
+echo ""
+echo -e "${CYAN}3. Scripts de Gestión de Cátedra:${RESET}"
+for script in ayuda nuevo-proyecto clonar verificar entregar; do
+    if command -v "$script" >/dev/null 2>&1; then
+        ok "Comando '$script' disponible en $(command -v "$script")"
+    else
+        bad "Comando '$script' no disponible en el PATH actual."
+    fi
+done
+
+# 4. Prueba rápida de compilación C
+echo ""
+echo -e "${CYAN}4. Prueba de Compilación C:${RESET}"
+TMP="$(mktemp -d)"
+cat << 'TEST_C' > "$TMP/test.c"
+#include <stdio.h>
+int main(void) {
+    printf("OK\n");
+    return 0;
+}
+TEST_C
+
+CC_BIN="gcc"
+command -v clang >/dev/null 2>&1 && CC_BIN="clang"
+
+if "$CC_BIN" -Wall -std=c11 "$TMP/test.c" -o "$TMP/test.out" 2>/dev/null; then
+    SALIDA="$("$TMP/test.out" 2>/dev/null || true)"
+    if [ "$SALIDA" = "OK" ]; then
+        ok "Compilación y ejecución de prueba exitosas ($CC_BIN)."
+    else
+        bad "El programa de prueba compiló pero falló al ejecutarse."
+    fi
+else
+    bad "Falló la compilación de prueba con $CC_BIN."
+fi
+rm -rf "$TMP"
+
+echo ""
+echo -e "${CYAN}======================================================================${RESET}"
+if [ "$FAIL" -eq 0 ]; then
+    echo -e "${GREEN}${BOLD}[RESULTADO] Entorno saludable: $PASS comprobaciones correctas.${RESET}"
+    exit 0
+else
+    echo -e "${RED}${BOLD}[RESULTADO] Se encontraron $FAIL fallas y $WARN advertencias.${RESET}"
+    echo "Revisá los puntos indicados con [FALLA] arriba."
+    exit 1
+fi

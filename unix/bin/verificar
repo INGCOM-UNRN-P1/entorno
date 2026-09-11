@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+# verificar - Corrector local de trabajos prácticos para macOS y Linux
+# Uso: verificar [directorio_del_proyecto]
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; CYAN='\033[36m'; RESET='\033[0m'
+
+PROJ_DIR="${1:-.}"
+if [ ! -d "$PROJ_DIR" ]; then
+    echo -e "${RED}[ERROR] No existe el directorio '$PROJ_DIR'.${RESET}"
+    exit 1
+fi
+
+cd "$PROJ_DIR"
+
+if ! ls ./*.c >/dev/null 2>&1 && [ ! -f "Makefile" ]; then
+    echo -e "${RED}[ERROR] El directorio no contiene archivos .c ni Makefile.${RESET}"
+    exit 1
+fi
+
+# Delegar en ripley si está presente
+if command -v ripley >/dev/null 2>&1 && { ls ./*.ripkg >/dev/null 2>&1 || [ -f "ripley.toml" ]; }; then
+    echo -e "${CYAN}-> Ejecutando análisis con Ripley ...${RESET}"
+    exec ripley check .
+fi
+
+# Prioridad: objetivo 'test' en Makefile (evitar bucle si ya estamos dentro de verificar)
+if [ "${IN_VERIFICAR:-0}" = "0" ] && [ -f "Makefile" ] && grep -qE '^[[:space:]]*(test|check)[[:space:]]*:' Makefile; then
+    echo -e "${CYAN}-> Ejecutando 'make test' ...${RESET}"
+    export IN_VERIFICAR=1
+    if make test; then
+        echo -e "${GREEN}[ÉXITO] Pruebas del Makefile superadas.${RESET}"
+        exit 0
+    else
+        echo -e "${RED}[FALLA] Las pruebas del Makefile no pasaron.${RESET}"
+        exit 1
+    fi
+fi
+
+# Compilar proyecto si hay Makefile
+if [ -f "Makefile" ]; then
+    echo -e "${CYAN}-> Compilando con make ...${RESET}"
+    if ! make >/dev/null; then
+        echo -e "${RED}[ERROR] La compilación falló. Revisá los errores del compilador.${RESET}"
+        exit 1
+    fi
+fi
+
+# Buscar binario
+BASENAME="$(basename "$(pwd)")"
+BIN=""
+if [ -f "Makefile" ]; then
+    CAND="$(grep -E '^TARGET[[:space:]]*[:?+]?=' Makefile 2>/dev/null | head -n1 | sed -e 's/^[^=]*=//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -v '\$' || true)"
+    if [ -n "$CAND" ] && [ -x "$CAND" ]; then
+        BIN="./$CAND"
+    fi
+fi
+
+if [ -z "$BIN" ] && [ -x "./$BASENAME" ]; then
+    BIN="./$BASENAME"
+elif [ -z "$BIN" ] && [ -x "./a.out" ]; then
+    BIN="./a.out"
+fi
+
+if [ -z "$BIN" ]; then
+    echo -e "${RED}[ERROR] No se encontró el binario ejecutable del proyecto.${RESET}"
+    exit 1
+fi
+
+shopt -s nullglob
+CASOS=(tests/caso_*.in)
+shopt -u nullglob
+
+if [ "${#CASOS[@]}" -eq 0 ]; then
+    echo -e "${YELLOW}[AVISO] No se encontraron casos en tests/caso_*.in.${RESET}"
+    echo "Ejecutando binario directamente:"
+    "$BIN"
+    exit 0
+fi
+
+echo -e "${CYAN}-> Verificando ${#CASOS[@]} caso(s) contra '$BIN' ...${RESET}"
+
+normaliza() {
+    tr -d '\r' < "$1" | sed -e 's/[[:space:]]*$//'
+}
+
+PASS=0
+FAILN=0
+GOT="$(mktemp)"
+trap 'rm -f "$GOT"' EXIT
+
+# Helper de ejecución con límite de 15 segundos compatible con Linux y macOS
+run_with_timeout() {
+    local bin="$1"
+    local input="$2"
+    local out="$3"
+
+    if command -v timeout >/dev/null 2>&1; then
+        timeout 15 "$bin" < "$input" > "$out" 2>/dev/null
+    elif command -v gtimeout >/dev/null 2>&1; then
+        gtimeout 15 "$bin" < "$input" > "$out" 2>/dev/null
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 -c '
+import subprocess, sys
+try:
+    with open(sys.argv[2], "rb") as fin, open(sys.argv[3], "wb") as fout:
+        proc = subprocess.run([sys.argv[1]], stdin=fin, stdout=fout, stderr=subprocess.DEVNULL, timeout=15)
+        sys.exit(proc.returncode)
+except subprocess.TimeoutExpired:
+    sys.exit(124)
+except Exception:
+    sys.exit(1)
+' "$bin" "$input" "$out"
+    else
+        "$bin" < "$input" > "$out" 2>/dev/null
+    fi
+}
+
+for caso in "${CASOS[@]}"; do
+    NOMBRE="$(basename "$caso" .in)"
+    ESPERADO="${caso%.in}.out"
+    if [ ! -f "$ESPERADO" ]; then
+        echo -e "${YELLOW}[AVISO] Falta '$ESPERADO': caso $NOMBRE omitido.${RESET}"
+        continue
+    fi
+
+    RC=0
+    run_with_timeout "$BIN" "$caso" "$GOT" || RC=$?
+
+    if [ "$RC" -eq 124 ] || [ "$RC" -eq 137 ]; then
+        echo -e "${RED}[FALLA] $NOMBRE: tiempo límite de 15s excedido.${RESET}"
+        FAILN=$((FAILN+1))
+        continue
+    fi
+
+    if [ "$RC" -ne 0 ]; then
+        echo -e "${RED}[FALLA] $NOMBRE: finalizó con código de error $RC.${RESET}"
+        FAILN=$((FAILN+1))
+        continue
+    fi
+
+    if [ "$(normaliza "$ESPERADO")" = "$(normaliza "$GOT")" ]; then
+        echo -e "${GREEN}[OK] $NOMBRE${RESET}"
+        PASS=$((PASS+1))
+    else
+        echo -e "${RED}[FALLA] $NOMBRE: la salida no coincide.${RESET}"
+        echo "  Esperado:"
+        normaliza "$ESPERADO" | head -n 5 | sed 's/^/    | /'
+        echo "  Obtenido:"
+        normaliza "$GOT" | head -n 5 | sed 's/^/    | /'
+        FAILN=$((FAILN+1))
+    fi
+done
+
+echo -e "${CYAN}----------------------------------------------------------------------${RESET}"
+if [ "$FAILN" -eq 0 ]; then
+    echo -e "${GREEN}RESULTADO: $PASS/$((PASS+FAILN)) casos correctos.${RESET}"
+    exit 0
+fi
+
+echo -e "${RED}RESULTADO: $FAILN caso(s) fallaron de $((PASS+FAILN)).${RESET}"
+exit 1

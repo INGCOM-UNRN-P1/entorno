@@ -1,0 +1,1 @@
+unix/desinstalar-personal.sh

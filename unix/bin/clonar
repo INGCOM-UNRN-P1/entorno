@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# clonar - Clona un repositorio de entrega en ~/proyectos (macOS y Linux)
+# Uso: clonar <url | owner/repo> [destino]
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; YELLOW='\033[33m'; CYAN='\033[36m'; RESET='\033[0m'
+
+if [ "${1:-}" = "" ]; then
+    echo -e "${RED}[ERROR] Indicá la URL o el atajo del repositorio.${RESET}"
+    echo "Uso: clonar <url | owner/repo> [destino]"
+    exit 1
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+    echo -e "${RED}[ERROR] Git no está disponible en este sistema.${RESET}"
+    exit 1
+fi
+
+SRC="$1"
+DEST_BASE="${2:-$HOME/proyectos}"
+
+# Atajo owner/repo → URL de GitHub si no es ruta local existente
+case "$SRC" in
+    */*)
+        if [ ! -e "$SRC" ] && printf '%s' "$SRC" | grep -qE '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'; then
+            SRC="https://github.com/$SRC.git"
+        fi
+        ;;
+esac
+
+REPO_NAME="$(basename "$SRC")"
+REPO_NAME="${REPO_NAME%.git}"
+REPO_NAME="${REPO_NAME%/}"
+
+if [ -z "$REPO_NAME" ]; then
+    echo -e "${RED}[ERROR] No se pudo inferir el nombre del repositorio desde '$1'.${RESET}"
+    exit 1
+fi
+
+mkdir -p "$DEST_BASE"
+TARGET="$DEST_BASE/$REPO_NAME"
+
+if [ -e "$TARGET" ]; then
+    echo -e "${YELLOW}[AVISO] '$TARGET' ya existe.${RESET}"
+    echo "Para actualizar tu copia: cd \"$TARGET\" && git pull"
+    exit 1
+fi
+
+if command -v gh >/dev/null 2>&1; then
+    if ! gh auth status >/dev/null 2>&1; then
+        echo -e "${YELLOW}[AVISO] No iniciaste sesión en GitHub CLI. Si el repositorio es privado, ejecutá 'gh auth login'.${RESET}"
+    fi
+fi
+
+echo -e "${CYAN}-> Clonando en $TARGET ...${RESET}"
+if ! git clone "$SRC" "$TARGET"; then
+    echo -e "${RED}[ERROR] Falló la clonación. Verificá la URL y tus credenciales de acceso.${RESET}"
+    rm -rf "$TARGET"
+    exit 1
+fi
+
+BRANCH="$(git -C "$TARGET" symbolic-ref --short HEAD 2>/dev/null || true)"
+if [ -n "$BRANCH" ]; then
+    git -C "$TARGET" branch --set-upstream-to="origin/$BRANCH" "$BRANCH" >/dev/null 2>&1 || true
+fi
+
+echo -e "${GREEN}[ÉXITO] Repositorio clonado en:${RESET}"
+echo "  $TARGET"
+echo ""
+echo -e "${CYAN}Siguiente paso sugerido:${RESET}"
+echo "  cd \"$TARGET\""

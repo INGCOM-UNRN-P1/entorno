@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# ayuda - Guía rápida de comandos de Programación 1 para macOS y Linux
+
+CYAN="\033[36m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+GOLD="\033[33m"
+RESET="\033[0m"
+BOLD="\033[1m"
+
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "${GOLD}${BOLD}   COMANDOS DE GESTIÓN — PROGRAMACIÓN 1 (macOS / Linux)              ${RESET}"
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "Herramientas de cátedra instaladas en tu perfil (${HOME}):"
+echo ""
+
+echo -e "${CYAN}${BOLD}[ Comandos de Gestión ]${RESET}"
+echo -e "  ${GREEN}nuevo-proyecto <nombre>${RESET} - Crea un nuevo proyecto C con Makefile y pruebas."
+echo -e "  ${GREEN}clonar <url | org/repo>${RESET} - Clona un repositorio de entrega en ~/proyectos."
+echo -e "  ${GREEN}verificar [dir]${RESET}         - Compila y ejecuta las pruebas de cátedra del TP."
+echo -e "  ${GREEN}entregar [dir]${RESET}          - Empaqueta tu entrega en un ZIP y publica a GitHub."
+echo -e "  ${GREEN}doctor${RESET}                  - Diagnostica el estado de tus herramientas de desarrollo."
+echo -e "  ${GREEN}ayuda${RESET}                   - Muestra esta guía en pantalla."
+echo ""
+
+echo -e "${CYAN}${BOLD}[ Herramientas de Desarrollo Detectadas ]${RESET}"
+for cmd in gcc clang make cmake ninja gdb lldb python3 uv git gh ripley; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+        printf "  %b: %s\n" "${BLUE}${cmd}${RESET}" "$(command -v "$cmd")"
+    fi
+done
+echo ""
+
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"
+echo -e "Carpeta de trabajo sugerida: ${GREEN}${HOME}/proyectos${RESET}"
+echo -e "Para desinstalar estos comandos: ejecutá ${YELLOW}desinstalar-personal.sh${RESET}"
+echo -e "${GOLD}${BOLD}======================================================================${RESET}"

@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# nuevo-proyecto - Crea la estructura inicial de un proyecto C de Programación 1
+# Compatible con macOS y distribuciones Linux.
+# Uso: nuevo-proyecto <nombre>
+
+set -eu
+
+RED='\033[31m'; GREEN='\033[32m'; CYAN='\033[36m'; YELLOW='\033[33m'; RESET='\033[0m'
+
+if [ "${1:-}" = "" ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+    echo "Uso: nuevo-proyecto <nombre_del_proyecto>"
+    exit 1
+fi
+
+NAME="$1"
+TARGET_DIR="${2:-./$NAME}"
+
+if [ -e "$TARGET_DIR" ]; then
+    echo -e "${RED}[ERROR] El directorio o archivo '$TARGET_DIR' ya existe.${RESET}"
+    exit 1
+fi
+
+mkdir -p "$TARGET_DIR/tests"
+
+# Detectar compilador por defecto (clang en macOS, gcc en Linux)
+COMPILER="gcc"
+if [ "$(uname -s)" = "Darwin" ] && command -v clang >/dev/null 2>&1; then
+    COMPILER="clang"
+fi
+
+cat << 'MAIN_EOF' > "$TARGET_DIR/main.c"
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    printf("Hola desde Programación 1!\n");
+    return EXIT_SUCCESS;
+}
+MAIN_EOF
+
+cat << 'MAKE_EOF' | sed "s/@TARGET@/${NAME}/" > "$TARGET_DIR/Makefile"
+CC ?= gcc
+CFLAGS ?= -Wall -Wextra -std=c11 -pedantic
+TARGET = @TARGET@
+
+SRCS = main.c
+OBJS = $(SRCS:.c=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+debug: CFLAGS += -g -O0
+debug: clean all
+
+asan: CFLAGS += -fsanitize=address,undefined -g -O1
+asan: clean all
+
+clean:
+	rm -f $(OBJS) $(TARGET) tests/*.out_got
+
+test: $(TARGET)
+	@if [ -d "tests" ] && ls tests/caso_*.in >/dev/null 2>&1; then \
+		echo "Ejecutando pruebas de tests/..."; \
+		for caso in tests/caso_*.in; do \
+			base=$$(basename "$$caso" .in); \
+			out="tests/$$base.out"; \
+			./$(TARGET) < "$$caso" > "tests/$$base.out_got"; \
+			if diff -u "$$out" "tests/$$base.out_got" >/dev/null; then \
+				echo "[OK] $$base"; \
+			else \
+				echo "[FALLA] $$base"; \
+				diff -u "$$out" "tests/$$base.out_got"; \
+				exit 1; \
+			fi; \
+		done; \
+	else \
+		./$(TARGET); \
+	fi
+
+.PHONY: all clean debug asan test
+MAKE_EOF
+
+cat << 'TEST_IN' > "$TARGET_DIR/tests/caso_01.in"
+TEST_IN
+
+cat << 'TEST_OUT' > "$TARGET_DIR/tests/caso_01.out"
+Hola desde Programación 1!
+TEST_OUT
+
+cat << 'CLANG_FORMAT' > "$TARGET_DIR/.clang-format"
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+AllowShortIfStatementsOnASingleLine: false
+CLANG_FORMAT
+
+cat << 'GITIGNORE' > "$TARGET_DIR/.gitignore"
+*.o
+*.out
+*.exe
+*.dSYM/
+tests/*.out_got
+ENTREGA_*.zip
+.DS_Store
+GITIGNORE
+
+echo -e "${GREEN}[ÉXITO] Proyecto C creado en: ${TARGET_DIR}${RESET}"
+echo ""
+echo "Estructura inicial:"
+echo "  ${TARGET_DIR}/main.c"
+echo "  ${TARGET_DIR}/Makefile"
+echo "  ${TARGET_DIR}/tests/caso_01.in"
+echo "  ${TARGET_DIR}/tests/caso_01.out"
+echo ""
+echo "Pasos sugeridos:"
+echo "  cd \"${TARGET_DIR}\""
+echo "  make"
+echo "  verificar"
