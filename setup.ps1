@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
     [switch]$SkipUpdate,
@@ -20,10 +20,67 @@ if ($PSVersionTable.PSVersion.Major -ge 6) {
     Write-Warning "Si algo falla de forma extrana (encoding, JSON), proba primero con: powershell -ExecutionPolicy Bypass -File setup.ps1"
 }
 
+function Test-IsDirectHomePath {
+    <#
+    .SYNOPSIS
+    Verifica si una ruta dada coincide con el directorio HOME / UserProfile del host.
+    #>
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $false
+    }
+    if ($Path -eq "~") {
+        return $true
+    }
+    try {
+        $resolved = [System.IO.Path]::GetFullPath($Path).TrimEnd('\', '/')
+        $candidates = @()
+        if ($HOME) {
+            $candidates += [System.IO.Path]::GetFullPath($HOME).TrimEnd('\', '/')
+        }
+        if ($env:USERPROFILE) {
+            $candidates += [System.IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\', '/')
+        }
+        $specialProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+        if ($specialProfile) {
+            $candidates += [System.IO.Path]::GetFullPath($specialProfile).TrimEnd('\', '/')
+        }
+
+        foreach ($cand in $candidates) {
+            if ([string]::Equals($resolved, $cand, [System.StringComparison]::OrdinalIgnoreCase)) {
+                return $true
+            }
+        }
+    } catch {
+        return $false
+    }
+    return $false
+}
+
 # Directorio base del script (con fallback al directorio actual si se ejecuta desde internet via IEX)
 $portableRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($portableRoot)) {
     $portableRoot = (Get-Location).Path
+}
+
+# Evitar la instalacion directa en el HOME / perfil de usuario
+if (Test-IsDirectHomePath -Path $portableRoot) {
+    Write-Host "==========================================================================" -ForegroundColor Red
+    Write-Host "ERROR: NO SE PUEDE INSTALAR DIRECTAMENTE EN EL DIRECTORIO DE USUARIO (`$HOME)" -ForegroundColor Red
+    Write-Host "==========================================================================" -ForegroundColor Red
+    Write-Host "La ruta de instalacion coincide con tu directorio personal:" -ForegroundColor Yellow
+    Write-Host "  $portableRoot" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Instalar directamente en el HOME rompe el aislamiento del entorno portable"
+    Write-Host "y mezcla herramientas (msys64, vscode, bin, .env, descargas) con tus archivos."
+    Write-Host ""
+    Write-Host "Crea una subcarpeta dedicada y ejecuta el instalador desde alli."
+    Write-Host "Ejemplos recomendados:"
+    Write-Host "  mkdir C:\dev\entorno; cd C:\dev\entorno"
+    Write-Host "  (o adentro de una subcarpeta: $(Join-Path $portableRoot 'entorno'))"
+    Write-Host "==========================================================================" -ForegroundColor Red
+    throw "Instalacion cancelada: no esta permitido instalar directamente en `$HOME ($portableRoot)."
 }
 
 if (-not ($HomeDirName -match "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$")) {
