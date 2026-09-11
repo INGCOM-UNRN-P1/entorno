@@ -1,4 +1,4 @@
-﻿# test_windows_logic.ps1 - Pruebas de la logica interna de setup.ps1 ejecutables
+# test_windows_logic.ps1 - Pruebas de la logica interna de setup.ps1 ejecutables
 # en cualquier plataforma con PowerShell 7 (CI incluido). Extrae las funciones por
 # AST para probar el texto real que se distribuye, sin ejecutar la instalacion.
 #
@@ -199,25 +199,14 @@ Assert-True "URL vacia usa el default" `
 # ============================================================
 . ([scriptblock]::Create((Get-FunctionFromScript -Path $SetupPath -Name "Test-IsDirectHomePath")))
 
-$prevHome = $HOME
-$prevProfile = $env:USERPROFILE
-$fakeHome = Join-Path ([System.IO.Path]::GetTempPath()) ("fakehome-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $fakeHome | Out-Null
-try {
-    $HOME = $fakeHome
-    $env:USERPROFILE = $fakeHome
+$currentHome = if ($HOME) { $HOME } elseif ($env:USERPROFILE) { $env:USERPROFILE } else { [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile) }
 
-    Assert-True "detecta instalacion directa en HOME exacto" (Test-IsDirectHomePath -Path $fakeHome)
-    Assert-True "detecta instalacion con separador final" (Test-IsDirectHomePath -Path ($fakeHome + [System.IO.Path]::DirectorySeparatorChar))
-    Assert-True "detecta tilde (~)" (Test-IsDirectHomePath -Path "~")
-    Assert-True "permite instalacion en subcarpeta de HOME" (-not (Test-IsDirectHomePath -Path (Join-Path $fakeHome "entorno")))
-    Assert-True "permite instalacion en ruta externa" (-not (Test-IsDirectHomePath -Path ([System.IO.Path]::GetTempPath())))
-    Assert-True "ruta vacia devuelve false" (-not (Test-IsDirectHomePath -Path ""))
-} finally {
-    $HOME = $prevHome
-    $env:USERPROFILE = $prevProfile
-    Remove-Item -Recurse -Force $fakeHome -ErrorAction SilentlyContinue
-}
+Assert-True "detecta instalacion directa en HOME exacto" (Test-IsDirectHomePath -Path $currentHome)
+Assert-True "detecta instalacion con separador final" (Test-IsDirectHomePath -Path ($currentHome + [System.IO.Path]::DirectorySeparatorChar))
+Assert-True "detecta tilde (~)" (Test-IsDirectHomePath -Path "~")
+Assert-True "permite instalacion en subcarpeta de HOME" (-not (Test-IsDirectHomePath -Path (Join-Path $currentHome "entorno")))
+Assert-True "permite instalacion en ruta externa" (-not (Test-IsDirectHomePath -Path ([System.IO.Path]::GetTempPath())))
+Assert-True "ruta vacia devuelve false" (-not (Test-IsDirectHomePath -Path ""))
 
 # ============================================================
 # Resumen

@@ -7,7 +7,7 @@ on:
 
 jobs:
   bash:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Sintaxis de scripts Bash
@@ -22,14 +22,14 @@ jobs:
         run: shellcheck --severity=error $(find . -type f -name "*.sh") bin/ayuda linux/bin/ayuda
 
   linux-env:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Pruebas de la variante Linux
         run: tests/test_linux_env.sh
 
   powershell:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Análisis estático con PSScriptAnalyzer
