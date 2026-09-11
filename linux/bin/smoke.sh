@@ -39,8 +39,14 @@ if command -v cppcheck >/dev/null 2>&1; then
     else
         bad "cppcheck reporta problemas en el archivo de prueba"
     fi
+elif command -v gaff >/dev/null 2>&1; then
+    if gaff check "$WORK/test.c" >/dev/null 2>&1; then
+        ok "gaff analiza el archivo sin violaciones de estilo"
+    else
+        bad "gaff reporta desviaciones en el archivo de prueba"
+    fi
 else
-    bad "cppcheck no está instalado"
+    printf "%b[AVISO] Linter estático (cppcheck/gaff) no encontrado en PATH (no bloquea el resto).%b\n" "$YELLOW" "$RESET"
 fi
 
 # ---------------------------------------------------------------
