@@ -1,4 +1,3 @@
-
 # Complete indicator files
 .msys_complete
 .vscode_complete
@@ -37,3 +36,9 @@ home/
 # Windows specific
 Thumbs.db
 desktop.ini
+
+__pycache__/
+
+*.py[cod]
+
+.pytest_cache/
