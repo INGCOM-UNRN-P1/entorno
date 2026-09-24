@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# entrar - Abre el espacio de trabajo separado de Programación 1 (macOS y Linux).
+#
+# Uso:
+#   entrar                 abre una sesión de Bash aislada con HOME=~/p1/dev
+#   entrar <comando...>    ejecuta un comando dentro del espacio aislado y sale
+#   entrar --preparar      solo crea el espacio de trabajo y sus archivos de inicio
+#
+# La sesión aislada redirige $HOME hacia ~/p1/dev: la configuración de git, gh,
+# uv y los proyectos quedan ahí, sin tocar la configuración personal del usuario.
+# Para volver a la sesión habitual alcanza con 'exit'.
+
+set -eu
+
+P1_ENTORNO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+P1_DEV="${P1_DEV:-$(dirname "$P1_ENTORNO")/dev}"
+
+if [ -n "${P1_SEPARADO:-}" ]; then
+    echo "[INFO] Ya estás dentro del espacio de trabajo separado (HOME: $HOME)." >&2
+    [ $# -eq 0 ] && exit 0
+fi
+
+mkdir -p "$P1_DEV/proyectos"
+
+# Archivos de inicio del HOME aislado: se crean una sola vez y quedan para el usuario
+if [ ! -f "$P1_DEV/.bash_profile" ]; then
+    cat > "$P1_DEV/.bash_profile" <<'EOF'
+if [ -f "${HOME}/.bashrc" ]; then
+    . "${HOME}/.bashrc"
+fi
+EOF
+fi
+if [ ! -f "$P1_DEV/.bashrc" ]; then
+    cat > "$P1_DEV/.bashrc" <<'EOF'
+# .bashrc - Espacio de trabajo separado de Programación 1 (UNRN Andina)
+# Podés agregar tus alias y funciones personalizadas debajo de este bloque.
+
+if [ -n "${P1_ENTORNO:-}" ] && [ -f "$P1_ENTORNO/unix/p1-env.sh" ]; then
+    . "$P1_ENTORNO/unix/p1-env.sh"
+fi
+
+PS1='\[\e[35m\](p1)\[\e[0m\] \w \$ '
+
+echo -e "\e[35m======================================================================"
+echo "  UNRN Andina - Programación 1 — espacio de trabajo separado"
+echo -e "======================================================================\e[0m"
+echo "Ejecutá 'ayuda' para ver los comandos y 'exit' para volver a tu sesión."
+EOF
+fi
+
+[ "${1:-}" = "--preparar" ] && exit 0
+
+export P1_ENTORNO P1_DEV
+export P1_SEPARADO=1
+export HOME="$P1_DEV"
+export BASH_SILENCE_DEPRECATION_WARNING=1
+# shellcheck source=p1-env.sh
+. "$P1_ENTORNO/unix/p1-env.sh"
+
+cd "$P1_DEV"
+if [ $# -gt 0 ]; then
+    exec "$@"
+fi
+exec bash -i

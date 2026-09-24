@@ -17,7 +17,7 @@ echo ""
 
 echo -e "${CYAN}${BOLD}[ Comandos de Gestión ]${RESET}"
 echo -e "  ${GREEN}nuevo-proyecto <nombre>${RESET} - Crea un nuevo proyecto C con Makefile y pruebas."
-echo -e "  ${GREEN}clonar <url | org/repo>${RESET} - Clona un repositorio de entrega en ~/proyectos."
+echo -e "  ${GREEN}clonar <url | org/repo>${RESET} - Clona un repositorio de entrega en proyectos/."
 echo -e "  ${GREEN}verificar [dir]${RESET}         - Compila y ejecuta las pruebas de cátedra del TP."
 echo -e "  ${GREEN}entregar [dir]${RESET}          - Empaqueta tu entrega en un ZIP y publica a GitHub."
 echo -e "  ${GREEN}doctor${RESET}                  - Diagnostica el estado de tus herramientas de desarrollo."
@@ -33,6 +33,11 @@ done
 echo ""
 
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"
-echo -e "Carpeta de trabajo sugerida: ${GREEN}${HOME}/proyectos${RESET}"
-echo -e "Para desinstalar estos comandos: ejecutá ${YELLOW}desinstalar-personal.sh${RESET}"
+if [ -n "${P1_ENTORNO:-}" ]; then
+    echo -e "Espacio de trabajo: ${GREEN}${P1_DEV:-$HOME}${RESET} (proyectos en ${P1_DEV:-$HOME}/proyectos)"
+    echo -e "Para desinstalar el entorno: ejecutá ${YELLOW}${P1_ENTORNO}/desinstalar.sh${RESET} (fuera de la sesión separada)"
+else
+    echo -e "Carpeta de trabajo sugerida: ${GREEN}${HOME}/proyectos${RESET}"
+    echo -e "Para desinstalar estos comandos: ejecutá ${YELLOW}desinstalar-personal.sh${RESET}"
+fi
 echo -e "${GOLD}${BOLD}======================================================================${RESET}"

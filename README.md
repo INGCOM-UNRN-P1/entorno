@@ -1,8 +1,9 @@
 # Entorno de Desarrollo Portable en C y Python (Windows y Linux)
 
-Entorno de desarrollo unificado y autocontenido para la cátedra de Programación 1 (UNRN Andina). Provee dos modalidades de despliegue:
+Entorno de desarrollo unificado y autocontenido para la cátedra de Programación 1 (UNRN Andina). Provee tres modalidades de despliegue:
 1. **Windows**: Entorno portable completo con terminal acelerada por GPU (WezTerm), userland Unix (MSYS2 UCRT64), compilador GCC nativo, Python 3 con `uv`, VS Code Portable preconfigurado y lanzadores invisibles `.exe`.
-2. **Linux Nativo y WSL**: Activación de sesión modular y no invasiva (`source linux/activate.sh`) con redirección aislada de `$HOME`, toolchain C local (`local/`), paridad funcional total en comandos de cátedra y política estricta de cero modificaciones al sistema host (sin `sudo`).
+2. **macOS y Linux personal (una línea)**: `curl -fsSL https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/install.sh | bash` instala en `~/p1/entorno` con espacio de trabajo `~/p1/dev`, en modo **separado** (HOME aislado, se entra con `~/p1/entrar`) o **integrado** a tu terminal. Ver [docs/personal-unix.md](docs/personal-unix.md).
+3. **Linux Nativo y WSL**: Activación de sesión modular y no invasiva (`source linux/activate.sh`) con redirección aislada de `$HOME`, toolchain C local (`local/`), paridad funcional total en comandos de cátedra y política estricta de cero modificaciones al sistema host (sin `sudo`).
 
 ## Componentes Principales
 

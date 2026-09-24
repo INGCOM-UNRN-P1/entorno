@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# clonar - Clona un repositorio de entrega en ~/proyectos (macOS y Linux)
+# clonar - Clona un repositorio de entrega en proyectos/ del espacio de trabajo (macOS y Linux)
 # Uso: clonar <url | owner/repo> [destino]
 
 set -eu
@@ -18,7 +18,8 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 SRC="$1"
-DEST_BASE="${2:-$HOME/proyectos}"
+# Con el instalador de ~/p1 el destino es ~/p1/dev/proyectos; si no, ~/proyectos
+DEST_BASE="${2:-${P1_DEV:-$HOME}/proyectos}"
 
 # Atajo owner/repo → URL de GitHub si no es ruta local existente
 case "$SRC" in

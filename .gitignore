@@ -15,6 +15,9 @@ msys64/
 # Local environment configuration
 .env
 
+# Estado del instalador unix (install.sh)
+/.p1-instalacion
+
 # Default home folder
 home/
 

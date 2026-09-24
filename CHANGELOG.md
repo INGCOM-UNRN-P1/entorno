@@ -6,6 +6,13 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 ## [Sin publicar]
 
 ### Agregado
+* Instalador `install.sh` para macOS y Linux vía `curl | bash`: instala en `~/p1/entorno` con espacio de trabajo `~/p1/dev` y pregunta (por la terminal, no por stdin) entre modo **separado** (HOME aislado con `~/p1/entrar`, sin tocar la configuración del usuario) o **integrado** (bloque delimitado en `~/.bashrc` / `~/.zshrc`). Descarga por git o tarball, actualización idempotente conservando `local/` y proyectos, `uv` y `gh` locales en `~/p1/entorno/local/bin`, advertencias de rutas con espacios/no ASCII/carpetas sincronizadas.
+* `desinstalar.sh`: quita la integración, `~/p1/entorno` y el atajo; conserva `~/p1/dev` salvo `--borrar-dev`.
+* CI `Unix (Linux y macOS)`: matriz ubuntu-24.04 / macOS arm64 / macOS Intel con `/bin/bash` 3.2, suite `tests/test_instalador_unix.sh` (incluye descarga real de uv/gh) y `tests/test_personal_unix.sh`, que antes no corría en CI.
+
+### Corregido
+* `unix/setup-personal.sh`: `UV_INSTALL_DIR` se pasaba a `curl` y no al instalador de uv; la detección de zsh comparaba `$SHELL` contra un patrón literal y nunca coincidía.
+* Lint: la sintaxis y shellcheck ahora cubren también los scripts sin extensión (`bin/*`, `linux/bin/*`, `unix/bin/*`), y se verifican permisos de ejecución y fin de línea LF (`.gitattributes` fuerza LF en esos scripts).
 * Módulo común `env.common.psm1` para los lanzadores (`launch.ps1`, `launch-vscode.ps1`): advertencia de ruta conflictiva, resolución del HOME portable desde `.env` e inyección de la sesión/toolchain en una sola fuente, con suite propia en CI.
 * `configure-git.sh`: las credenciales de respaldo para otros servidores ahora se eligen entre caché temporal en memoria (expira a la hora; recomendado en compartidas) o `store` persistente en texto plano.
 * Cobertura de pruebas ampliada: 53 pruebas bash (backup/restaurar, uninstall-lib, doctor --fix, verificar avanzado, exclusiones de entregar, diagnose-env, integridad de fuentes únicas), parcheo quirúrgico de settings bajo prueba, manifiesto de versiones (`Get-Pinned`) y quoting del lanzador C verificado contra reglas MSVCRT en cada push.

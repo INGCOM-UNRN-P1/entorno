@@ -1,5 +1,49 @@
 # Configuración en Computadoras Personales (macOS y Linux)
 
+## Instalación en una línea (recomendada)
+
+Abrí una terminal y pegá:
+```bash
+curl -fsSL https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/install.sh | bash
+```
+
+El instalador no usa `sudo` ni instala paquetes del sistema (solo te sugiere el comando si falta
+el compilador, `make`, `git` o `python3`). Deja todo dentro de `~/p1`:
+
+| Ruta | Contenido |
+|------|-----------|
+| `~/p1/entorno` | Scripts del entorno (clon de git, o tarball si no hay git) y `local/bin` con `uv` y `gh`. |
+| `~/p1/dev` | Tu espacio de trabajo; `clonar` y los proyectos van a `~/p1/dev/proyectos`. |
+| `~/p1/entrar` | Atajo a la sesión aislada (solo en modo separado). |
+
+Durante la instalación te pregunta cómo integrarlo:
+
+1. **Espacio de trabajo separado** (opción por defecto): no toca tu `~/.bashrc`, `~/.zshrc`
+   ni tu `~/.gitconfig`. Entrás con `~/p1/entrar`, que abre una terminal Bash con `HOME=~/p1/dev`:
+   la identidad de git, la sesión de `gh` y las cachés de `uv` quedan aisladas ahí. Salís con `exit`.
+2. **Integrado a tu sesión**: agrega un bloque delimitado por `# >>> p1-entorno >>>` a `~/.bashrc`
+   (y a `~/.zshrc` / `~/.bash_profile` en macOS o si usás zsh). Los comandos de cátedra quedan
+   disponibles en cualquier terminal nueva, con tu HOME habitual.
+
+Para instalar sin preguntas (o cambiar de modo más adelante), volvé a ejecutarlo con `--modo`:
+```bash
+curl -fsSL https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/install.sh | bash -s -- --modo integrado
+```
+Reejecutar el instalador actualiza el entorno (`git pull`) y conserva `~/p1/dev` y `~/p1/entorno/local`.
+Otras opciones: `--sin-herramientas` (no descarga `uv` ni `gh`), `--rama <nombre>`, `--help`.
+
+### Desinstalación
+```bash
+~/p1/entorno/desinstalar.sh              # pregunta antes de borrar; conserva ~/p1/dev
+~/p1/entorno/desinstalar.sh --borrar-dev # borra también tus proyectos (irreversible)
+```
+Quita el bloque de tus archivos de inicio, `~/p1/entorno` (con `uv` y `gh` locales) y `~/p1/entrar`.
+También puede ejecutarse remoto: `curl -fsSL .../desinstalar.sh | bash`.
+
+---
+
+## Instalación alternativa desde un clon (`setup-personal.sh`)
+
 Este procedimiento instala las herramientas y scripts de gestión de Programación 1 directamente en tu perfil de usuario (`$HOME/.local/bin`), sin requerir privilegios de administrador (`sudo`).
 
 ---

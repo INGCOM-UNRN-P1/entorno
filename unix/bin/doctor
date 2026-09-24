@@ -64,7 +64,7 @@ echo -e "${CYAN}2. Herramientas en el Perfil del Estudiante:${RESET}"
 if command -v uv >/dev/null 2>&1; then
     ok "Gestor de paquetes uv: $(uv --version)"
 else
-    bad "No se encontró 'uv'. Ejecutá setup-personal.sh para instalarlo en tu perfil."
+    bad "No se encontró 'uv'. Volvé a ejecutar el instalador para agregarlo a tu perfil."
 fi
 
 # gh (GitHub CLI)
@@ -76,7 +76,7 @@ if command -v gh >/dev/null 2>&1; then
         warn "Sesión de GitHub CLI no iniciada. Ejecutá 'gh auth login' para acceder a tus TPs privados."
     fi
 else
-    bad "No se encontró 'gh' en tu PATH. Ejecutá setup-personal.sh para instalarlo localmente."
+    bad "No se encontró 'gh' en tu PATH. Volvé a ejecutar el instalador para agregarlo localmente."
 fi
 
 # 3. Scripts de gestión de cátedra

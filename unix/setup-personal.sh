@@ -84,7 +84,8 @@ else
     echo -e "${CYAN}-> Instalando 'uv' en el perfil del usuario (${TARGET_BIN})...${RESET}"
     if command -v curl >/dev/null 2>&1; then
         # Instalador oficial de Astral configurando destino en TARGET_BIN
-        UV_INSTALL_DIR="${TARGET_BIN}" curl -LsSf https://astral.sh/uv/install.sh | env CARGO_HOME="$HOME/.cargo" sh || true
+        # (las variables deben llegar a 'sh', que es quien instala, no a curl)
+        curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="${TARGET_BIN}" CARGO_HOME="$HOME/.cargo" sh || true
         # Asegurar binario en TARGET_BIN
         if [ -f "$HOME/.cargo/bin/uv" ] && [ ! -f "${TARGET_BIN}/uv" ]; then
             cp "$HOME/.cargo/bin/uv" "${TARGET_BIN}/uv"
@@ -219,7 +220,7 @@ PROFILE_EOF
 if [ "$OS_TYPE" = "Darwin" ]; then
     configurar_archivo_perfil "$HOME/.zshrc"
     configurar_archivo_perfil "$HOME/.bash_profile"
-elif [ -f "$HOME/.zshrc" ] || [ "${SHELL:-}" = "*/zsh" ]; then
+elif [ -f "$HOME/.zshrc" ] || case "${SHELL:-}" in */zsh) true ;; *) false ;; esac; then
     configurar_archivo_perfil "$HOME/.zshrc"
 fi
 

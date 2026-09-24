@@ -1,0 +1,57 @@
+name: Unix (Linux y macOS)
+
+# Instalador 'curl | bash' (install.sh / desinstalar.sh) y variante personal
+# (unix/setup-personal.sh) probados en runners reales de Linux y macOS.
+# En macOS los scripts se ejecutan con /bin/bash del sistema (Bash 3.2), que es
+# el que usa un estudiante al pegar la línea 'curl ... | bash'.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  instalador:
+    name: instalador (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            bash: bash
+          - os: macos-latest       # Apple Silicon (arm64)
+            bash: /bin/bash
+          - os: macos-15-intel     # Intel (x86_64)
+            bash: /bin/bash
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: zsh para probar el modo integrado (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq zsh
+
+      - name: Versiones de las herramientas
+        run: |
+          uname -a
+          ${{ matrix.bash }} --version | head -n 1
+          git --version
+          command -v zsh && zsh --version || true
+
+      - name: Instalador curl | bash y desinstalador (incluye descarga real de uv y gh)
+        env:
+          P1_TEST_BASH: ${{ matrix.bash }}
+          P1_TEST_RED: "1"
+        run: tests/test_instalador_unix.sh
+
+      - name: Variante personal (setup-personal.sh / desinstalar-personal.sh)
+        run: tests/test_personal_unix.sh

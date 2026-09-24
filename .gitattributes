@@ -16,6 +16,11 @@
 *.lua text eol=lf
 *.md text eol=lf
 Makefile text eol=lf
+# Scripts Bash sin extensión (bash no tolera CRLF)
+bin/* text eol=lf
+linux/bin/* text eol=lf
+unix/bin/* text eol=lf
+unix/entrar text eol=lf
 
 # Declarar binarios explícitamente para que no sean alterados
 *.exe binary

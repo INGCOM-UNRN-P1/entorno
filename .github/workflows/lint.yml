@@ -5,21 +5,53 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   bash:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Sintaxis de scripts Bash
+      - name: Inventario de scripts de shell (*.sh y ejecutables sin extensión con shebang)
         run: |
-          find . -type f -name "*.sh" -print0 | xargs -0 -n1 bash -n
-          bash -n bin/ayuda linux/bin/ayuda
+          : > "$RUNNER_TEMP/scripts.txt"
+          git ls-files -z | while IFS= read -r -d '' f; do
+            [ -f "$f" ] && [ ! -L "$f" ] || continue
+            case "$f" in
+              *.sh) echo "$f" >> "$RUNNER_TEMP/scripts.txt"; continue ;;
+            esac
+            case "$(head -n 1 "$f")" in
+              '#!'*bash*|'#!'*/sh|'#!'*' sh') echo "$f" >> "$RUNNER_TEMP/scripts.txt" ;;
+            esac
+          done
+          cat "$RUNNER_TEMP/scripts.txt"
+      - name: Sintaxis de scripts Bash
+        run: xargs -n1 bash -n < "$RUNNER_TEMP/scripts.txt"
+      - name: Permisos de ejecución y fin de línea LF
+        run: |
+          fallas=0
+          while IFS= read -r f; do
+            if head -n 1 "$f" | grep -q '^#!' && [ "$(git ls-files -s -- "$f" | cut -c1-6)" != "100755" ]; then
+              echo "::error file=$f::script con shebang sin permiso de ejecución en git (git update-index --chmod=+x)"
+              fallas=1
+            fi
+            if grep -q $'\r' "$f"; then
+              echo "::error file=$f::fin de línea CRLF en un script de shell"
+              fallas=1
+            fi
+          done < "$RUNNER_TEMP/scripts.txt"
+          exit "$fallas"
       - name: Quoting del lanzador ejecutable (C con stubs de Windows)
         run: |
           gcc -O2 -Wall -Wextra -I tests/stub -o /tmp/test_launcher_quoting tests/test_launcher_quoting.c
           /tmp/test_launcher_quoting
       - name: Shellcheck (nivel error)
-        run: shellcheck --severity=error $(find . -type f -name "*.sh") bin/ayuda linux/bin/ayuda
+        run: xargs shellcheck --severity=error < "$RUNNER_TEMP/scripts.txt"
 
   linux-env:
     runs-on: ubuntu-24.04
