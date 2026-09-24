@@ -44,18 +44,21 @@ function Invoke-InstallOffline {
 }
 
 $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("offline-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path (Join-Path $tmp "paquete") | Out-Null
+# Misma estructura que genera package-env.ps1: todo bajo la carpeta raiz "entorno"
+New-Item -ItemType Directory -Path (Join-Path $tmp "paquete/entorno") | Out-Null
 try {
-    Set-Content -Path (Join-Path $tmp "paquete/launch.bat") -Value "@echo off"
+    Set-Content -Path (Join-Path $tmp "paquete/entorno/launch.bat") -Value "@echo off"
     $zip = Join-Path $tmp "portable-env-offline.zip"
-    Compress-Archive -Path (Join-Path $tmp "paquete/*") -DestinationPath $zip
+    Compress-Archive -Path (Join-Path $tmp "paquete/entorno") -DestinationPath $zip
 
     # 1. Destino nuevo, sin -Yes y sin consola: debe terminar sin esperar una tecla
     $destino = Join-Path $tmp "destino"
     $rc = Invoke-InstallOffline @("-RutaZip", $zip, "-Destino", $destino)
     Assert-True "sin consola termina sin quedar bloqueado en la pausa final" ($null -ne $rc)
     Assert-True "sin consola la instalacion termina con exito" ($rc -eq 0)
-    Assert-True "el paquete se extrae en el destino" (Test-Path (Join-Path $destino "launch.bat"))
+    Assert-True "el paquete se extrae bajo destino/entorno" (Test-Path (Join-Path $destino "entorno/launch.bat"))
+    Assert-True "informa la raiz real del entorno (destino/entorno)" `
+        ($script:UltimaSalida -match [regex]::Escape((Join-Path $destino "entorno")))
 
     # 2. Destino existente, sin -Yes y sin consola: falla rapido en vez de preguntar
     $rc = Invoke-InstallOffline @("-RutaZip", $zip, "-Destino", $destino)
@@ -64,9 +67,9 @@ try {
     Assert-True "el error sugiere usar -Yes" ($script:UltimaSalida -match "-Yes")
 
     # 3. Destino existente con -Yes (modo del job e2e-windows): extrae encima
-    Remove-Item (Join-Path $destino "launch.bat") -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $destino "entorno/launch.bat") -ErrorAction SilentlyContinue
     $rc = Invoke-InstallOffline @("-RutaZip", $zip, "-Destino", $destino, "-Yes")
-    Assert-True "-Yes extrae encima de un destino existente" (($rc -eq 0) -and (Test-Path (Join-Path $destino "launch.bat")))
+    Assert-True "-Yes extrae encima de un destino existente" (($rc -eq 0) -and (Test-Path (Join-Path $destino "entorno/launch.bat")))
 
     # 4. Paquete inexistente: error inmediato
     $rc = Invoke-InstallOffline @("-RutaZip", (Join-Path $tmp "no-existe.zip"), "-Destino", $destino, "-Yes")

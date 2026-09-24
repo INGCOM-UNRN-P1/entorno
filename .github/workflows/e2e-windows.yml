@@ -43,8 +43,14 @@ jobs:
         run: |
           $destino = Join-Path $env:RUNNER_TEMP "instalacion-offline"
           ./install-offline.ps1 -RutaZip (Join-Path (Get-Location) "portable-env-offline.zip") -Destino $destino -Yes
-          if (-not (Test-Path (Join-Path $destino "launch.bat"))) {
-            throw "El paquete instalado no contiene launch.bat"
+          if ($LASTEXITCODE -ne 0) { throw "install-offline.ps1 termino con codigo $LASTEXITCODE" }
+          # package-env.ps1 empaqueta todo bajo la carpeta raiz "entorno"
+          $raiz = Join-Path $destino "entorno"
+          foreach ($esperado in @("launch.bat", "setup.ps1", "msys64")) {
+            if (-not (Test-Path (Join-Path $raiz $esperado))) {
+              Get-ChildItem $destino -Depth 1 | Format-Table -AutoSize
+              throw "El paquete instalado no contiene entorno\$esperado"
+            }
           }
 
       - name: Logs de diagnóstico ante fallo
