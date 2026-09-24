@@ -10,37 +10,46 @@ on:
   schedule:
     - cron: "0 9 * * 1"
 
+permissions:
+  contents: read
+
 jobs:
   cadena-completa:
     runs-on: windows-latest
-    timeout-minutes: 150
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Instalación desatendida del entorno
+        timeout-minutes: 45
         shell: pwsh
         run: ./setup.ps1 -Yes
 
       - name: Pruebas de aceptación automatizadas (smoke)
+        timeout-minutes: 15
         shell: pwsh
         run: ./smoke.ps1
 
       - name: Empaquetado offline compacto
+        timeout-minutes: 20
         shell: pwsh
         run: ./package-env.ps1 -Compact
 
+      # -Yes: sin consola interactiva la pausa final de install-offline.ps1 esperaba
+      # una tecla indefinidamente y el job agotaba el límite de 2h30.
       - name: Roundtrip de instalación del paquete en otra carpeta
+        timeout-minutes: 15
         shell: pwsh
         run: |
           $destino = Join-Path $env:RUNNER_TEMP "instalacion-offline"
-          ./install-offline.ps1 -RutaZip (Join-Path (Get-Location) "portable-env-offline.zip") -Destino $destino
+          ./install-offline.ps1 -RutaZip (Join-Path (Get-Location) "portable-env-offline.zip") -Destino $destino -Yes
           if (-not (Test-Path (Join-Path $destino "launch.bat"))) {
             throw "El paquete instalado no contiene launch.bat"
           }
 
       - name: Logs de diagnóstico ante fallo
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: logs-diagnostico
           path: |

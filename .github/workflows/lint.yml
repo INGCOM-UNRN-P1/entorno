@@ -16,7 +16,7 @@ jobs:
   bash:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Inventario de scripts de shell (*.sh y ejecutables sin extensión con shebang)
         run: |
           : > "$RUNNER_TEMP/scripts.txt"
@@ -56,14 +56,14 @@ jobs:
   linux-env:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Pruebas de la variante Linux
         run: tests/test_linux_env.sh
 
   powershell:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Análisis estático con PSScriptAnalyzer
         shell: pwsh
         run: |
@@ -80,3 +80,6 @@ jobs:
       - name: Pruebas del módulo común de lanzadores (env.common.psm1)
         shell: pwsh
         run: ./tests/test_env_common.ps1
+      - name: Pruebas de install-offline.ps1 sin consola (regresión del bloqueo de e2e-windows)
+        shell: pwsh
+        run: ./tests/test_install_offline.ps1

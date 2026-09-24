@@ -34,7 +34,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: zsh para probar el modo integrado (Linux)
         if: runner.os == 'Linux'

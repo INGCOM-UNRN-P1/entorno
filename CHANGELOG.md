@@ -11,6 +11,7 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 * CI `Unix (Linux y macOS)`: matriz ubuntu-24.04 / macOS arm64 / macOS Intel con `/bin/bash` 3.2, suite `tests/test_instalador_unix.sh` (incluye descarga real de uv/gh) y `tests/test_personal_unix.sh`, que antes no corría en CI.
 
 ### Corregido
+* `e2e-windows` nunca terminaba: `install-offline.ps1` esperaba una tecla (`ReadKey`) en su pausa final y el job agotaba el límite de 2h30. Nuevo switch `-Yes` y detección de consola no interactiva (CI, entrada redirigida) que omite preguntas y pausa; límites de tiempo por paso; acciones migradas a Node 24 (`checkout@v7`, `upload-artifact@v7`); prueba de regresión `tests/test_install_offline.ps1` en cada push.
 * `unix/setup-personal.sh`: `UV_INSTALL_DIR` se pasaba a `curl` y no al instalador de uv; la detección de zsh comparaba `$SHELL` contra un patrón literal y nunca coincidía.
 * Lint: la sintaxis y shellcheck ahora cubren también los scripts sin extensión (`bin/*`, `linux/bin/*`, `unix/bin/*`), y se verifican permisos de ejecución y fin de línea LF (`.gitattributes` fuerza LF en esos scripts).
 * Módulo común `env.common.psm1` para los lanzadores (`launch.ps1`, `launch-vscode.ps1`): advertencia de ruta conflictiva, resolución del HOME portable desde `.env` e inyección de la sesión/toolchain en una sola fuente, con suite propia en CI.

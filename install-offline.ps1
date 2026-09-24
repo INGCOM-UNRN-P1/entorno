@@ -1,4 +1,4 @@
-# install-offline.ps1 - Asiste la instalacion del paquete offline (portable-env-offline.zip).
+﻿# install-offline.ps1 - Asiste la instalacion del paquete offline (portable-env-offline.zip).
 # Extrae el ZIP en el destino elegido, valida la estructura y deja el entorno listo para
 # ejecutar launch.bat. No requiere permisos de administrador ni conexion a internet.
 #
@@ -7,11 +7,13 @@
 #   .\install-offline.ps1 -Destino D:\catedra\entorno  # destino personalizado
 #   .\install-offline.ps1 -RutaZip C:\paquetes\portable-env-offline.zip
 #   .\install-offline.ps1 -Ejecutar                    # abre el terminal al terminar
+#   .\install-offline.ps1 -Yes                         # desatendido: sin preguntas ni pausa final (CI)
 
 param(
     [string]$Destino = "",
     [string]$RutaZip = "",
-    [switch]$Ejecutar
+    [switch]$Ejecutar,
+    [switch]$Yes
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,10 +30,18 @@ if (-not (Test-Path $RutaZip)) {
     exit 1
 }
 
+# Sin consola interactiva (CI, tareas programadas, entrada redirigida) nunca se espera
+# una respuesta: Read-Host / ReadKey quedarian bloqueados indefinidamente.
+$interactivo = (-not $Yes) -and (-not $env:CI) -and (-not [Console]::IsInputRedirected) -and [Environment]::UserInteractive
+
 if (Test-Path $Destino) {
     Write-Host "El destino '$Destino' ya existe." -ForegroundColor Yellow
-    $choice = Read-Host "Continuar extrayendo encima? (s/n)"
-    if ($choice -notmatch "^[sS]$") {
+    if ($Yes) {
+        Write-Host "(-Yes) Extrayendo encima del contenido existente." -ForegroundColor DarkGray
+    } elseif (-not $interactivo) {
+        Write-Error "El destino ya existe y no hay consola para confirmar. Usa -Yes para extraer encima."
+        exit 1
+    } elseif ((Read-Host "Continuar extrayendo encima? (s/n)") -notmatch "^[sS]$") {
         Write-Host "Operacion cancelada." -ForegroundColor Green
         exit 0
     }
@@ -45,8 +55,8 @@ Write-Host "Destino : $Destino"
 Write-Host ""
 
 # Extraccion acelerada: tar.exe (bsdtar incluido desde Windows 10 1803) con fallback nativo
-$tarExe = Join-Path $env:SystemRoot "System32\tar.exe"
-if (Test-Path $tarExe) {
+$tarExe = if ($env:SystemRoot) { Join-Path $env:SystemRoot "System32\tar.exe" } else { "" }
+if ($tarExe -and (Test-Path $tarExe)) {
     Write-Host "[1/3] Extrayendo con tar.exe (rapido)..." -ForegroundColor Cyan
     & $tarExe -xf "$RutaZip" -C "$Destino"
     if ($LASTEXITCODE -ne 0) {
@@ -88,6 +98,8 @@ if ($Ejecutar) {
     Write-Host "`nIniciando el terminal..." -ForegroundColor Magenta
     Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "`"$($launchBat.FullName)`"" -WorkingDirectory $rootExtraido
 } else {
-    Write-Host "`nPresiona cualquier tecla para salir..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    if ($interactivo) {
+        Write-Host "`nPresiona cualquier tecla para salir..."
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
 }
