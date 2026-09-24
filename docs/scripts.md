@@ -16,7 +16,7 @@ Este documento provee una referencia técnica exhaustiva, script por script, det
   * `-Latest`: Ignora los pines de `versions.json` e instala las últimas versiones disponibles de cada componente. Por defecto el manifiesto manda (reproducibilidad por cuatrimestre); los fallbacks también viven en el manifiesto.
 * **Canal de scripts:** En instalaciones standalone, la variable `CHANNEL=<rama-o-tag>` dentro de `.env` define desde qué canal se descargan los scripts; en repos Git rige la rama local (`git pull`).
 * **Funcionamiento Interno:**
-  1. Valida la codificación UTF-8 con BOM y si la ruta de instalación posee espacios o caracteres no ASCII.
+  1. Valida si la ruta de instalación posee espacios o caracteres no ASCII.
   2. Descarga el snapshot ZIP más reciente del repositorio de GitHub (`INGCOM-UNRN-P1/entorno`) y extrae los scripts en la raíz y carpetas de utilidad.
   3. Comprueba, descarga e inicializa el subsistema MSYS2 (`msys64/`).
   4. Ejecuta `pacman` para instalar de forma desatendida las herramientas de C (gcc, make, cmake, ninja, cppcheck, gdb, clang, doxygen) y Python 3.

@@ -46,6 +46,20 @@ jobs:
             fi
           done < "$RUNNER_TEMP/scripts.txt"
           exit "$fallas"
+      - name: Scripts PowerShell en ASCII básico (regla 6 de AGENTS.md)
+        run: |
+          fallas=0
+          while IFS= read -r -d '' f; do
+            if [ "$(head -c 3 "$f" | od -An -tx1 | tr -d ' ')" = "efbbbf" ]; then
+              echo "::error file=$f::tiene BOM; los scripts PowerShell deben ser ASCII puro"
+              fallas=1
+            fi
+            if LC_ALL=C grep -nP '[^\x09\x0A\x0D\x20-\x7E]' "$f" |
+                 sed "s|^\([0-9]*\):.*|::error file=$f,line=\1::caracter no ASCII (acento, ñ, comillas tipograficas...)|" | grep .; then
+              fallas=1
+            fi
+          done < <(git ls-files -z '*.ps1' '*.psm1' '*.psd1')
+          exit "$fallas"
       - name: Quoting del lanzador ejecutable (C con stubs de Windows)
         run: |
           gcc -O2 -Wall -Wextra -I tests/stub -o /tmp/test_launcher_quoting tests/test_launcher_quoting.c

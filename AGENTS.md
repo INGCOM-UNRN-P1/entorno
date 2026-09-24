@@ -20,5 +20,9 @@
 5. **Validación de Rutas:** Advertir ante rutas con espacios, caracteres no ASCII o carpetas
    sincronizadas (OneDrive/Dropbox).
 
-6. **Codificación y BOM:** Los `.ps1` se guardan OBLIGATORIAMENTE en UTF-8 **con BOM**
-   (PowerShell 5.1 corrompe acentos sin BOM). Los scripts Bash/Lua/C van en UTF-8 sin BOM.
+6. **Codificación:** Los scripts PowerShell (`.ps1`, `.psm1`, `.psd1`) son **ASCII básico
+   obligatorio**: sin acentos, sin `ñ`, sin `¿`/`¡`, sin comillas tipográficas, sin emojis ni
+   BOM (solo bytes 0x20-0x7E, tabulación y fin de línea CRLF). Así PowerShell 5.1 los lee igual
+   sin importar la página de códigos del sistema. Escribir `Instalacion`, `configuracion`,
+   `anio`; si un mensaje necesita un carácter no ASCII, generarlo en tiempo de ejecución
+   (`[char]0x00E9`). El CI (lint) lo verifica. Los scripts Bash/Lua/C van en UTF-8 sin BOM.

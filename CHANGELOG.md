@@ -5,6 +5,9 @@ versionado SemVer. La versión del entorno vive en el archivo `VERSION`.
 
 ## [Sin publicar]
 
+### Cambiado
+* Regla de codificación (AGENTS.md, regla 6): los scripts PowerShell (`.ps1`, `.psm1`, `.psd1`) pasan a ser ASCII básico sin BOM, en lugar de UTF-8 con BOM. Se quitó el BOM de `setup.ps1`, `install-offline.ps1` y `tests/test_install_offline.ps1`; `install.ps1` y la autoactualización de `setup.ps1` ya no agregan BOM al escribir scripts; nuevo paso de lint que rechaza BOM o caracteres no ASCII.
+
 ### Agregado
 * Instalador `install.sh` para macOS y Linux vía `curl | bash`: instala en `~/p1/entorno` con espacio de trabajo `~/p1/dev` y pregunta (por la terminal, no por stdin) entre modo **separado** (HOME aislado con `~/p1/entrar`, sin tocar la configuración del usuario) o **integrado** (bloque delimitado en `~/.bashrc` / `~/.zshrc`). Descarga por git o tarball, actualización idempotente conservando `local/` y proyectos, `uv` y `gh` locales en `~/p1/entorno/local/bin`, advertencias de rutas con espacios/no ASCII/carpetas sincronizadas.
 * `desinstalar.sh`: quita la integración, `~/p1/entorno` y el atajo; conserva `~/p1/dev` salvo `--borrar-dev`.

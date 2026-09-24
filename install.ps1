@@ -22,9 +22,9 @@ try {
     # Remover el BOM si viene en el texto remoto
     $content = $content.TrimStart([char]0xFEFF)
     
-    # Escribir setup.ps1 local con UTF-8 con BOM
-    $utf8WithBom = New-Object System.Text.UTF8Encoding($true)
-    [System.IO.File]::WriteAllText($destPath, $content, $utf8WithBom)
+    # Escribir setup.ps1 local sin BOM (los scripts PS del entorno son ASCII puro)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($destPath, $content, $utf8NoBom)
     
     Write-Host "`n======================================================================" -ForegroundColor Green
     Write-Host " DESCARGA DE SETUP COMPLETADA. INICIANDO INSTALACION..." -ForegroundColor Green

@@ -1,4 +1,4 @@
-﻿# test_install_offline.ps1 - Pruebas de install-offline.ps1 en modo no interactivo.
+# test_install_offline.ps1 - Pruebas de install-offline.ps1 en modo no interactivo.
 # Regresion: sin consola, la pausa final (ReadKey) bloqueaba el job e2e-windows
 # hasta agotar el limite de 2h30. Cada ejecucion corre en un proceso hijo con
 # tiempo limite, asi un bloqueo se detecta como falla en segundos.

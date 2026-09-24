@@ -1,4 +1,4 @@
-﻿# install-offline.ps1 - Asiste la instalacion del paquete offline (portable-env-offline.zip).
+# install-offline.ps1 - Asiste la instalacion del paquete offline (portable-env-offline.zip).
 # Extrae el ZIP en el destino elegido, valida la estructura y deja el entorno listo para
 # ejecutar launch.bat. No requiere permisos de administrador ni conexion a internet.
 #

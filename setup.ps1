@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$HomeDirName = "home",
     [switch]$ImportHostConfig,
     [switch]$SkipUpdate,
@@ -245,9 +245,8 @@ function Select-PacmanMirrorByLatency {
     }
 }
 
-# Configurar codificaciones UTF-8 globales (con y sin BOM)
+# Codificacion UTF-8 sin BOM para los archivos que genera el instalador
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-$utf8WithBom = New-Object System.Text.UTF8Encoding($true)
 
 # Funcion para extraer el nombre de archivo de una URL o usar un fallback
 function Get-FileNameFromUrl {
@@ -499,10 +498,10 @@ try {
                         }
                         # Copiar archivo
                         Copy-Item -Path $srcPath -Destination $destPath -Force
-                        # Guardar con UTF-8 BOM si es un script PS
-                        if ($file -like "*.ps1") {
+                        # Los scripts PS son ASCII puro: quitar el BOM que traigan versiones anteriores
+                        if ($file -like "*.ps1" -or $file -like "*.psm1") {
                             $content = [System.IO.File]::ReadAllText($destPath, [System.Text.Encoding]::UTF8)
-                            [System.IO.File]::WriteAllText($destPath, $content, $utf8WithBom)
+                            [System.IO.File]::WriteAllText($destPath, $content, $utf8NoBom)
                         }
                     }
                 }
