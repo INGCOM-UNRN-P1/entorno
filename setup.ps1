@@ -1507,7 +1507,7 @@ if (-not (Test-Path $ripleyPyzPath)) {
     $needsRipleyDownload = $true
     Write-Host "El motor Ripley no esta descargado todavia." -ForegroundColor Yellow
 } elseif ($isUpdateMode -or $Latest) {
-    # En modo actualizacion se refresca silenciosamente (el zipapp pesa ~200 KB)
+    # En modo actualizacion se refresca silenciosamente (el zipapp pesa ~2 MB: trae typer, rich y demas dependencias)
     $needsRipleyDownload = $true
 } else {
     Write-Host "Motor Ripley ya aprovisionado en bin\ripley.pyz." -ForegroundColor Green
