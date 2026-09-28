@@ -94,7 +94,7 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [`launch.ps1`](launch.ps1): Lanzador de consola WezTerm desde PowerShell (configura la sesión en el entorno de MSYS2 UCRT64).
 *   [`launch-vscode.bat`](launch-vscode.bat): Lanzador silencioso de VS Code desde CMD.
 *   [`launch-vscode.ps1`](launch-vscode.ps1): Lanzador de VS Code desde PowerShell (inyecta la ruta del compilador GCC y las variables locales a la sesión).
-*   [`wezterm.lua`](wezterm.lua): Configuración portable de WezTerm (apariencia, tipografía y arranque de shell Bash UCRT64).
+*   [`wezterm.lua.template`](wezterm.lua.template): Plantilla de la configuración portable de WezTerm (apariencia, tipografía y arranque de shell Bash UCRT64); `launch.ps1` genera `wezterm.lua` a partir de ella.
 *   [`launcher/`](launcher/): Directorio que contiene el código fuente (`launcher.c`) y un `Makefile` para compilar binarios compilados que lanzan la consola o VS Code de forma directa y silenciosa, suprimiendo la ventana negra de PowerShell intermedia.
 *   [`linux/`](linux/): Variante nativa para Linux: activación de sesión (`source linux/activate.sh`), bootstrap de dependencias y scripts `bin/` portados (gestión de librerías, configuración de Git con GitHub CLI y personalización de la terminal).
 *   [plan.md](plan.md): Plan de trabajo y hoja de ruta.
