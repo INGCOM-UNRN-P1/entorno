@@ -30,7 +30,14 @@ Para instalar sin preguntas (o cambiar de modo más adelante), volvé a ejecutar
 curl -fsSL https://raw.githubusercontent.com/INGCOM-UNRN-P1/entorno/main/install.sh | bash -s -- --modo integrado
 ```
 Reejecutar el instalador actualiza el entorno (`git pull`) y conserva `~/p1/dev` y `~/p1/entorno/local`.
-Otras opciones: `--sin-herramientas` (no descarga `uv` ni `gh`), `--rama <nombre>`, `--help`.
+El instalador también instala las herramientas de la cátedra del perfil estudiante (ripley,
+daedalus, gaff, hal, bishop, tetsuo, nostromo…) con [`mother`](https://github.com/INGCOM-UNRN-P1/mother),
+siempre desde los repositorios de git: baja `mother.pyz` a `~/p1/entorno/local/bin` y corre
+`mother instalar --perfil estudiante`. Desde Windows, esta es la forma de tenerlas completas (en WSL).
+Para actualizarlas: `python3 ~/p1/entorno/local/bin/mother.pyz actualizar`.
+
+Otras opciones: `--sin-herramientas` (no descarga `uv`, `gh` ni las herramientas de la cátedra),
+`--sin-perfil` (solo `uv` y `gh`), `--rama <nombre>`, `--help`.
 
 ### Desinstalación
 ```bash

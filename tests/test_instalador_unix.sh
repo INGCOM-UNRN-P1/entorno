@@ -20,7 +20,7 @@ trap 'rm -rf "$SANDBOX"' EXIT
 
 # Si las pruebas se lanzan desde una sesión del entorno, no heredar su estado
 unset P1_SEPARADO P1_ENTORNO P1_DEV P1_MODO P1_RAMA P1_METODO P1_REPO_URL \
-    P1_TARBALL_URL P1_SOURCE_DIR P1_TTY P1_SIN_HERRAMIENTAS P1_GH_VERSION
+    P1_TARBALL_URL P1_SOURCE_DIR P1_TTY P1_SIN_HERRAMIENTAS P1_GH_VERSION P1_SIN_PERFIL P1_MOTHER_URL
 
 PASS=0
 FAIL=0
@@ -331,7 +331,7 @@ if [ "${P1_TEST_RED:-0}" = "1" ]; then
     IFS="$IFS_ORIG"
 
     nuevo_home
-    env PATH="$ESPEJO" HOME="$H" SHELL=/bin/bash P1_SOURCE_DIR="$REPO_ROOT" \
+    env PATH="$ESPEJO" HOME="$H" SHELL=/bin/bash P1_SOURCE_DIR="$REPO_ROOT" P1_SIN_PERFIL=1 \
         "$BASH_BIN" "$REPO_ROOT/install.sh" --modo separado
     assert "red: uv descargado en ~/p1/entorno/local/bin" "$H/p1/entorno/local/bin/uv" --version
     assert "red: gh descargado en ~/p1/entorno/local/bin" "$H/p1/entorno/local/bin/gh" --version
@@ -342,6 +342,32 @@ $H/p1/entorno/local/bin/gh"
     desinstalar --si >/dev/null 2>&1
     assert "red: desinstalar elimina uv y gh locales" test ! -e "$H/p1/entorno/local"
 fi
+
+# --- Perfil estudiante con mother (sin red: uv, gh y mother.pyz falsos) -------------------------
+FALSOS="$SANDBOX/falsos"
+mkdir -p "$FALSOS"
+printf '#!/bin/sh\necho "uv 0.0.0"\n' > "$FALSOS/uv"
+printf '#!/bin/sh\necho "gh 0.0.0"\n' > "$FALSOS/gh"
+chmod +x "$FALSOS/uv" "$FALSOS/gh"
+REGISTRO="$SANDBOX/mother.args"
+printf '#!/usr/bin/env python3\nimport os, sys\nopen(%s, "w").write(" ".join(sys.argv[1:]) + "|" + os.environ.get("UV_TOOL_BIN_DIR", ""))\n' \
+    "'$REGISTRO'" > "$SANDBOX/mother.pyz"
+nuevo_home
+env PATH="$FALSOS:$PATH" HOME="$H" SHELL=/bin/bash P1_SOURCE_DIR="$REPO_ROOT" \
+    P1_MOTHER_URL="file://$SANDBOX/mother.pyz" "$BASH_BIN" "$REPO_ROOT/install.sh" --modo separado >/dev/null 2>&1
+assert "perfil: descarga mother.pyz a local/bin" test -x "$H/p1/entorno/local/bin/mother.pyz"
+assert "perfil: corre mother instalar --perfil estudiante con los ejecutables en local/bin" \
+    test "$(cat "$REGISTRO" 2>/dev/null)" = "instalar --perfil estudiante|$H/p1/entorno/local/bin"
+rm -f "$REGISTRO"
+nuevo_home
+env PATH="$FALSOS:$PATH" HOME="$H" SHELL=/bin/bash P1_SOURCE_DIR="$REPO_ROOT" \
+    P1_MOTHER_URL="file://$SANDBOX/mother.pyz" "$BASH_BIN" "$REPO_ROOT/install.sh" --modo separado --sin-perfil >/dev/null 2>&1
+assert "perfil: --sin-perfil no instala las herramientas" test ! -e "$REGISTRO"
+nuevo_home
+SALIDA="$(env PATH="$FALSOS:$PATH" HOME="$H" SHELL=/bin/bash P1_SOURCE_DIR="$REPO_ROOT" \
+    P1_MOTHER_URL="file://$SANDBOX/no-existe.pyz" "$BASH_BIN" "$REPO_ROOT/install.sh" --modo separado 2>&1)"; RC=$?
+assert "perfil: sin mother.pyz la instalación termina igual" test "$RC" -eq 0
+assert "perfil: sin mother.pyz explica cómo reintentar" grep -q "mother.pyz instalar --perfil estudiante" <<<"$SALIDA"
 
 echo ""
 if [ "$FAIL" -eq 0 ]; then

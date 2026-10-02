@@ -12,7 +12,8 @@
 #      Nunca instala paquetes del sistema ni usa sudo: solo sugiere los comandos.
 #   2. Descarga el entorno en ~/p1/entorno (git clone, o tarball si no hay git).
 #      Si ya estaba instalado, lo actualiza conservando ~/p1/entorno/local.
-#   3. Instala uv y gh en ~/p1/entorno/local/bin si no están en el sistema.
+#   3. Instala uv y gh en ~/p1/entorno/local/bin si no están en el sistema, y con
+#      mother las herramientas de la cátedra del perfil estudiante (desde git).
 #   4. Crea el espacio de trabajo ~/p1/dev.
 #   5. Pregunta cómo integrarlo:
 #        separado   -> no toca tu configuración; entrás con ~/p1/entrar (HOME aislado).
@@ -20,12 +21,14 @@
 #
 # Opciones:
 #   --modo separado|integrado   Evita la pregunta interactiva.
-#   --sin-herramientas          No descarga uv ni gh.
+#   --sin-herramientas          No descarga uv, gh ni las herramientas de la cátedra.
+#   --sin-perfil                No instala las herramientas de la cátedra (perfil estudiante).
 #   --rama <nombre>             Rama del repositorio a instalar (por defecto: main).
 #   -h, --help                  Muestra esta ayuda.
 #
 # Variables de entorno equivalentes / avanzadas:
-#   P1_MODO, P1_RAMA, P1_SIN_HERRAMIENTAS=1,
+#   P1_MODO, P1_RAMA, P1_SIN_HERRAMIENTAS=1, P1_SIN_PERFIL=1,
+#   P1_MOTHER_URL   URL de mother.pyz (por defecto, el último release de mother).
 #   P1_REPO_URL     URL de git del repositorio (por defecto, GitHub de la cátedra).
 #   P1_TARBALL_URL  URL del .tar.gz usado cuando no hay git.
 #   P1_METODO       git | tarball | local (fuerza el método de descarga).
@@ -46,6 +49,7 @@ main() {
     local MODO="${P1_MODO:-}"
     local RAMA="${P1_RAMA:-main}"
     local SIN_HERRAMIENTAS="${P1_SIN_HERRAMIENTAS:-0}"
+    local SIN_PERFIL="${P1_SIN_PERFIL:-0}"
     local TTY_DEV="${P1_TTY:-/dev/tty}"
 
     info()  { printf "${CYAN}%b${RESET}\n" "$*"; }
@@ -60,6 +64,7 @@ main() {
             --separado)         MODO="separado" ;;
             --integrado)        MODO="integrado" ;;
             --sin-herramientas) SIN_HERRAMIENTAS=1 ;;
+            --sin-perfil)       SIN_PERFIL=1 ;;
             --rama)             RAMA="${2:-main}"; shift ;;
             -h|--help)
                 if [ -f "${BASH_SOURCE[0]:-}" ]; then
@@ -283,7 +288,7 @@ main() {
     # 3. Herramientas de usuario: uv y gh en ~/p1/entorno/local/bin
     # ------------------------------------------------------------------
     echo ""
-    info "[3/5] Herramientas de usuario (uv, gh)..."
+    info "[3/5] Herramientas de usuario (uv, gh y las de la cátedra)..."
     local LOCAL_BIN="$ENTORNO/local/bin"
     mkdir -p "$LOCAL_BIN"
 
@@ -306,6 +311,15 @@ main() {
             ok "gh instalado en $LOCAL_BIN."
         else
             aviso "No se pudo instalar gh. Ver https://github.com/cli/cli#installation"
+        fi
+
+        if [ "$SIN_PERFIL" = "1" ]; then
+            aviso "Herramientas de la cátedra omitidas (--sin-perfil)."
+        elif instalar_perfil_estudiante "$LOCAL_BIN"; then
+            ok "Herramientas de la cátedra instaladas (perfil estudiante: ripley, daedalus, gaff, hal…)."
+        else
+            aviso "No se pudieron instalar todas las herramientas de la cátedra. Reintentá con:"
+            aviso "  python3 $LOCAL_BIN/mother.pyz instalar --perfil estudiante"
         fi
     fi
 
@@ -412,6 +426,24 @@ quitar_bloque() { # quitar_bloque <archivo> <inicio> <fin>
 }
 
 # Descarga el binario oficial de GitHub CLI y lo copia en <bin_dir>
+instalar_perfil_estudiante() { # instalar_perfil_estudiante <bin_dir>
+    # mother instala cada herramienta del perfil con `uv tool install git+…` (nunca por nombre en
+    # PyPI). Los ejecutables quedan en <bin_dir>, que el entorno ya pone en el PATH.
+    local dir="$1" url pyz tmp
+    url="${P1_MOTHER_URL:-https://github.com/INGCOM-UNRN-P1/mother/releases/latest/download/mother.pyz}"
+    pyz="$dir/mother.pyz"
+    command -v python3 >/dev/null 2>&1 || return 1
+    PATH="$dir:$PATH" command -v uv >/dev/null 2>&1 || return 1
+    tmp="$(mktemp)"
+    if ! curl -fsSL --max-time 120 -o "$tmp" "$url" || ! head -c 24 "$tmp" | grep -q '^#!/usr/bin/env python3'; then
+        rm -f "$tmp"
+        return 1
+    fi
+    mv -f "$tmp" "$pyz"
+    chmod +x "$pyz"
+    PATH="$dir:$PATH" UV_TOOL_BIN_DIR="$dir" python3 "$pyz" instalar --perfil estudiante
+}
+
 instalar_gh() { # instalar_gh <bin_dir> <os>
     local dir="$1" os="$2" version url_final gh_os gh_arch ext tmp bin
     version="${P1_GH_VERSION:-}"
