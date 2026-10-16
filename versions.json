@@ -13,6 +13,8 @@
   "gh_fallback": "https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_windows_amd64.zip",
   "wezterm": null,
   "wezterm_fallback": "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip",
+  "jonesy": null,
+  "jonesy_fallback": "https://github.com/INGCOM-UNRN-P1/jonesy/releases/download/v0.1.0/jonesy-0.1.0-windows-x86_64.zip",
   "extensiones": {
     "ms-vscode.cpptools": null,
     "ms-vscode.cpptools-extension-pack": null,
