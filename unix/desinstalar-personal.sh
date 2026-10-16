@@ -3,7 +3,7 @@
 # Compatible con macOS y Linux.
 #
 # Uso: desinstalar-personal.sh [--all]
-#   --all  Elimina también 'gh' y 'uv' de ~/.local/bin si fueron instalados allí.
+#   --all  Elimina también 'gh', 'uv' y 'jonesy' de ~/.local/bin si fueron instalados allí.
 
 set -eu
 
@@ -18,7 +18,7 @@ for arg in "$@"; do
         --all|--purge) REMOVE_ALL=1 ;;
         -h|--help)
             echo "Uso: desinstalar-personal.sh [--all]"
-            echo "  --all  Elimina también 'gh' y 'uv' de ${TARGET_BIN}"
+            echo "  --all  Elimina también 'gh', 'uv' y 'jonesy' de ${TARGET_BIN}"
             exit 0
             ;;
     esac
@@ -41,7 +41,7 @@ for s in "${SCRIPTS_GESTION[@]}"; do
     fi
 done
 
-# 2. Opcional: remover gh y uv si se especificó --all
+# 2. Opcional: remover gh, uv y jonesy si se especificó --all
 if [ "$REMOVE_ALL" -eq 1 ]; then
     echo ""
     echo -e "${CYAN}-> Eliminando herramientas locales instaladas en el perfil (--all)...${RESET}"
@@ -52,6 +52,10 @@ if [ "$REMOVE_ALL" -eq 1 ]; then
     if [ -f "${TARGET_BIN}/uv" ]; then
         rm -f "${TARGET_BIN}/uv" "${TARGET_BIN}/uvx" 2>/dev/null || true
         echo "  - Eliminado: ${TARGET_BIN}/uv"
+    fi
+    if [ -f "${TARGET_BIN}/jonesy" ]; then
+        rm -f "${TARGET_BIN}/jonesy"
+        echo "  - Eliminado: ${TARGET_BIN}/jonesy"
     fi
 fi
 

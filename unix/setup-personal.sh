@@ -6,9 +6,10 @@
 #   1. Comprueba paquetes de herramientas básicas del sistema (C, make, git, python3).
 #   2. Instala 'uv' en el perfil del estudiante (~/.local/bin).
 #   3. Instala 'gh' (GitHub CLI) de forma local en el perfil (~/.local/bin) sin requerir sudo.
-#   4. Instala los scripts de gestión de cátedra (ayuda, clonar, nuevo-proyecto, verificar, entregar, doctor).
-#   5. Configura el PATH de forma idempotente en ~/.bashrc, ~/.zshrc y ~/.bash_profile.
-#   6. Ejecuta una comprobación de salud del entorno.
+#   4. Instala 'jonesy' (IDE en terminal) de forma local en el perfil (~/.local/bin) sin requerir sudo.
+#   5. Instala los scripts de gestión de cátedra (ayuda, clonar, nuevo-proyecto, verificar, entregar, doctor).
+#   6. Configura el PATH de forma idempotente en ~/.bashrc, ~/.zshrc y ~/.bash_profile.
+#   7. Ejecuta una comprobación de salud del entorno.
 
 set -eu
 
@@ -165,10 +166,58 @@ if [ "$GH_INSTALLED" -eq 0 ]; then
 fi
 
 # ----------------------------------------------------------------------
-# 4. Instalación de scripts de gestión mínimos
+# 4. Instalación de jonesy (IDE en terminal) en el perfil
 # ----------------------------------------------------------------------
 echo ""
-echo -e "${CYAN}[4/5] Instalando scripts de gestión en ${TARGET_BIN}...${RESET}"
+echo -e "${CYAN}[4/6] Comprobando jonesy (IDE en terminal) en el perfil...${RESET}"
+
+JONESY_INSTALLED=0
+if [ -x "${TARGET_BIN}/jonesy" ]; then
+    JONESY_INSTALLED=1
+    echo -e "${GREEN}[OK] 'jonesy' ya está instalado en el perfil: ${TARGET_BIN}/jonesy${RESET}"
+elif command -v jonesy >/dev/null 2>&1; then
+    JONESY_INSTALLED=1
+    echo -e "${GREEN}[OK] 'jonesy' disponible en el sistema: $(command -v jonesy)${RESET}"
+fi
+
+if [ "$JONESY_INSTALLED" -eq 0 ]; then
+    echo -e "${CYAN}-> Descargando e instalando 'jonesy' en forma local en ${TARGET_BIN}...${RESET}"
+    JONESY_VERSION="${P1_JONESY_VERSION:-}"
+    if [ -z "$JONESY_VERSION" ]; then
+        URL_FINAL="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/INGCOM-UNRN-P1/jonesy/releases/latest 2>/dev/null || true)"
+        JONESY_VERSION="${URL_FINAL##*/v}"
+        case "$JONESY_VERSION" in [0-9]*.[0-9]*) : ;; *) JONESY_VERSION="0.1.0" ;; esac
+    fi
+
+    JONESY_TARGET="linux-x86_64"
+    [ "$OS_TYPE" = "Darwin" ] && JONESY_TARGET="macos-universal"
+
+    JONESY_URL="${P1_JONESY_URL:-https://github.com/INGCOM-UNRN-P1/jonesy/releases/download/v${JONESY_VERSION}/jonesy-${JONESY_VERSION}-${JONESY_TARGET}.tar.gz}"
+    TMP_JONESY="$(mktemp -d)"
+
+    echo "  Descargando desde: $JONESY_URL"
+    if curl -sSL -f -o "$TMP_JONESY/jonesy.tar.gz" "$JONESY_URL"; then
+        if tar -xzf "$TMP_JONESY/jonesy.tar.gz" -C "$TMP_JONESY"; then
+            EXTRACTED_JONESY="$(find "$TMP_JONESY" -type f -name jonesy -perm -111 2>/dev/null | head -n1 || true)"
+            [ -z "$EXTRACTED_JONESY" ] && EXTRACTED_JONESY="$(find "$TMP_JONESY" -type f -name jonesy 2>/dev/null | head -n1 || true)"
+            if [ -n "$EXTRACTED_JONESY" ] && [ -f "$EXTRACTED_JONESY" ]; then
+                cp "$EXTRACTED_JONESY" "${TARGET_BIN}/jonesy"
+                chmod +x "${TARGET_BIN}/jonesy"
+                echo -e "${GREEN}[OK] 'jonesy' instalado exitosamente en ${TARGET_BIN}/jonesy${RESET}"
+            fi
+        fi
+    else
+        echo -e "${YELLOW}[AVISO] No se pudo descargar el binario precompilado de jonesy.${RESET}"
+        echo "Podés instalarlo o compilarlo desde https://github.com/INGCOM-UNRN-P1/jonesy"
+    fi
+    rm -rf "$TMP_JONESY"
+fi
+
+# ----------------------------------------------------------------------
+# 5. Instalación de scripts de gestión mínimos
+# ----------------------------------------------------------------------
+echo ""
+echo -e "${CYAN}[5/6] Instalando scripts de gestión en ${TARGET_BIN}...${RESET}"
 
 SRC_BIN_DIR="${SCRIPT_DIR}/bin"
 SCRIPTS_GESTION=(ayuda clonar nuevo-proyecto verificar entregar doctor)
@@ -186,10 +235,10 @@ cp "${SCRIPT_DIR}/desinstalar-personal.sh" "${TARGET_BIN}/desinstalar-personal.s
 [ -f "${TARGET_BIN}/desinstalar-personal.sh" ] && chmod +x "${TARGET_BIN}/desinstalar-personal.sh"
 
 # ----------------------------------------------------------------------
-# 5. Configuración del PATH en el perfil del usuario
+# 6. Configuración del PATH en el perfil del usuario
 # ----------------------------------------------------------------------
 echo ""
-echo -e "${CYAN}[5/5] Configurando variables de entorno en el perfil del estudiante...${RESET}"
+echo -e "${CYAN}[6/6] Configurando variables de entorno en el perfil del estudiante...${RESET}"
 
 PATH_LINE="export PATH=\"${TARGET_BIN}:\$PATH\""
 BLOCK_START="# >>> P1-GESTION-PERSONAL >>>"
