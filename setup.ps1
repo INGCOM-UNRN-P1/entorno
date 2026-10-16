@@ -1314,6 +1314,143 @@ if (-not $isUpdateMode -and $isGhComplete -and $isGhInstalled) {
 }
 
 # ==========================================
+# 5.6. Gestion e Instalacion de jonesy (IDE en terminal)
+# ==========================================
+$jonesyExe = Join-Path $portableRoot "bin\jonesy.exe"
+$isJonesyInstalled = Test-Path $jonesyExe
+$isJonesyComplete = Test-Path (Join-Path $portableRoot ".jonesy_complete")
+
+$jonesyDownloadUrl = ""
+$shouldInstallOrUpdateJonesy = $false
+
+if ($isUpdateMode -or -not $isJonesyComplete -or -not $isJonesyInstalled) {
+    Write-Host "Obteniendo URL de descarga de jonesy..." -ForegroundColor Cyan
+    # Pin del manifiesto tiene prioridad; si no hay, se consulta la API
+    $jonesyDownloadUrl = Get-Pinned 'jonesy'
+    $jonesyFallbackUrl = if ($pinF = Get-Pinned 'jonesy_fallback') { $pinF } else { "https://github.com/INGCOM-UNRN-P1/jonesy/releases/download/v0.1.0/jonesy-0.1.0-windows-x86_64.zip" }
+    if ($jonesyDownloadUrl) {
+        Write-Host "jonesy fijado por el manifiesto de versiones." -ForegroundColor DarkGray
+    } else {
+        try {
+            $jonesyReleaseUrl = "https://api.github.com/repos/INGCOM-UNRN-P1/jonesy/releases/latest"
+            $jonesyRelease = Get-GitHubApiCached -Url $jonesyReleaseUrl
+            $jonesyAsset = $jonesyRelease.assets | Where-Object { $_.name -like "*windows-x86_64.zip" }
+            if ($jonesyAsset) {
+                $jonesyDownloadUrl = $jonesyAsset.browser_download_url
+                Write-Host "Ultima version detectada de jonesy: $($jonesyAsset.name)" -ForegroundColor Green
+            }
+        } catch {
+            Write-Warning "Fallo al consultar la API de GitHub para jonesy. Usando fallback fijo."
+        }
+
+        if (-not $jonesyDownloadUrl) {
+            $jonesyDownloadUrl = $jonesyFallbackUrl
+            Write-Host "Fallback URL jonesy: $jonesyDownloadUrl" -ForegroundColor Yellow
+        }
+    }
+}
+
+if (-not $isUpdateMode -and $isJonesyComplete -and $isJonesyInstalled) {
+    Write-Host "jonesy ya esta instalado y configurado de una ejecucion previa." -ForegroundColor Green
+} else {
+    if ($isUpdateMode) {
+        $installedJonesyVersionFile = Join-Path $portableRoot "bin\.jonesy_version"
+        $installedJonesyUrl = ""
+        if (Test-Path $installedJonesyVersionFile) {
+            $installedJonesyUrl = (Get-Content $installedJonesyVersionFile -Raw).Trim()
+        }
+        if ($jonesyDownloadUrl -ne $installedJonesyUrl) {
+            $isFallback = ($jonesyDownloadUrl -eq $jonesyFallbackUrl)
+            if ($isFallback -and $installedJonesyUrl) {
+                Write-Host "Omitiendo comprobacion de actualizacion de jonesy (la API de GitHub no esta disponible)." -ForegroundColor Green
+            } else {
+                Write-Host "Hay una nueva version de jonesy disponible para actualizar (o no pudo verificarse la version local)." -ForegroundColor Yellow
+                if ($Yes -or ((Read-Host "Deseas descargar e instalar la actualizacion de jonesy? (s/n)") -match "^[sS]$")) {
+                    $shouldInstallOrUpdateJonesy = $true
+                    if ($Yes) { Write-Host "(--Yes) Actualizando jonesy automaticamente..." -ForegroundColor DarkGray }
+                } else {
+                    Write-Host "Omitiendo actualizacion de jonesy." -ForegroundColor DarkGray
+                }
+            }
+        } else {
+            Write-Host "jonesy ya se encuentra en la version mas reciente ($jonesyDownloadUrl)." -ForegroundColor Green
+        }
+    } else {
+        $shouldInstallOrUpdateJonesy = $true
+    }
+
+    if ($shouldInstallOrUpdateJonesy) {
+        if (-not $isUpdateMode -and $isJonesyInstalled) {
+            Write-Host "Se detecto una instalacion previa incompleta de jonesy. Se continuara con la instalacion existente..." -ForegroundColor Yellow
+        } else {
+            $jonesyZipName = Get-FileNameFromUrl -Url $jonesyDownloadUrl -DefaultName "jonesy_archive.zip"
+            $jonesyZipPath = Join-Path $descargasDir $jonesyZipName
+
+            $isJonesyZipValid = $false
+            if (Test-Path $jonesyZipPath) {
+                Write-Host "Se detecto un archivo ZIP de jonesy descargado previamente ($jonesyZipName). Verificando..." -ForegroundColor Yellow
+                try {
+                    $fileSize = (Get-Item $jonesyZipPath).Length
+                    if ($fileSize -gt 1MB) {
+                        $sidecar = "$jonesyZipPath.sha256"
+                        if (Test-Path $sidecar) {
+                            $expectedHash = (Get-Content $sidecar -Raw).Trim()
+                            $actualHash = (Get-FileHash -Path $jonesyZipPath -Algorithm SHA256).Hash
+                            if ($actualHash -ne $expectedHash) {
+                                Write-Host "El ZIP previo de jonesy esta corrupto (SHA256 no coincide). Se volvera a descargar." -ForegroundColor Yellow
+                            } else {
+                                $isJonesyZipValid = $true
+                                Write-Host "El ZIP previo de jonesy es valido (SHA256 verificado)." -ForegroundColor Green
+                            }
+                        } else {
+                            $isJonesyZipValid = $true
+                            Write-Host "El archivo ZIP previo de jonesy es valido (sin hash previo registrado)." -ForegroundColor Green
+                        }
+                    } else {
+                        Write-Host "El archivo ZIP previo de jonesy esta incompleto. Se volvera a descargar." -ForegroundColor Yellow
+                    }
+                } catch {
+                    Write-Host "No se pudo verificar el archivo ZIP previo de jonesy. Se volvera a descargar." -ForegroundColor Yellow
+                }
+            }
+
+            if (-not $isJonesyZipValid) {
+                Write-Host "Descargando jonesy desde $jonesyDownloadUrl..." -ForegroundColor Cyan
+                Invoke-DownloadWithRetry -Url $jonesyDownloadUrl -OutFile $jonesyZipPath
+                (Get-FileHash -Path $jonesyZipPath -Algorithm SHA256).Hash | Set-Content -Path "$jonesyZipPath.sha256"
+            }
+
+            $jonesyTempDir = Join-Path $portableRoot "jonesy_temp"
+            if (Test-Path $jonesyTempDir) {
+                Remove-Item -Path $jonesyTempDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            New-Item -ItemType Directory -Path $jonesyTempDir | Out-Null
+
+            Write-Host "Extrayendo jonesy..." -ForegroundColor Cyan
+            Expand-Archive -Path $jonesyZipPath -DestinationPath $jonesyTempDir -Force
+
+            $extractedJonesyExe = Get-ChildItem -Path $jonesyTempDir -Filter "jonesy.exe" -Recurse | Select-Object -First 1
+            if ($extractedJonesyExe) {
+                $binDir = Join-Path $portableRoot "bin"
+                if (-not (Test-Path $binDir)) {
+                    New-Item -ItemType Directory -Path $binDir | Out-Null
+                }
+                Move-Item -Path $extractedJonesyExe.FullName -Destination $jonesyExe -Force
+                Write-Host "jonesy copiado con exito a $jonesyExe." -ForegroundColor Green
+            } else {
+                Write-Error "No se pudo encontrar jonesy.exe en el paquete extraido."
+            }
+
+            Remove-Item -Path $jonesyTempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        Set-Content -Path (Join-Path $portableRoot "bin\.jonesy_version") -Value $jonesyDownloadUrl
+        Set-Content -Path (Join-Path $portableRoot ".jonesy_complete") -Value "Complete"
+        Write-Host "jonesy instalado con exito." -ForegroundColor Green
+    }
+}
+
+# ==========================================
 # 6. Gestion e Instalacion de WezTerm Portable
 # ==========================================
 $wezDir = Join-Path $portableRoot "wezterm"
@@ -1636,7 +1773,8 @@ if ($ImportHostConfig) {
         @{ Name = "MSYS2 (GCC, make, cmake, python)"; Ok = (Test-Path (Join-Path $msysDir "usr\bin\bash.exe")) },
         @{ Name = "VS Code Portable";                 Ok = (Test-Path (Join-Path $vscodeDir "Code.exe")) },
         @{ Name = "WezTerm";                          Ok = (Test-Path (Join-Path $portableRoot "wezterm\wezterm.exe")) },
-        @{ Name = "GitHub CLI";                       Ok = (Test-Path (Join-Path $portableRoot "bin\gh.exe")) }
+        @{ Name = "GitHub CLI";                       Ok = (Test-Path (Join-Path $portableRoot "bin\gh.exe")) },
+        @{ Name = "Jonesy (IDE Terminal)";            Ok = (Test-Path (Join-Path $portableRoot "bin\jonesy.exe")) }
     )
     foreach ($comp in $summaryComponents) {
         $state = if ($comp.Ok) { "[OK]   " } else { "[FALTA]" }
