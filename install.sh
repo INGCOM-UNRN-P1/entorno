@@ -12,7 +12,7 @@
 #      Nunca instala paquetes del sistema ni usa sudo: solo sugiere los comandos.
 #   2. Descarga el entorno en ~/p1/entorno (git clone, o tarball si no hay git).
 #      Si ya estaba instalado, lo actualiza conservando ~/p1/entorno/local.
-#   3. Instala uv y gh en ~/p1/entorno/local/bin si no están en el sistema, y con
+#   3. Instala uv, gh y jonesy en ~/p1/entorno/local/bin si no están en el sistema, y con
 #      mother las herramientas de la cátedra del perfil estudiante (desde git).
 #   4. Crea el espacio de trabajo ~/p1/dev.
 #   5. Pregunta cómo integrarlo:
@@ -21,13 +21,14 @@
 #
 # Opciones:
 #   --modo separado|integrado   Evita la pregunta interactiva.
-#   --sin-herramientas          No descarga uv, gh ni las herramientas de la cátedra.
+#   --sin-herramientas          No descarga uv, gh, jonesy ni las herramientas de la cátedra.
 #   --sin-perfil                No instala las herramientas de la cátedra (perfil estudiante).
 #   --rama <nombre>             Rama del repositorio a instalar (por defecto: main).
 #   -h, --help                  Muestra esta ayuda.
 #
 # Variables de entorno equivalentes / avanzadas:
 #   P1_MODO, P1_RAMA, P1_SIN_HERRAMIENTAS=1, P1_SIN_PERFIL=1,
+#   P1_JONESY_VERSION, P1_JONESY_URL
 #   P1_MOTHER_URL   URL de mother.pyz (por defecto, el último release de mother).
 #   P1_REPO_URL     URL de git del repositorio (por defecto, GitHub de la cátedra).
 #   P1_TARBALL_URL  URL del .tar.gz usado cuando no hay git.
@@ -285,15 +286,15 @@ main() {
     chmod +x "$ENTORNO/unix/entrar" "$ENTORNO/unix/bin/"* "$ENTORNO/desinstalar.sh" 2>/dev/null || true
 
     # ------------------------------------------------------------------
-    # 3. Herramientas de usuario: uv y gh en ~/p1/entorno/local/bin
+    # 3. Herramientas de usuario: uv, gh y jonesy en ~/p1/entorno/local/bin
     # ------------------------------------------------------------------
     echo ""
-    info "[3/5] Herramientas de usuario (uv, gh y las de la cátedra)..."
+    info "[3/5] Herramientas de usuario (uv, gh, jonesy y las de la cátedra)..."
     local LOCAL_BIN="$ENTORNO/local/bin"
     mkdir -p "$LOCAL_BIN"
 
     if [ "$SIN_HERRAMIENTAS" = "1" ]; then
-        aviso "Descarga de uv y gh omitida (--sin-herramientas)."
+        aviso "Descarga de uv, gh y jonesy omitida (--sin-herramientas)."
     else
         if [ -x "$LOCAL_BIN/uv" ] || command -v uv >/dev/null 2>&1; then
             ok "uv disponible."
@@ -311,6 +312,14 @@ main() {
             ok "gh instalado en $LOCAL_BIN."
         else
             aviso "No se pudo instalar gh. Ver https://github.com/cli/cli#installation"
+        fi
+
+        if [ -x "$LOCAL_BIN/jonesy" ] || command -v jonesy >/dev/null 2>&1; then
+            ok "jonesy disponible."
+        elif instalar_jonesy "$LOCAL_BIN" "$OS"; then
+            ok "jonesy instalado en $LOCAL_BIN."
+        else
+            aviso "No se pudo instalar jonesy. Ver https://github.com/INGCOM-UNRN-P1/jonesy"
         fi
 
         if [ "$SIN_PERFIL" = "1" ]; then
@@ -477,6 +486,38 @@ instalar_gh() { # instalar_gh <bin_dir> <os>
     chmod +x "$dir/gh"
     rm -rf "$tmp"
     "$dir/gh" --version >/dev/null 2>&1
+}
+
+# Descarga el binario precompilado de jonesy (IDE en terminal) y lo copia en <bin_dir>
+instalar_jonesy() { # instalar_jonesy <bin_dir> <os>
+    local dir="$1" os="$2" version url_final target tmp bin url
+    version="${P1_JONESY_VERSION:-}"
+    if [ -z "$version" ]; then
+        url_final="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/INGCOM-UNRN-P1/jonesy/releases/latest 2>/dev/null || true)"
+        version="${url_final##*/v}"
+        case "$version" in [0-9]*.[0-9]*) : ;; *) version="0.1.0" ;; esac
+    fi
+    case "$os" in
+        Darwin) target="macos-universal" ;;
+        *)      target="linux-x86_64" ;;
+    esac
+    url="${P1_JONESY_URL:-https://github.com/INGCOM-UNRN-P1/jonesy/releases/download/v$version/jonesy-${version}-${target}.tar.gz}"
+    tmp="$(mktemp -d)"
+    if ! curl -fsSL -o "$tmp/jonesy.tar.gz" "$url"; then
+        rm -rf "$tmp"; return 1
+    fi
+    if ! tar -xzf "$tmp/jonesy.tar.gz" -C "$tmp"; then
+        rm -rf "$tmp"; return 1
+    fi
+    bin="$(find "$tmp" -type f -name 'jonesy' -perm -111 2>/dev/null | head -n 1)"
+    if [ -z "$bin" ]; then
+        bin="$(find "$tmp" -type f -name 'jonesy' | head -n 1)"
+    fi
+    if [ -z "$bin" ]; then rm -rf "$tmp"; return 1; fi
+    cp "$bin" "$dir/jonesy"
+    chmod +x "$dir/jonesy"
+    rm -rf "$tmp"
+    "$dir/jonesy" --version >/dev/null 2>&1 || true
 }
 
 main "$@"

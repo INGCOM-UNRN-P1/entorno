@@ -20,7 +20,7 @@ trap 'rm -rf "$SANDBOX"' EXIT
 
 # Si las pruebas se lanzan desde una sesión del entorno, no heredar su estado
 unset P1_SEPARADO P1_ENTORNO P1_DEV P1_MODO P1_RAMA P1_METODO P1_REPO_URL \
-    P1_TARBALL_URL P1_SOURCE_DIR P1_TTY P1_SIN_HERRAMIENTAS P1_GH_VERSION P1_SIN_PERFIL P1_MOTHER_URL
+    P1_TARBALL_URL P1_SOURCE_DIR P1_TTY P1_SIN_HERRAMIENTAS P1_GH_VERSION P1_JONESY_VERSION P1_JONESY_URL P1_SIN_PERFIL P1_MOTHER_URL
 
 PASS=0
 FAIL=0
@@ -324,7 +324,7 @@ if [ "${P1_TEST_RED:-0}" = "1" ]; then
         [ -d "$d" ] || continue
         for f in "$d"/*; do
             n="${f##*/}"
-            case "$n" in gh|uv|uvx) continue ;; esac
+            case "$n" in gh|uv|uvx|jonesy) continue ;; esac
             if [ -x "$f" ] && [ ! -e "$ESPEJO/$n" ]; then ln -s "$f" "$ESPEJO/$n"; fi
         done
     done
@@ -335,20 +335,23 @@ if [ "${P1_TEST_RED:-0}" = "1" ]; then
         "$BASH_BIN" "$REPO_ROOT/install.sh" --modo separado
     assert "red: uv descargado en ~/p1/entorno/local/bin" "$H/p1/entorno/local/bin/uv" --version
     assert "red: gh descargado en ~/p1/entorno/local/bin" "$H/p1/entorno/local/bin/gh" --version
-    OUT="$(env PATH="$ESPEJO" HOME="$H" "$H/p1/entrar" bash -c 'command -v uv; command -v gh')"
-    assert "red: entrar resuelve uv y gh locales" \
+    assert "red: jonesy descargado en ~/p1/entorno/local/bin" "$H/p1/entorno/local/bin/jonesy" --version
+    OUT="$(env PATH="$ESPEJO" HOME="$H" "$H/p1/entrar" bash -c 'command -v uv; command -v gh; command -v jonesy')"
+    assert "red: entrar resuelve uv, gh y jonesy locales" \
         test "$OUT" = "$H/p1/entorno/local/bin/uv
-$H/p1/entorno/local/bin/gh"
+$H/p1/entorno/local/bin/gh
+$H/p1/entorno/local/bin/jonesy"
     desinstalar --si >/dev/null 2>&1
-    assert "red: desinstalar elimina uv y gh locales" test ! -e "$H/p1/entorno/local"
+    assert "red: desinstalar elimina herramientas locales" test ! -e "$H/p1/entorno/local"
 fi
 
-# --- Perfil estudiante con mother (sin red: uv, gh y mother.pyz falsos) -------------------------
+# --- Perfil estudiante con mother (sin red: uv, gh, jonesy y mother.pyz falsos) -----------------
 FALSOS="$SANDBOX/falsos"
 mkdir -p "$FALSOS"
 printf '#!/bin/sh\necho "uv 0.0.0"\n' > "$FALSOS/uv"
 printf '#!/bin/sh\necho "gh 0.0.0"\n' > "$FALSOS/gh"
-chmod +x "$FALSOS/uv" "$FALSOS/gh"
+printf '#!/bin/sh\necho "jonesy 0.0.0"\n' > "$FALSOS/jonesy"
+chmod +x "$FALSOS/uv" "$FALSOS/gh" "$FALSOS/jonesy"
 REGISTRO="$SANDBOX/mother.args"
 printf '#!/usr/bin/env python3\nimport os, sys\nopen(%s, "w").write(" ".join(sys.argv[1:]) + "|" + os.environ.get("UV_TOOL_BIN_DIR", ""))\n' \
     "'$REGISTRO'" > "$SANDBOX/mother.pyz"
