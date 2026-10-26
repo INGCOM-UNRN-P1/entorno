@@ -100,6 +100,7 @@ El repositorio está organizado para separar las herramientas ejecutables del ho
 *   [plan.md](plan.md): Plan de trabajo y hoja de ruta.
 *   [AGENTS.md](AGENTS.md): Directrices normativas para agentes de desarrollo (commits semánticos, aislamiento del host, UCRT64). GEMINI.md se mantiene como stub de compatibilidad.
 *   [versions.json](versions.json): Manifiesto de versiones por cuatrimestre (URLs pineadas de MSYS2/VS Code/gh/WezTerm y versiones de extensiones). `null` = última disponible; el flag `-Latest` lo ignora.
+*   **Integridad de lo que se descarga de la cátedra:** `mother.pyz`, `ripley.pyz` y el binario de jonesy se comparan con el `SHA256SUMS` publicado en su mismo release antes de usarlos (`install.sh`, `unix/setup-personal.sh`, `setup.ps1` y `bin/update-env.sh`). Si la suma no coincide o no se puede comprobar, la instalación se cancela con la suma esperada y la descargada. Para un espejo propio, la suma esperada se puede dar con `P1_MOTHER_SHA256` / `P1_JONESY_SHA256` (Unix) o con `ripley_sha256` / `jonesy_sha256` en `versions.json` (Windows).
 *   [packages-baseline.txt](packages-baseline.txt): Fuente única de paquetes pacman del entorno, compartida por setup.ps1 y download-baseline.sh.
 *   VERSION: Versión actual del entorno, visible en `ayuda`, el diagnóstico y el log de instalación.
 *   [mejoras-y-problemas.md](mejoras-y-problemas.md): Análisis vivo de mejoras implementadas y pendientes.

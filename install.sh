@@ -30,6 +30,11 @@
 #   P1_MODO, P1_RAMA, P1_SIN_HERRAMIENTAS=1, P1_SIN_PERFIL=1,
 #   P1_JONESY_VERSION, P1_JONESY_URL
 #   P1_MOTHER_URL   URL de mother.pyz (por defecto, el último release de mother).
+#   P1_MOTHER_SHA256, P1_JONESY_SHA256
+#                   Suma SHA-256 esperada (si no, la del SHA256SUMS publicado en el mismo release).
+#
+# Integridad: mother.pyz y el binario de jonesy se verifican contra el SHA256SUMS de su release
+# antes de usarlos; si la suma no coincide (o no se puede comprobar), la instalación se cancela.
 #   P1_REPO_URL     URL de git del repositorio (por defecto, GitHub de la cátedra).
 #   P1_TARBALL_URL  URL del .tar.gz usado cuando no hay git.
 #   P1_METODO       git | tarball | local (fuerza el método de descarga).
@@ -314,21 +319,35 @@ main() {
             aviso "No se pudo instalar gh. Ver https://github.com/cli/cli#installation"
         fi
 
+        local rc=0
         if [ -x "$LOCAL_BIN/jonesy" ] || command -v jonesy >/dev/null 2>&1; then
             ok "jonesy disponible."
-        elif instalar_jonesy "$LOCAL_BIN" "$OS"; then
-            ok "jonesy instalado en $LOCAL_BIN."
         else
-            aviso "No se pudo instalar jonesy. Ver https://github.com/INGCOM-UNRN-P1/jonesy"
+            instalar_jonesy "$LOCAL_BIN" "$OS" || rc=$?
+            if [ "$rc" -eq 0 ]; then
+                ok "jonesy instalado en $LOCAL_BIN."
+            elif [ "$rc" -eq 3 ]; then
+                error "Instalación cancelada: el binario de jonesy descargado no es el publicado."
+                return 1
+            else
+                aviso "No se pudo instalar jonesy. Ver https://github.com/INGCOM-UNRN-P1/jonesy"
+            fi
         fi
 
+        rc=0
         if [ "$SIN_PERFIL" = "1" ]; then
             aviso "Herramientas de la cátedra omitidas (--sin-perfil)."
-        elif instalar_perfil_estudiante "$LOCAL_BIN"; then
-            ok "Herramientas de la cátedra instaladas (perfil estudiante: ripley, daedalus, gaff, hal…)."
         else
-            aviso "No se pudieron instalar todas las herramientas de la cátedra. Reintentá con:"
-            aviso "  python3 $LOCAL_BIN/mother.pyz instalar --perfil estudiante"
+            instalar_perfil_estudiante "$LOCAL_BIN" || rc=$?
+            if [ "$rc" -eq 0 ]; then
+                ok "Herramientas de la cátedra instaladas (perfil estudiante: ripley, daedalus, gaff, hal…)."
+            elif [ "$rc" -eq 3 ]; then
+                error "Instalación cancelada: el mother.pyz descargado no es el publicado."
+                return 1
+            else
+                aviso "No se pudieron instalar todas las herramientas de la cátedra. Reintentá con:"
+                aviso "  python3 $LOCAL_BIN/mother.pyz instalar --perfil estudiante"
+            fi
         fi
     fi
 
@@ -434,6 +453,45 @@ quitar_bloque() { # quitar_bloque <archivo> <inicio> <fin>
     return 0
 }
 
+sha256_de() { # sha256_de <archivo> — la suma en hexadecimal (sha256sum en Linux, shasum en macOS)
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | cut -d ' ' -f 1
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" | cut -d ' ' -f 1
+    else
+        return 1
+    fi
+}
+
+# Verifica <archivo> contra la suma esperada: <esperada> si se dio, si no la línea de <nombre> en el
+# SHA256SUMS publicado junto a <url> (el mismo release). Devuelve 3 si no coincide o no se puede
+# comprobar: quien llama cancela la instalación (no se ejecuta nada descargado sin verificar).
+verificar_sha256() { # verificar_sha256 <archivo> <url> <nombre> [esperada]
+    local archivo="$1" url="$2" nombre="$3" esperada="${4:-}" sumas real
+    if [ -z "$esperada" ]; then
+        if ! sumas="$(curl -fsSL --max-time 60 "${url%/*}/SHA256SUMS" 2>/dev/null)"; then
+            error "No se pudo descargar ${url%/*}/SHA256SUMS para verificar $nombre."
+            return 3
+        fi
+        esperada="$(printf '%s\n' "$sumas" | awk -v n="$nombre" '$2 == n || $2 == "*" n { print $1; exit }')"
+        if [ -z "$esperada" ]; then
+            error "El SHA256SUMS del release no trae la suma de $nombre."
+            return 3
+        fi
+    fi
+    if ! real="$(sha256_de "$archivo")"; then
+        error "No hay sha256sum ni shasum para verificar $nombre."
+        return 3
+    fi
+    esperada="$(printf '%s' "$esperada" | tr 'A-F' 'a-f')"
+    if [ "$real" != "$esperada" ]; then
+        error "La suma SHA-256 de $nombre no coincide con la del release:"
+        error "  esperada:  $esperada"
+        error "  descargada: $real"
+        return 3
+    fi
+}
+
 # Descarga el binario oficial de GitHub CLI y lo copia en <bin_dir>
 instalar_perfil_estudiante() { # instalar_perfil_estudiante <bin_dir>
     # mother instala cada herramienta del perfil con `uv tool install git+…` (nunca por nombre en
@@ -447,6 +505,10 @@ instalar_perfil_estudiante() { # instalar_perfil_estudiante <bin_dir>
     if ! curl -fsSL --max-time 120 -o "$tmp" "$url" || ! head -c 24 "$tmp" | grep -q '^#!/usr/bin/env python3'; then
         rm -f "$tmp"
         return 1
+    fi
+    if ! verificar_sha256 "$tmp" "$url" "mother.pyz" "${P1_MOTHER_SHA256:-}"; then
+        rm -f "$tmp"
+        return 3
     fi
     mv -f "$tmp" "$pyz"
     chmod +x "$pyz"
@@ -505,6 +567,9 @@ instalar_jonesy() { # instalar_jonesy <bin_dir> <os>
     tmp="$(mktemp -d)"
     if ! curl -fsSL -o "$tmp/jonesy.tar.gz" "$url"; then
         rm -rf "$tmp"; return 1
+    fi
+    if ! verificar_sha256 "$tmp/jonesy.tar.gz" "$url" "${url##*/}" "${P1_JONESY_SHA256:-}"; then
+        rm -rf "$tmp"; return 3
     fi
     if ! tar -xzf "$tmp/jonesy.tar.gz" -C "$tmp"; then
         rm -rf "$tmp"; return 1

@@ -197,6 +197,27 @@ if [ "$JONESY_INSTALLED" -eq 0 ]; then
 
     echo "  Descargando desde: $JONESY_URL"
     if curl -sSL -f -o "$TMP_JONESY/jonesy.tar.gz" "$JONESY_URL"; then
+        # Integridad (Ola 11): la suma tiene que ser la del SHA256SUMS del mismo release (o
+        # P1_JONESY_SHA256); si no coincide o no se puede comprobar, se cancela la instalación.
+        JONESY_ARCHIVO="${JONESY_URL##*/}"
+        JONESY_ESPERADA="${P1_JONESY_SHA256:-}"
+        if [ -z "$JONESY_ESPERADA" ]; then
+            JONESY_ESPERADA="$(curl -fsSL --max-time 60 "${JONESY_URL%/*}/SHA256SUMS" 2>/dev/null |
+                awk -v n="$JONESY_ARCHIVO" '$2 == n || $2 == "*" n { print $1; exit }' || true)"
+        fi
+        if command -v sha256sum >/dev/null 2>&1; then
+            JONESY_REAL="$(sha256sum "$TMP_JONESY/jonesy.tar.gz" | cut -d ' ' -f 1)"
+        else
+            JONESY_REAL="$(shasum -a 256 "$TMP_JONESY/jonesy.tar.gz" | cut -d ' ' -f 1)"
+        fi
+        if [ -z "$JONESY_ESPERADA" ] || [ "$JONESY_REAL" != "$(printf '%s' "$JONESY_ESPERADA" | tr 'A-F' 'a-f')" ]; then
+            rm -rf "$TMP_JONESY"
+            echo -e "${RED}[ERROR] La suma SHA-256 de $JONESY_ARCHIVO no coincide con la del release (o no se pudo descargar SHA256SUMS).${RESET}" >&2
+            echo "  esperada:   ${JONESY_ESPERADA:-desconocida}" >&2
+            echo "  descargada: $JONESY_REAL" >&2
+            echo -e "${RED}Instalación cancelada.${RESET}" >&2
+            exit 1
+        fi
         if tar -xzf "$TMP_JONESY/jonesy.tar.gz" -C "$TMP_JONESY"; then
             EXTRACTED_JONESY="$(find "$TMP_JONESY" -type f -name jonesy -perm -111 2>/dev/null | head -n1 || true)"
             [ -z "$EXTRACTED_JONESY" ] && EXTRACTED_JONESY="$(find "$TMP_JONESY" -type f -name jonesy 2>/dev/null | head -n1 || true)"

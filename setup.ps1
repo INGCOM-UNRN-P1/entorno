@@ -186,6 +186,41 @@ function Invoke-DownloadWithRetry {
     }
 }
 
+# Integridad de los artefactos de la catedra (Ola 11): compara el archivo con la linea de su
+# nombre en el SHA256SUMS publicado junto a la URL (el mismo release), o con -Expected si se da
+# (versions.json: "<clave>_sha256"). Lanza una excepcion si no coincide o no se puede comprobar:
+# quien llama cancela la instalacion en vez de ejecutar algo descargado sin verificar.
+function Assert-ReleaseSha256 {
+    param(
+        [string]$Path,
+        [string]$Url,
+        [string]$Expected = ""
+    )
+    $name = $Url.Substring($Url.LastIndexOf('/') + 1)
+    if (-not $Expected) {
+        $sumsUrl = $Url.Substring(0, $Url.LastIndexOf('/')) + "/SHA256SUMS"
+        $sumsPath = "$Path.SHA256SUMS"
+        try {
+            Invoke-DownloadWithRetry -Url $sumsUrl -OutFile $sumsPath
+        } catch {
+            throw "No se pudo descargar $sumsUrl para verificar $name."
+        }
+        foreach ($line in (Get-Content -Path $sumsPath)) {
+            $parts = $line.Trim() -split '\s+', 2
+            if ($parts.Count -eq 2 -and ($parts[1] -eq $name -or $parts[1] -eq "*$name")) {
+                $Expected = $parts[0]
+                break
+            }
+        }
+        Remove-Item -Path $sumsPath -Force -ErrorAction SilentlyContinue
+        if (-not $Expected) { throw "El SHA256SUMS del release no trae la suma de $name." }
+    }
+    $actual = (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLower()
+    if ($actual -ne $Expected.Trim().ToLower()) {
+        throw "La suma SHA-256 de $name no coincide con la del release (esperada: $($Expected.Trim().ToLower()); descargada: $actual)."
+    }
+}
+
 # Espejo regional de pacman: mide latencia contra candidatos (prioridad sudamericana
 # para Red UNRN) y configura el mas rapido como primera opcion de cada mirrorlist.
 # Devuelve el espejo elegido o $null si ninguno respondio (no toca archivos en ese caso).
@@ -1417,6 +1452,13 @@ if (-not $isUpdateMode -and $isJonesyComplete -and $isJonesyInstalled) {
             if (-not $isJonesyZipValid) {
                 Write-Host "Descargando jonesy desde $jonesyDownloadUrl..." -ForegroundColor Cyan
                 Invoke-DownloadWithRetry -Url $jonesyDownloadUrl -OutFile $jonesyZipPath
+                try {
+                    Assert-ReleaseSha256 -Path $jonesyZipPath -Url $jonesyDownloadUrl -Expected (Get-Pinned 'jonesy_sha256')
+                } catch {
+                    Remove-Item -Path $jonesyZipPath, "$jonesyZipPath.sha256" -Force -ErrorAction SilentlyContinue
+                    throw "Instalacion cancelada: $_"
+                }
+                Write-Host "Suma SHA-256 de jonesy verificada contra el release." -ForegroundColor Green
                 (Get-FileHash -Path $jonesyZipPath -Algorithm SHA256).Hash | Set-Content -Path "$jonesyZipPath.sha256"
             }
 
@@ -1651,22 +1693,34 @@ if (-not (Test-Path $ripleyPyzPath)) {
 }
 
 if ($needsRipleyDownload) {
+    $ripleyTmpPath = "$ripleyPyzPath.tmp"
+    $ripleyDownloaded = $false
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Write-Host "Descargando Ripley desde $ripleyUrl..." -ForegroundColor Cyan
-        $ripleyTmpPath = "$ripleyPyzPath.tmp"
         Invoke-DownloadWithRetry -Url $ripleyUrl -OutFile $ripleyTmpPath
         if (-not (Test-ZipappValid $ripleyTmpPath)) {
             throw "El archivo descargado no parece un zipapp valido."
         }
+        $ripleyDownloaded = $true
+    } catch {
+        # No bloquea la instalacion: verificar/entregar caen al corrector diff clasico sin Ripley.
+        Write-Warning "No se pudo descargar ripley.pyz ($_). El corrector local funcionara en modo clasico."
+        if (Test-Path $ripleyTmpPath) { Remove-Item $ripleyTmpPath -Force -ErrorAction SilentlyContinue }
+    }
+    # Una descarga que no es la publicada si cancela: no se instala un zipapp sin verificar.
+    if ($ripleyDownloaded) {
+        try {
+            Assert-ReleaseSha256 -Path $ripleyTmpPath -Url $ripleyUrl -Expected (Get-Pinned 'ripley_sha256')
+        } catch {
+            Remove-Item $ripleyTmpPath -Force -ErrorAction SilentlyContinue
+            throw "Instalacion cancelada: $_"
+        }
+        Write-Host "Suma SHA-256 de ripley.pyz verificada contra el release." -ForegroundColor Green
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $ripleyPyzPath) | Out-Null
         Move-Item -Path $ripleyTmpPath -Destination $ripleyPyzPath -Force
         Write-Host "Motor Ripley aprovisionado con exito ($( '{0:N0}' -f ((Get-Item $ripleyPyzPath).Length / 1KB) ) KB)." -ForegroundColor Green
         Write-Host "Probalo con: ripley doctor" -ForegroundColor DarkGray
-    } catch {
-        # No bloquea la instalacion: verificar/entregar caen al corrector diff clasico sin Ripley.
-        Write-Warning "No se pudo descargar ripley.pyz ($_). El corrector local funcionara en modo clasico."
-        if (Test-Path "$ripleyPyzPath.tmp") { Remove-Item "$ripleyPyzPath.tmp" -Force -ErrorAction SilentlyContinue }
     }
 }
 

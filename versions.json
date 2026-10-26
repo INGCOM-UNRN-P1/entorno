@@ -3,7 +3,9 @@
     "Manifiesto de versiones por cuatrimestre. Los valores en null significan",
     "'usar la última disponible'. La cátedra debe pinear URLs/versiones al inicio",
     "de cada cuatrestre y revisar los fallbacks (política: rotación semestral).",
-    "El flag -Latest de setup.ps1 ignora este manifiesto por completo."
+    "El flag -Latest de setup.ps1 ignora este manifiesto por completo.",
+    "jonesy_sha256 y ripley_sha256: suma esperada del artefacto; en null se usa el SHA256SUMS",
+    "publicado en el mismo release (si no coincide, la instalacion se cancela)."
   ],
   "canal": "2026-c1",
   "msys2": null,
@@ -15,6 +17,9 @@
   "wezterm_fallback": "https://github.com/wez/wezterm/releases/download/20240203-110809-5046fc22/WezTerm-windows-20240203-110809-5046fc22.zip",
   "jonesy": null,
   "jonesy_fallback": "https://github.com/INGCOM-UNRN-P1/jonesy/releases/download/v0.1.0/jonesy-0.1.0-windows-x86_64.zip",
+  "jonesy_sha256": null,
+  "ripley": null,
+  "ripley_sha256": null,
   "extensiones": {
     "ms-vscode.cpptools": null,
     "ms-vscode.cpptools-extension-pack": null,

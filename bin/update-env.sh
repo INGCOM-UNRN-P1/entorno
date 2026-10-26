@@ -67,6 +67,16 @@ RIPLEY_TMP="$(mktemp -t ripley-XXXXXX)"
 
 if curl -fsSL --max-time 120 -o "$RIPLEY_TMP" "$RIPLEY_URL" \
    && head -c 24 "$RIPLEY_TMP" | grep -q '#!/usr/bin/env python3'; then
+    # Integridad (Ola 11): la suma del SHA256SUMS del mismo release; si no coincide, no se reemplaza.
+    RIPLEY_ESPERADA="$(curl -fsSL --max-time 60 "${RIPLEY_URL%/*}/SHA256SUMS" 2>/dev/null |
+        awk '$2 == "ripley.pyz" || $2 == "*ripley.pyz" { print $1; exit }' || true)"
+    RIPLEY_REAL="$(sha256sum "$RIPLEY_TMP" | cut -d ' ' -f 1)"
+    if [ -z "$RIPLEY_ESPERADA" ] || [ "$RIPLEY_REAL" != "$RIPLEY_ESPERADA" ]; then
+        rm -f "$RIPLEY_TMP"
+        echo -e "\e[31m[ERROR] La suma SHA-256 de ripley.pyz no coincide con la del release (esperada: ${RIPLEY_ESPERADA:-sin SHA256SUMS}; descargada: $RIPLEY_REAL).\e[0m" >&2
+        echo -e "\e[31mActualización cancelada: se conserva la versión local.\e[0m" >&2
+        exit 1
+    fi
     mkdir -p "$PORTABLE_ROOT/bin"
     mv -f "$RIPLEY_TMP" "$RIPLEY_DEST"
     chmod +x "$RIPLEY_DEST"

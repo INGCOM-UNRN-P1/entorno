@@ -209,6 +209,56 @@ Assert-True "permite instalacion en ruta externa" (-not (Test-IsDirectHomePath -
 Assert-True "ruta vacia devuelve false" (-not (Test-IsDirectHomePath -Path ""))
 
 # ============================================================
+# N. Assert-ReleaseSha256: integridad de jonesy y ripley.pyz (Ola 11)
+# ============================================================
+. ([scriptblock]::Create((Get-FunctionFromScript -Path $SetupPath -Name "Assert-ReleaseSha256")))
+
+$work = Join-Path ([System.IO.Path]::GetTempPath()) ("sha-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $work | Out-Null
+try {
+    # El "release": un directorio local; la descarga simulada copia de ahi.
+    $release = Join-Path $work "release"
+    New-Item -ItemType Directory -Path $release | Out-Null
+    function Invoke-DownloadWithRetry { param([string]$Url, [string]$OutFile)
+        $origen = Join-Path $script:release ($Url.Substring($Url.LastIndexOf('/') + 1))
+        if (-not (Test-Path $origen)) { throw "404 simulado" }
+        Copy-Item -Path $origen -Destination $OutFile -Force
+    }
+    $script:release = $release
+    $artefacto = Join-Path $work "ripley.pyz"
+    Set-Content -Path $artefacto -Value "zipapp de prueba" -NoNewline
+    $hash = (Get-FileHash -Path $artefacto -Algorithm SHA256).Hash.ToLower()
+    Set-Content -Path (Join-Path $release "SHA256SUMS") -Value "$hash  ripley.pyz`n0000  otro.zip"
+    $url = "https://github.com/x/ripley/releases/latest/download/ripley.pyz"
+
+    $ok = $true
+    try { Assert-ReleaseSha256 -Path $artefacto -Url $url } catch { $ok = $false }
+    Assert-True "sha256: la suma del SHA256SUMS del release coincide" $ok
+
+    Add-Content -Path $artefacto -Value "alterado"
+    $msg = ""
+    try { Assert-ReleaseSha256 -Path $artefacto -Url $url } catch { $msg = "$_" }
+    Assert-True "sha256: un archivo alterado lanza el error con la esperada y la descargada" ($msg -match "no coincide" -and $msg -match $hash)
+
+    $msg = ""
+    try { Assert-ReleaseSha256 -Path $artefacto -Url "https://github.com/x/jonesy/releases/download/v1/jonesy.zip" } catch { $msg = "$_" }
+    Assert-True "sha256: sin la linea del archivo en SHA256SUMS tambien falla" ($msg -match "no trae la suma")
+
+    Remove-Item (Join-Path $release "SHA256SUMS")
+    $msg = ""
+    try { Assert-ReleaseSha256 -Path $artefacto -Url $url } catch { $msg = "$_" }
+    Assert-True "sha256: sin SHA256SUMS publicado falla" ($msg -match "No se pudo descargar")
+
+    $actual = (Get-FileHash -Path $artefacto -Algorithm SHA256).Hash
+    $ok = $true
+    try { Assert-ReleaseSha256 -Path $artefacto -Url $url -Expected $actual } catch { $ok = $false }
+    Assert-True "sha256: -Expected (versions.json) reemplaza al SHA256SUMS" $ok
+} finally {
+    Remove-Item -Path $work -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item Function:\Invoke-DownloadWithRetry -ErrorAction SilentlyContinue
+}
+
+# ============================================================
 # Resumen
 # ============================================================
 if ($Fail -eq 0) {
