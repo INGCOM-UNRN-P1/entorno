@@ -44,9 +44,26 @@ if [ -f "$PYZ" ]; then
     exec "$PY" "$PYZ" "$@"
 fi
 
-# 2. Instalación nativa (ripley instalado con uv tool / pip), evitando llamarte a vos mismo
-NATIVE="$(command -v ripley || true)"
-if [ -n "$NATIVE" ] && [ "$(normalizar "$NATIVE")" != "$SELF" ]; then
+# 2. Instalación nativa (ripley instalado con uv tool / pip): el primer ripley del PATH que no
+#    sea este lanzador ni una copia suya. `command -v ripley` no sirve: devuelve este mismo script,
+#    que está primero en el PATH. Y en Windows bin/ y linux/bin/ (dos copias) están los dos en el
+#    PATH, así que saltear sólo este archivo haría que cada copia llamara a la otra en un bucle.
+MARCA_LANZADOR="p1-entorno:lanzador-ripley"
+NATIVE=""
+IFS_ANTERIOR="$IFS"; IFS=:
+set -f
+for DIR in $PATH; do
+    for CANDIDATO in "${DIR:-.}/ripley" "${DIR:-.}/ripley.exe"; do
+        [ -f "$CANDIDATO" ] && [ -x "$CANDIDATO" ] || continue
+        [ "$(normalizar "$CANDIDATO")" = "$SELF" ] && continue
+        grep -qF "$MARCA_LANZADOR" "$CANDIDATO" 2>/dev/null && continue
+        NATIVE="$CANDIDATO"
+        break 2
+    done
+done
+set +f
+IFS="$IFS_ANTERIOR"
+if [ -n "$NATIVE" ]; then
     exec "$NATIVE" "$@"
 fi
 

@@ -313,6 +313,27 @@ run_in_sandbox "mkdir -p '$SANDBOX/repo/home/vacio' && cd '$SANDBOX/repo/home/va
 TC=$(cat /tmp/entvacio.$$); rm -f /tmp/entvacio.$$
 assert "entregar rechaza un directorio que no es proyecto C" test "$TC" -ne 0
 
+# --- Lanzador de ripley: delega en el ripley nativo sin encontrarse a sí mismo ---
+# PATH explícito, para que no cuente un ripley instalado en la máquina que corre las pruebas.
+NATIVO_DIR="$SANDBOX/nativo"
+mkdir -p "$NATIVO_DIR"
+printf '#!/usr/bin/env bash\necho "nativo $*"\n' > "$NATIVO_DIR/ripley"
+chmod +x "$NATIVO_DIR/ripley"
+BASE_PATH="/usr/local/bin:/usr/bin:/bin"
+
+OUT=$(run_in_sandbox "PATH='$SANDBOX/repo/linux/bin:$NATIVO_DIR:$BASE_PATH'; ripley --version")
+assert "el lanzador de ripley delega en el ripley nativo del PATH" test "$OUT" = "nativo --version"
+
+# bin/ y linux/bin/ en el PATH (como en Windows): ninguna copia llama a la otra
+mkdir -p "$SANDBOX/repo/bin"
+cp "$SANDBOX/repo/linux/bin/ripley" "$SANDBOX/repo/bin/ripley"
+OUT=$(run_in_sandbox "PATH='$SANDBOX/repo/bin:$SANDBOX/repo/linux/bin:$NATIVO_DIR:$BASE_PATH'; timeout 10 ripley check .")
+assert "con dos copias del lanzador en el PATH igual llega al nativo" test "$OUT" = "nativo check ."
+
+RC=$(run_in_sandbox "PATH='$SANDBOX/repo/bin:$SANDBOX/repo/linux/bin:$BASE_PATH'; timeout 10 ripley --version >/dev/null 2>&1; echo \$?")
+assert "sin ripley nativo el lanzador falla (sin colgarse ni llamarse en bucle)" test "$RC" -eq 1
+rm -rf "$SANDBOX/repo/bin" "$NATIVO_DIR"
+
 # --- Fase 3: integración con el motor Ripley (adaptadores y multitipo) ---
 
 # Stub de ripley instalado en linux/bin del sandbox (queda primero en el PATH
